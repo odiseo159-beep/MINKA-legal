@@ -1,9 +1,9 @@
 # agent/brain.py — Cerebro del agente: conexión con Claude API
-# Generado por AgentKit
+# Minka — Asistente Legal AI
 
 """
-Lógica de IA del agente. Lee el system prompt de prompts.yaml
-y genera respuestas usando la API de Anthropic Claude.
+Lógica de IA de Minka. Lee el system prompt de prompts.yaml,
+inyecta el contexto del caso del cliente y genera respuestas con Claude.
 """
 
 import os
@@ -11,6 +11,7 @@ import yaml
 import logging
 from anthropic import AsyncAnthropic
 from dotenv import load_dotenv
+from agent.case_tools import generar_contexto_para_bot
 
 load_dotenv()
 logger = logging.getLogger("agentkit")
@@ -47,13 +48,14 @@ def obtener_mensaje_fallback() -> str:
     return config.get("fallback_message", "Disculpa, no entendí tu mensaje. ¿Podrías reformularlo?")
 
 
-async def generar_respuesta(mensaje: str, historial: list[dict]) -> str:
+async def generar_respuesta(mensaje: str, historial: list[dict], telefono: str = "") -> str:
     """
-    Genera una respuesta usando Claude API.
+    Genera una respuesta usando Claude API con el contexto del caso del cliente.
 
     Args:
         mensaje: El mensaje nuevo del usuario
         historial: Lista de mensajes anteriores [{"role": "user/assistant", "content": "..."}]
+        telefono: Número del cliente — se usa para buscar su caso en el sistema
 
     Returns:
         La respuesta generada por Claude
@@ -62,7 +64,14 @@ async def generar_respuesta(mensaje: str, historial: list[dict]) -> str:
     if not mensaje or len(mensaje.strip()) < 2:
         return obtener_mensaje_fallback()
 
-    system_prompt = cargar_system_prompt()
+    system_prompt_base = cargar_system_prompt()
+
+    # Inyectar contexto del caso del cliente al system prompt
+    if telefono:
+        contexto_caso = generar_contexto_para_bot(telefono)
+        system_prompt = system_prompt_base + "\n\n" + contexto_caso
+    else:
+        system_prompt = system_prompt_base
 
     # Construir mensajes para la API
     mensajes = []

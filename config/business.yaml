@@ -1,37 +1,27 @@
-# Configuración del negocio — Generado por AgentKit
+# Configuración del negocio — Minka Legal AI
 negocio:
-  nombre: "Jorkat - Soluciones Sanitarias"
+  nombre: "Estudio de Abogados"
   descripcion: >
-    Empresa peruana dedicada a la fabricación, venta, alquiler e importación de sanitarios
-    portátiles, lavamanos, duchas y casetas. Atiende los sectores de eventos, construcción
-    y minería a nivel nacional en Perú. Destaca por su puntualidad en entregas, stock
-    permanente disponible y precios que incluyen el traslado dentro de Lima Metropolitana.
-  horario: "Lunes a Viernes de 8am a 10pm, Sábados de 8am a 6pm"
-  cobertura: "Nacional (Perú). Entrega incluida en Lima Metropolitana, provincias vía agencia de transportes."
+    Estudio de abogados peruano que brinda servicios legales a personas naturales y empresas.
+    Los clientes pueden consultar el estado de sus casos legales via WhatsApp, 24/7.
+  horario: "Lunes a Viernes de 9am a 6pm"
   contacto:
-    email: jorkatinfo@gmail.com
-    telefonos:
-      - "988 442 177"
-      - "951 732 510"
-      - "986 488 905"
-    web: https://sanitariosportatilesjorkat.com
+    email: ""
+    telefonos: []
+    web: ""
 
 agente:
-  nombre: "Katia"
-  apellido_o_empresa: "Asesor Jorkat"
-  tono: "Profesional y cercano, como un asesor comercial peruano con experiencia"
+  nombre: "Minka"
+  tono: "Profesional, empático y claro. Nunca frío ni burocrático."
   casos_de_uso:
-    - "Identificar la necesidad del cliente (B2B o B2C)"
-    - "Recomendar productos del catálogo según el caso de uso"
-    - "Generar cotizaciones detalladas"
-    - "Tomar pedidos y recopilar datos de facturación (RUC/DNI, razón social)"
-    - "Enviar datos bancarios para el pago"
-    - "Confirmar recepción de comprobantes de pago"
-    - "Notificar al equipo interno para emisión de comprobante y despacho"
-    - "Dar seguimiento de entrega"
-    - "Soporte post-venta sobre mantenimiento y garantías"
+    - "Informar el estado actual del caso del cliente"
+    - "Indicar la próxima fecha importante (audiencia, vencimiento)"
+    - "Informar documentos pendientes de entregar"
+    - "Indicar el abogado asignado al caso"
+    - "Responder preguntas generales sobre procesos legales en Perú"
+    - "Brindar tranquilidad y empatía al cliente"
 
 metadata:
-  creado: "2026-03-19"
-  version: "1.0"
+  creado: "2026-03-21"
+  version: "2.0"
   proveedor_whatsapp: "whapi"
