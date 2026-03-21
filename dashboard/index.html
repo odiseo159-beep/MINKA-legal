@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minka — Panel del Abogado</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 20px;
+            color: #f1f5f9;
+        }
+        .header h1 span { color: #3b82f6; }
+        .header-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+        .stat-badge {
+            background: #334155;
+            padding: 4px 12px;
+            border-radius: 12px;
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .toolbar-left { display: flex; gap: 8px; flex-wrap: wrap; }
+        
+        .filter-btn {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #94a3b8;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .filter-btn:hover { border-color: #3b82f6; color: #e2e8f0; }
+        .filter-btn.active { background: #3b82f6; border-color: #3b82f6; color: white; }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .btn-primary:hover { background: #2563eb; }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .btn-danger:hover { background: #b91c1c; }
+
+        .btn-secondary {
+            background: #334155;
+            color: #e2e8f0;
+            border: 1px solid #475569;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .btn-secondary:hover { background: #475569; }
+
+        /* Table */
+        .table-container {
+            background: #1e293b;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            overflow: hidden;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            text-align: left;
+            padding: 12px 16px;
+            background: #0f172a;
+            color: #94a3b8;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        td {
+            padding: 12px 16px;
+            border-top: 1px solid #334155;
+            font-size: 14px;
+        }
+        tr:hover td { background: #334155; }
+        
+        .cliente-nombre { 
+            font-weight: 500; 
+            color: #f1f5f9; 
+        }
+        .cliente-tel { 
+            font-size: 12px; 
+            color: #64748b; 
+        }
+
+        /* Status badges */
+        .estado-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+        }
+        .estado-nuevo { background: #1e3a5f; color: #60a5fa; }
+        .estado-en_tramite { background: #365314; color: #86efac; }
+        .estado-en_audiencia { background: #713f12; color: #fbbf24; }
+        .estado-pendiente_documento { background: #7c2d12; color: #fb923c; }
+        .estado-en_revision { background: #4a1d96; color: #c084fc; }
+        .estado-en_apelacion { background: #831843; color: #f472b6; }
+        .estado-resuelto { background: #064e3b; color: #34d399; }
+        .estado-archivado { background: #1e293b; color: #64748b; }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 5vh;
+        }
+        .modal-overlay.active { display: flex; }
+        
+        .modal {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 580px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 24px;
+        }
+        .modal h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #f1f5f9;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .form-group textarea { 
+            resize: vertical; 
+            min-height: 70px; 
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+        .empty-state h3 { 
+            font-size: 18px; 
+            margin-bottom: 8px;
+            color: #94a3b8;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #22c55e;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 200;
+            display: none;
+        }
+        .toast.error { background: #dc2626; }
+        .toast.active { display: block; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .form-row { grid-template-columns: 1fr; }
+            .header { flex-direction: column; gap: 8px; }
+            td, th { padding: 8px 10px; font-size: 13px; }
+        }
+
+        /* Action buttons in table */
+        .row-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .btn-icon {
+            background: none;
+            border: 1px solid #334155;
+            color: #94a3b8;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .btn-icon:hover { border-color: #3b82f6; color: #3b82f6; }
+        .btn-icon.delete:hover { border-color: #dc2626; color: #dc2626; }
+
+        /* Search */
+        .search-input {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #e2e8f0;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 240px;
+        }
+        .search-input:focus { outline: none; border-color: #3b82f6; }
+        .search-input::placeholder { color: #475569; }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <h1><span>⚖️</span> Minka — Panel del Abogado</h1>
+    <div class="header-stats">
+        <span class="stat-badge" id="stat-total">Total: 0</span>
+        <span class="stat-badge" id="stat-activos">Activos: 0</span>
+        <span class="stat-badge" id="stat-pendientes">Pendientes: 0</span>
+    </div>
+</div>
+
+<!-- Main -->
+<div class="container">
+    
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <button class="filter-btn active" data-filtro="">Todos</button>
+            <button class="filter-btn" data-filtro="nuevo">Nuevos</button>
+            <button class="filter-btn" data-filtro="en_tramite">En trámite</button>
+            <button class="filter-btn" data-filtro="en_audiencia">En audiencia</button>
+            <button class="filter-btn" data-filtro="pendiente_documento">Pend. documento</button>
+            <button class="filter-btn" data-filtro="resuelto">Resueltos</button>
+            <input type="text" class="search-input" id="searchInput" placeholder="Buscar por nombre...">
+        </div>
+        <button class="btn-primary" onclick="abrirModalNuevo()">+ Nuevo caso</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Expediente</th>
+                    <th>Tipo</th>
+                    <th>Estado</th>
+                    <th>Próxima fecha</th>
+                    <th>Docs. pendientes</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tablaCasos">
+            </tbody>
+        </table>
+        <div class="empty-state" id="emptyState" style="display:none;">
+            <h3>No hay casos registrados</h3>
+            <p>Agrega tu primer caso con el botón "+ Nuevo caso"</p>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Crear/Editar Caso -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <h2 id="modalTitle">Nuevo caso</h2>
+        <input type="hidden" id="casoId">
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Nombre del cliente *</label>
+                <input type="text" id="nombreCliente" placeholder="Juan Pérez López">
+            </div>
+            <div class="form-group">
+                <label>Teléfono (WhatsApp) *</label>
+                <input type="text" id="telefono" placeholder="987654321">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>N° Expediente</label>
+                <input type="text" id="expediente" placeholder="00123-2026-0-1801-JR-CI-01">
+            </div>
+            <div class="form-group">
+                <label>Tipo de caso</label>
+                <select id="tipoCaso">
+                    <option value="">Seleccionar...</option>
+                    <option value="civil">Civil</option>
+                    <option value="penal">Penal</option>
+                    <option value="laboral">Laboral</option>
+                    <option value="familia">Familia</option>
+                    <option value="comercial">Comercial</option>
+                    <option value="administrativo">Administrativo</option>
+                    <option value="constitucional">Constitucional</option>
+                    <option value="tributario">Tributario</option>
+                    <option value="otro">Otro</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Estado</label>
+                <select id="estado">
+                    <option value="nuevo">Nuevo</option>
+                    <option value="en_tramite">En trámite</option>
+                    <option value="en_audiencia">En audiencia</option>
+                    <option value="pendiente_documento">Pendiente de documento</option>
+                    <option value="en_revision">En revisión</option>
+                    <option value="en_apelacion">En apelación</option>
+                    <option value="resuelto">Resuelto</option>
+                    <option value="archivado">Archivado</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Próxima fecha importante</label>
+                <input type="date" id="proximaFecha">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Próxima acción</label>
+            <input type="text" id="proximaAccion" placeholder="Ej: Asistir a audiencia, presentar escrito...">
+        </div>
+
+        <div class="form-group">
+            <label>Documentos pendientes del cliente</label>
+            <textarea id="documentosPendientes" placeholder="Ej: DNI actualizado, contrato original, recibos de pago..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Abogado asignado</label>
+            <input type="text" id="abogadoAsignado" placeholder="Nombre del abogado">
+        </div>
+
+        <div class="form-group">
+            <label>Notas internas</label>
+            <textarea id="notas" placeholder="Notas internas que el bot NO compartirá con el cliente..."></textarea>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+            <button class="btn-primary" onclick="guardarCaso()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+    const API = 'https://katia-jorkat-production.up.railway.app/api/casos';
+    let filtroActual = '';
+    let busquedaActual = '';
+
+    // ============================================================
+    // Cargar datos
+    // ============================================================
+    
+    async function cargarCasos() {
+        try {
+            const url = filtroActual ? `${API}?estado=${filtroActual}` : API;
+            const res = await fetch(url);
+            const data = await res.json();
+            
+            let casos = data.casos || [];
+            
+            // Filtro de búsqueda local
+            if (busquedaActual) {
+                const q = busquedaActual.toLowerCase();
+                casos = casos.filter(c => 
+                    c.nombre_cliente.toLowerCase().includes(q) ||
+                    (c.expediente && c.expediente.toLowerCase().includes(q)) ||
+                    c.telefono.includes(q)
+                );
+            }
+            
+            renderTabla(casos);
+            actualizarStats(data.casos || []);
+        } catch (err) {
+            mostrarToast('Error al cargar casos', true);
+        }
+    }
+
+    function renderTabla(casos) {
+        const tbody = document.getElementById('tablaCasos');
+        const empty = document.getElementById('emptyState');
+        
+        if (casos.length === 0) {
+            tbody.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+        
+        empty.style.display = 'none';
+        tbody.innerHTML = casos.map(c => `
+            <tr>
+                <td>
+                    <div class="cliente-nombre">${esc(c.nombre_cliente)}</div>
+                    <div class="cliente-tel">${esc(c.telefono)}</div>
+                </td>
+                <td>${esc(c.expediente || '—')}</td>
+                <td>${esc(c.tipo_caso || '—')}</td>
+                <td><span class="estado-badge estado-${c.estado}">${formatEstado(c.estado)}</span></td>
+                <td>${formatFecha(c.proxima_fecha)}</td>
+                <td>${esc(c.documentos_pendientes || '—')}</td>
+                <td>
+                    <div class="row-actions">
+                        <button class="btn-icon" onclick="editarCaso(${c.id})" title="Editar">✏️</button>
+                        <button class="btn-icon delete" onclick="confirmarEliminar(${c.id})" title="Eliminar">🗑️</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function actualizarStats(casos) {
+        document.getElementById('stat-total').textContent = `Total: ${casos.length}`;
+        const activos = casos.filter(c => !['resuelto', 'archivado'].includes(c.estado)).length;
+        const pendientes = casos.filter(c => c.estado === 'pendiente_documento').length;
+        document.getElementById('stat-activos').textContent = `Activos: ${activos}`;
+        document.getElementById('stat-pendientes').textContent = `Pendientes: ${pendientes}`;
+    }
+
+    // ============================================================
+    // CRUD
+    // ============================================================
+    
+    function abrirModalNuevo() {
+        document.getElementById('modalTitle').textContent = 'Nuevo caso';
+        document.getElementById('casoId').value = '';
+        limpiarFormulario();
+        document.getElementById('modalOverlay').classList.add('active');
+    }
+
+    async function editarCaso(id) {
+        try {
+            const res = await fetch(`${API}/${id}`);
+            const caso = await res.json();
+            
+            document.getElementById('modalTitle').textContent = 'Editar caso';
+            document.getElementById('casoId').value = caso.id;
+            document.getElementById('nombreCliente').value = caso.nombre_cliente || '';
+            document.getElementById('telefono').value = caso.telefono || '';
+            document.getElementById('expediente').value = caso.expediente || '';
+            document.getElementById('tipoCaso').value = caso.tipo_caso || '';
+            document.getElementById('estado').value = caso.estado || 'nuevo';
+            document.getElementById('proximaFecha').value = caso.proxima_fecha || '';
+            document.getElementById('proximaAccion').value = caso.proxima_accion || '';
+            document.getElementById('documentosPendientes').value = caso.documentos_pendientes || '';
+            document.getElementById('abogadoAsignado').value = caso.abogado_asignado || '';
+            document.getElementById('notas').value = caso.notas || '';
+            
+            document.getElementById('modalOverlay').classList.add('active');
+        } catch (err) {
+            mostrarToast('Error al cargar caso', true);
+        }
+    }
+
+    async function guardarCaso() {
+        const id = document.getElementById('casoId').value;
+        const data = {
+            nombre_cliente: document.getElementById('nombreCliente').value.trim(),
+            telefono: document.getElementById('telefono').value.trim(),
+            expediente: document.getElementById('expediente').value.trim(),
+            tipo_caso: document.getElementById('tipoCaso').value,
+            estado: document.getElementById('estado').value,
+            proxima_fecha: document.getElementById('proximaFecha').value,
+            proxima_accion: document.getElementById('proximaAccion').value.trim(),
+            documentos_pendientes: document.getElementById('documentosPendientes').value.trim(),
+            abogado_asignado: document.getElementById('abogadoAsignado').value.trim(),
+            notas: document.getElementById('notas').value.trim(),
+        };
+
+        if (!data.nombre_cliente || !data.telefono) {
+            mostrarToast('Nombre y teléfono son obligatorios', true);
+            return;
+        }
+
+        try {
+            const url = id ? `${API}/${id}` : API;
+            const method = id ? 'PUT' : 'POST';
+            
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            if (!res.ok) throw new Error('Error al guardar');
+            
+            mostrarToast(id ? 'Caso actualizado' : 'Caso creado');
+            cerrarModal();
+            cargarCasos();
+        } catch (err) {
+            mostrarToast('Error al guardar caso', true);
+        }
+    }
+
+    async function confirmarEliminar(id) {
+        if (!confirm('¿Estás seguro de eliminar este caso?')) return;
+        
+        try {
+            const res = await fetch(`${API}/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error();
+            mostrarToast('Caso eliminado');
+            cargarCasos();
+        } catch (err) {
+            mostrarToast('Error al eliminar', true);
+        }
+    }
+
+    // ============================================================
+    // UI helpers
+    // ============================================================
+    
+    function cerrarModal() {
+        document.getElementById('modalOverlay').classList.remove('active');
+    }
+
+    function limpiarFormulario() {
+        ['nombreCliente', 'telefono', 'expediente', 'proximaFecha', 
+         'proximaAccion', 'documentosPendientes', 'abogadoAsignado', 'notas'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+        document.getElementById('tipoCaso').value = '';
+        document.getElementById('estado').value = 'nuevo';
+    }
+
+    function formatEstado(estado) {
+        const map = {
+            nuevo: 'Nuevo',
+            en_tramite: 'En trámite',
+            en_audiencia: 'En audiencia',
+            pendiente_documento: 'Pend. documento',
+            en_revision: 'En revisión',
+            en_apelacion: 'En apelación',
+            resuelto: 'Resuelto',
+            archivado: 'Archivado',
+        };
+        return map[estado] || estado;
+    }
+
+    function formatFecha(fecha) {
+        if (!fecha) return '—';
+        try {
+            const d = new Date(fecha + 'T00:00:00');
+            return d.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
+        } catch { return fecha; }
+    }
+
+    function esc(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function mostrarToast(msg, error = false) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.className = `toast active ${error ? 'error' : ''}`;
+        setTimeout(() => toast.classList.remove('active'), 3000);
+    }
+
+    // ============================================================
+    // Event listeners
+    // ============================================================
+    
+    // Filtros
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            filtroActual = btn.dataset.filtro;
+            cargarCasos();
+        });
+    });
+
+    // Búsqueda
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        busquedaActual = e.target.value;
+        cargarCasos();
+    });
+
+    // Cerrar modal con Escape o click fuera
+    document.getElementById('modalOverlay').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) cerrarModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') cerrarModal();
+    });
+
+    // Cargar al inicio
+    cargarCasos();
+</script>
+</body>
+</html>
