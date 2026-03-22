@@ -1,7 +1,10 @@
 # case_tools.py — Herramientas del bot para consultar casos
 # El bot usa estas funciones cuando un cliente pregunta por su caso
 
+import logging
 from agent.cases_db import buscar_por_telefono
+
+logger = logging.getLogger("agentkit")
 
 
 def consultar_caso_cliente(telefono: str) -> str:
@@ -9,8 +12,10 @@ def consultar_caso_cliente(telefono: str) -> str:
     Busca los casos asociados al número de teléfono del cliente.
     Retorna un resumen formateado que el bot puede usar para responder.
     """
+    logger.info(f"Teléfono del remitente: {telefono}")
     casos = buscar_por_telefono(telefono)
-    
+    logger.info(f"Casos encontrados: {casos}")
+
     if not casos:
         return "NO_ENCONTRADO"
     
