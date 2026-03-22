@@ -1,87 +1,218 @@
-# dashboard_api.py — Endpoints API para el dashboard del abogado
-# Importar y registrar estas rutas en main.py
-
-from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import HTMLResponse, FileResponse
-from agent.cases_db import (
-    init_cases_db, crear_caso, obtener_caso, buscar_por_telefono,
-    listar_casos, actualizar_caso, eliminar_caso
-)
 import os
+import httpx
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
+from typing import Optional
+from agent.cases_db import (
+    get_all_cases, get_case_by_id, create_case,
+    update_case, delete_case, get_case_by_phone
+)
 
 router = APIRouter()
 
+WHAPI_TOKEN = os.getenv("WHAPI_TOKEN")
+WHAPI_API_URL = os.getenv("WHAPI_API_URL", "https://gate.whapi.cloud")
 
-# ============================================================
-# API REST — CRUD de Casos
-# ============================================================
+# ─────────────────────────────────────────────
+# Modelos
+# ─────────────────────────────────────────────
+
+class CaseCreate(BaseModel):
+    telefono: str
+    nombre_cliente: str
+    expediente: Optional[str] = None
+    tipo_caso: Optional[str] = None
+    estado: Optional[str] = "nuevo"
+    proxima_fecha: Optional[str] = None
+    proxima_accion: Optional[str] = None
+    documentos_pendientes: Optional[str] = None
+    notas: Optional[str] = None
+    abogado_asignado: Optional[str] = None
+
+class CaseUpdate(BaseModel):
+    nombre_cliente: Optional[str] = None
+    expediente: Optional[str] = None
+    tipo_caso: Optional[str] = None
+    estado: Optional[str] = None
+    proxima_fecha: Optional[str] = None
+    proxima_accion: Optional[str] = None
+    documentos_pendientes: Optional[str] = None
+    notas: Optional[str] = None
+    abogado_asignado: Optional[str] = None
+    notificar_cliente: Optional[bool] = True  # ← NUEVO: controla si se notifica
+
+# ─────────────────────────────────────────────
+# Notificación proactiva vía Whapi
+# ─────────────────────────────────────────────
+
+ESTADOS_LABELS = {
+    "nuevo":               "📋 Nuevo",
+    "en_tramite":          "⚙️ En trámite",
+    "en_audiencia":        "⚖️ En audiencia",
+    "pendiente_documento": "📄 Pendiente de documento",
+    "en_revision":         "🔍 En revisión",
+    "en_apelacion":        "📢 En apelación",
+    "resuelto":            "✅ Resuelto",
+    "archivado":           "🗂️ Archivado",
+}
+
+def normalizar_telefono(telefono: str) -> str:
+    """Convierte teléfono a formato WhatsApp: 51XXXXXXXXX"""
+    t = telefono.strip().replace(" ", "").replace("-", "").replace("+", "")
+    if t.startswith("51") and len(t) == 11:
+        return t
+    if len(t) == 9:
+        return f"51{t}"
+    return t
+
+async def enviar_notificacion_whatsapp(caso: dict) -> bool:
+    """Envía mensaje proactivo al cliente cuando su caso es actualizado."""
+    if not WHAPI_TOKEN:
+        print("[Notificación] WHAPI_TOKEN no configurado, omitiendo.")
+        return False
+
+    telefono = normalizar_telefono(caso.get("telefono", ""))
+    nombre = caso.get("nombre_cliente", "cliente")
+    estado = caso.get("estado", "")
+    estado_label = ESTADOS_LABELS.get(estado, estado)
+    expediente = caso.get("expediente", "")
+    proxima_fecha = caso.get("proxima_fecha", "")
+    proxima_accion = caso.get("proxima_accion", "")
+    documentos = caso.get("documentos_pendientes", "")
+
+    # Construir mensaje
+    lineas = [
+        f"👋 Hola {nombre}, le escribimos del estudio jurídico.",
+        f"",
+        f"*Su caso ha sido actualizado:*",
+        f"📁 Expediente: {expediente}" if expediente else "",
+        f"📊 Estado: {estado_label}",
+    ]
+
+    if proxima_fecha:
+        lineas.append(f"📅 Próxima fecha: {proxima_fecha}")
+    if proxima_accion:
+        lineas.append(f"▶️ Próxima acción: {proxima_accion}")
+    if documentos:
+        lineas.append(f"📎 Documentos pendientes: {documentos}")
+
+    lineas += [
+        f"",
+        f"Si tiene consultas, puede escribirme aquí mismo. 🤖 _Minka_",
+    ]
+
+    mensaje = "\n".join(l for l in lineas if l is not None)
+
+    payload = {
+        "to": f"{telefono}@s.whatsapp.net",
+        "body": mensaje,
+        "typing_time": 1,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.post(
+                f"{WHAPI_API_URL}/messages/text",
+                headers={
+                    "Authorization": f"Bearer {WHAPI_TOKEN}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+            if response.status_code in (200, 201):
+                print(f"[Notificación] ✅ Enviada a {telefono}")
+                return True
+            else:
+                print(f"[Notificación] ❌ Error {response.status_code}: {response.text}")
+                return False
+    except Exception as e:
+        print(f"[Notificación] ❌ Excepción: {e}")
+        return False
+
+# ─────────────────────────────────────────────
+# Endpoints API REST
+# ─────────────────────────────────────────────
 
 @router.get("/api/casos")
-async def api_listar_casos(estado: str = None):
-    """Lista todos los casos, opcionalmente filtrados por estado."""
-    casos = listar_casos(filtro_estado=estado)
-    return {"casos": casos, "total": len(casos)}
+def listar_casos(estado: Optional[str] = None, buscar: Optional[str] = None):
+    casos = get_all_cases()
+    if estado:
+        casos = [c for c in casos if c.get("estado") == estado]
+    if buscar:
+        buscar_lower = buscar.lower()
+        casos = [c for c in casos if
+                 buscar_lower in (c.get("nombre_cliente") or "").lower() or
+                 buscar_lower in (c.get("expediente") or "").lower() or
+                 buscar_lower in (c.get("telefono") or "").lower()]
+    return casos
 
+@router.get("/api/casos/stats")
+def obtener_stats():
+    casos = get_all_cases()
+    total = len(casos)
+    por_estado = {}
+    for c in casos:
+        e = c.get("estado", "desconocido")
+        por_estado[e] = por_estado.get(e, 0) + 1
+    activos = sum(v for k, v in por_estado.items()
+                  if k not in ("resuelto", "archivado"))
+    return {
+        "total": total,
+        "activos": activos,
+        "resueltos": por_estado.get("resuelto", 0),
+        "por_estado": por_estado,
+    }
 
 @router.get("/api/casos/{caso_id}")
-async def api_obtener_caso(caso_id: int):
-    """Obtiene un caso específico por ID."""
-    caso = obtener_caso(caso_id)
+def obtener_caso(caso_id: int):
+    caso = get_case_by_id(caso_id)
     if not caso:
         raise HTTPException(status_code=404, detail="Caso no encontrado")
     return caso
 
-
-@router.post("/api/casos")
-async def api_crear_caso(request: Request):
-    """Crea un nuevo caso."""
-    data = await request.json()
-    
-    # Validaciones básicas
-    if not data.get("nombre_cliente"):
-        raise HTTPException(status_code=400, detail="El nombre del cliente es obligatorio")
-    if not data.get("telefono"):
-        raise HTTPException(status_code=400, detail="El teléfono es obligatorio")
-    
-    caso = crear_caso(data)
-    return {"mensaje": "Caso creado exitosamente", "caso": caso}
-
+@router.post("/api/casos", status_code=201)
+def crear_caso(data: CaseCreate):
+    nuevo = create_case(data.dict())
+    return nuevo
 
 @router.put("/api/casos/{caso_id}")
-async def api_actualizar_caso(caso_id: int, request: Request):
-    """Actualiza un caso existente."""
-    data = await request.json()
-    caso = actualizar_caso(caso_id, data)
-    if not caso:
+async def actualizar_caso(caso_id: int, data: CaseUpdate):
+    caso_existente = get_case_by_id(caso_id)
+    if not caso_existente:
         raise HTTPException(status_code=404, detail="Caso no encontrado")
-    return {"mensaje": "Caso actualizado", "caso": caso}
 
+    notificar = data.notificar_cliente
+    update_data = data.dict(exclude_none=True, exclude={"notificar_cliente"})
+
+    caso_actualizado = update_case(caso_id, update_data)
+
+    # ─── NOTIFICACIÓN PROACTIVA ───
+    notificacion_enviada = False
+    if notificar and caso_actualizado:
+        notificacion_enviada = await enviar_notificacion_whatsapp(caso_actualizado)
+
+    return {
+        **caso_actualizado,
+        "_notificacion_enviada": notificacion_enviada,
+    }
 
 @router.delete("/api/casos/{caso_id}")
-async def api_eliminar_caso(caso_id: int):
-    """Elimina un caso."""
-    eliminado = eliminar_caso(caso_id)
-    if not eliminado:
+def eliminar_caso(caso_id: int):
+    caso = get_case_by_id(caso_id)
+    if not caso:
         raise HTTPException(status_code=404, detail="Caso no encontrado")
-    return {"mensaje": "Caso eliminado"}
+    delete_case(caso_id)
+    return {"ok": True, "mensaje": "Caso eliminado"}
 
-
-@router.get("/api/casos/buscar/{telefono}")
-async def api_buscar_por_telefono(telefono: str):
-    """Busca casos por número de teléfono."""
-    casos = buscar_por_telefono(telefono)
-    return {"casos": casos, "total": len(casos)}
-
-
-# ============================================================
-# Dashboard HTML — Interfaz del abogado
-# ============================================================
+# ─────────────────────────────────────────────
+# Dashboard (sirve el HTML estático)
+# ─────────────────────────────────────────────
 
 @router.get("/dashboard", response_class=HTMLResponse)
-async def dashboard():
-    """Sirve el dashboard HTML del abogado."""
-    dashboard_path = os.path.join(os.path.dirname(__file__), "static", "dashboard.html")
-    if os.path.exists(dashboard_path):
-        with open(dashboard_path, "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
-    return HTMLResponse(content="<h1>Dashboard no encontrado</h1>", status_code=404)
+def dashboard():
+    html_path = os.path.join(os.path.dirname(__file__), "static", "dashboard.html")
+    if os.path.exists(html_path):
+        with open(html_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return HTMLResponse("<h1>Dashboard no encontrado</h1>", status_code=404)

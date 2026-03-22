@@ -1,696 +1,1205 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel del Abogado — Asistente Legal AI</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0f172a;
-            color: #e2e8f0;
-            min-height: 100vh;
-        }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Minka — Dashboard del Abogado</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:       #0a0b14;
+  --surface:  #111222;
+  --card:     #161728;
+  --border:   #1e2035;
+  --purple:   #7c3aed;
+  --purple-l: #a855f7;
+  --teal:     #2dd4bf;
+  --teal-d:   #0d9488;
+  --red:      #f43f5e;
+  --yellow:   #fbbf24;
+  --text:     #e8eaf6;
+  --muted:    #6b7280;
+  --sub:      #9ca3af;
+  --font-h:   'Syne', sans-serif;
+  --font-b:   'DM Sans', sans-serif;
+}
 
-        /* Header */
-        .header {
-            background: #1e293b;
-            border-bottom: 1px solid #334155;
-            padding: 16px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .header h1 {
-            font-size: 20px;
-            color: #f1f5f9;
-        }
-        .header h1 span { color: #3b82f6; }
-        .header-stats {
-            display: flex;
-            gap: 16px;
-            font-size: 13px;
-            color: #94a3b8;
-        }
-        .stat-badge {
-            background: #334155;
-            padding: 4px 12px;
-            border-radius: 12px;
-        }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* Layout */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 24px;
-        }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-b);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
 
-        /* Toolbar */
-        .toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        .toolbar-left { display: flex; gap: 8px; flex-wrap: wrap; }
-        
-        .filter-btn {
-            background: #1e293b;
-            border: 1px solid #334155;
-            color: #94a3b8;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: all 0.2s;
-        }
-        .filter-btn:hover { border-color: #3b82f6; color: #e2e8f0; }
-        .filter-btn.active { background: #3b82f6; border-color: #3b82f6; color: white; }
+/* ── NOISE TEXTURE OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: .4;
+}
 
-        .btn-primary {
-            background: #3b82f6;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: background 0.2s;
-        }
-        .btn-primary:hover { background: #2563eb; }
+/* ── AMBIENT GLOW ── */
+.ambient {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+.ambient-1 {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(124,58,237,.12), transparent 70%);
+  top: -200px; left: -200px;
+}
+.ambient-2 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(45,212,191,.08), transparent 70%);
+  bottom: -100px; right: -100px;
+}
 
-        .btn-danger {
-            background: #dc2626;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-        }
-        .btn-danger:hover { background: #b91c1c; }
+/* ── LAYOUT ── */
+.shell {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
 
-        .btn-secondary {
-            background: #334155;
-            color: #e2e8f0;
-            border: 1px solid #475569;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-        }
-        .btn-secondary:hover { background: #475569; }
+/* ── SIDEBAR ── */
+aside {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 28px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
 
-        /* Table */
-        .table-container {
-            background: #1e293b;
-            border-radius: 12px;
-            border: 1px solid #334155;
-            overflow: hidden;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th {
-            text-align: left;
-            padding: 12px 16px;
-            background: #0f172a;
-            color: #94a3b8;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
-        }
-        td {
-            padding: 12px 16px;
-            border-top: 1px solid #334155;
-            font-size: 14px;
-        }
-        tr:hover td { background: #334155; }
-        
-        .cliente-nombre { 
-            font-weight: 500; 
-            color: #f1f5f9; 
-        }
-        .cliente-tel { 
-            font-size: 12px; 
-            color: #64748b; 
-        }
+.logo {
+  padding: 0 24px 28px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
 
-        /* Status badges */
-        .estado-badge {
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 500;
-            display: inline-block;
-        }
-        .estado-nuevo { background: #1e3a5f; color: #60a5fa; }
-        .estado-en_tramite { background: #365314; color: #86efac; }
-        .estado-en_audiencia { background: #713f12; color: #fbbf24; }
-        .estado-pendiente_documento { background: #7c2d12; color: #fb923c; }
-        .estado-en_revision { background: #4a1d96; color: #c084fc; }
-        .estado-en_apelacion { background: #831843; color: #f472b6; }
-        .estado-resuelto { background: #064e3b; color: #34d399; }
-        .estado-archivado { background: #1e293b; color: #64748b; }
+.logo-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
-        /* Modal */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7);
-            z-index: 100;
-            justify-content: center;
-            align-items: flex-start;
-            padding-top: 5vh;
-        }
-        .modal-overlay.active { display: flex; }
-        
-        .modal {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 580px;
-            max-height: 85vh;
-            overflow-y: auto;
-            padding: 24px;
-        }
-        .modal h2 {
-            font-size: 18px;
-            margin-bottom: 20px;
-            color: #f1f5f9;
-        }
+.logo-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--purple), var(--purple-l));
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
 
-        .form-group {
-            margin-bottom: 16px;
-        }
-        .form-group label {
-            display: block;
-            font-size: 13px;
-            color: #94a3b8;
-            margin-bottom: 6px;
-            font-weight: 500;
-        }
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 10px 12px;
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            color: #e2e8f0;
-            font-size: 14px;
-            font-family: inherit;
-        }
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #3b82f6;
-        }
-        .form-group textarea { 
-            resize: vertical; 
-            min-height: 70px; 
-        }
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-        .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            margin-top: 20px;
-        }
+.logo-text {
+  font-family: var(--font-h);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
 
-        /* Empty state */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #64748b;
-        }
-        .empty-state h3 { 
-            font-size: 18px; 
-            margin-bottom: 8px;
-            color: #94a3b8;
-        }
+.logo-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+}
 
-        /* Toast */
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #22c55e;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            z-index: 200;
-            display: none;
-        }
-        .toast.error { background: #dc2626; }
-        .toast.active { display: block; }
+.nav-section {
+  padding: 8px 16px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 8px;
+}
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .form-row { grid-template-columns: 1fr; }
-            .header { flex-direction: column; gap: 8px; }
-            td, th { padding: 8px 10px; font-size: 13px; }
-        }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  color: var(--sub);
+  font-size: 13.5px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all .15s;
+}
 
-        /* Action buttons in table */
-        .row-actions {
-            display: flex;
-            gap: 6px;
-        }
-        .btn-icon {
-            background: none;
-            border: 1px solid #334155;
-            color: #94a3b8;
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-        .btn-icon:hover { border-color: #3b82f6; color: #3b82f6; }
-        .btn-icon.delete:hover { border-color: #dc2626; color: #dc2626; }
+.nav-item:hover { color: var(--text); background: rgba(255,255,255,.03); }
+.nav-item.active {
+  color: var(--purple-l);
+  border-left-color: var(--purple);
+  background: rgba(124,58,237,.08);
+}
 
-        /* Search */
-        .search-input {
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #e2e8f0;
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-size: 14px;
-            width: 240px;
-        }
-        .search-input:focus { outline: none; border-color: #3b82f6; }
-        .search-input::placeholder { color: #475569; }
-    </style>
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 20px 24px;
+  border-top: 1px solid var(--border);
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--teal);
+}
+
+.status-dot {
+  width: 7px; height: 7px;
+  background: var(--teal);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .5; transform: scale(1.3); }
+}
+
+/* ── MAIN ── */
+main {
+  padding: 32px 36px;
+  overflow-y: auto;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.page-title {
+  font-family: var(--font-h);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -.5px;
+}
+
+.page-title span { color: var(--purple-l); }
+
+.topbar-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* ── STATS GRID ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+
+.stat-card.purple::before { background: linear-gradient(90deg, var(--purple), var(--purple-l)); }
+.stat-card.teal::before   { background: linear-gradient(90deg, var(--teal-d), var(--teal)); }
+.stat-card.yellow::before { background: linear-gradient(90deg, #d97706, var(--yellow)); }
+.stat-card.green::before  { background: linear-gradient(90deg, #059669, #34d399); }
+
+.stat-card:hover { border-color: #2a2d45; }
+
+.stat-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  margin-bottom: 10px;
+}
+
+.stat-value {
+  font-family: var(--font-h);
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.stat-card.purple .stat-value { color: var(--purple-l); }
+.stat-card.teal   .stat-value { color: var(--teal); }
+.stat-card.yellow .stat-value { color: var(--yellow); }
+.stat-card.green  .stat-value { color: #34d399; }
+
+.stat-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.stat-icon {
+  position: absolute;
+  top: 16px; right: 16px;
+  font-size: 22px;
+  opacity: .25;
+}
+
+/* ── TOOLBAR ── */
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+}
+
+.search-box input {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 14px 9px 38px;
+  color: var(--text);
+  font-size: 13.5px;
+  font-family: var(--font-b);
+  outline: none;
+  transition: border-color .2s;
+}
+
+.search-box input:focus { border-color: var(--purple); }
+.search-box input::placeholder { color: var(--muted); }
+
+.search-icon {
+  position: absolute;
+  left: 12px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+select {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 14px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: var(--font-b);
+  outline: none;
+  cursor: pointer;
+  transition: border-color .2s;
+}
+
+select:focus { border-color: var(--purple); }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-family: var(--font-b);
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all .15s;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--purple);
+  color: #fff;
+}
+.btn-primary:hover { background: #6d28d9; transform: translateY(-1px); }
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--sub);
+}
+.btn-ghost:hover { border-color: var(--purple); color: var(--purple-l); background: rgba(124,58,237,.05); }
+
+.btn-danger {
+  background: rgba(244,63,94,.12);
+  border: 1px solid rgba(244,63,94,.2);
+  color: var(--red);
+}
+.btn-danger:hover { background: rgba(244,63,94,.2); }
+
+.btn-teal {
+  background: rgba(45,212,191,.1);
+  border: 1px solid rgba(45,212,191,.2);
+  color: var(--teal);
+}
+.btn-teal:hover { background: rgba(45,212,191,.2); }
+
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+
+/* ── TABLE ── */
+.table-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: rgba(255,255,255,.02);
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  padding: 13px 18px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .8px;
+}
+
+td {
+  padding: 14px 18px;
+  font-size: 13.5px;
+  border-bottom: 1px solid rgba(255,255,255,.03);
+  vertical-align: middle;
+}
+
+tr:last-child td { border-bottom: none; }
+
+tbody tr { transition: background .1s; }
+tbody tr:hover { background: rgba(255,255,255,.025); }
+
+.client-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--purple), var(--purple-l));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.client-name {
+  font-weight: 500;
+  color: var(--text);
+  font-size: 13.5px;
+}
+
+.client-phone {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.expediente-tag {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  background: rgba(124,58,237,.1);
+  color: var(--purple-l);
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(124,58,237,.2);
+}
+
+/* ── STATUS BADGE ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.badge-nuevo            { background: rgba(99,102,241,.15); color: #818cf8; border: 1px solid rgba(99,102,241,.2); }
+.badge-en_tramite       { background: rgba(251,191,36,.12); color: #fbbf24; border: 1px solid rgba(251,191,36,.2); }
+.badge-en_audiencia     { background: rgba(239,68,68,.12);  color: #f87171; border: 1px solid rgba(239,68,68,.2); }
+.badge-pendiente_documento { background: rgba(249,115,22,.12); color: #fb923c; border: 1px solid rgba(249,115,22,.2); }
+.badge-en_revision      { background: rgba(45,212,191,.12); color: #2dd4bf; border: 1px solid rgba(45,212,191,.2); }
+.badge-en_apelacion     { background: rgba(236,72,153,.12); color: #f472b6; border: 1px solid rgba(236,72,153,.2); }
+.badge-resuelto         { background: rgba(52,211,153,.12); color: #34d399; border: 1px solid rgba(52,211,153,.2); }
+.badge-archivado        { background: rgba(107,114,128,.12);color: #9ca3af; border: 1px solid rgba(107,114,128,.2); }
+
+.badge-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ── ACTIONS ── */
+.row-actions {
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity .15s;
+}
+
+tbody tr:hover .row-actions { opacity: 1; }
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.empty-icon { font-size: 40px; margin-bottom: 12px; opacity: .4; }
+.empty-title { font-family: var(--font-h); font-size: 16px; color: var(--sub); margin-bottom: 6px; }
+.empty-sub { font-size: 13px; color: var(--muted); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+  backdrop-filter: blur(6px);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn .15s ease;
+}
+
+.modal-overlay.open { display: flex; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  width: 560px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 40px 80px rgba(0,0,0,.6);
+  animation: slideUp .2s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(30px) scale(.97); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.modal-header {
+  padding: 24px 28px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-title {
+  font-family: var(--font-h);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.modal-close {
+  width: 30px; height: 30px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--muted);
+  transition: all .15s;
+}
+
+.modal-close:hover { color: var(--text); background: rgba(255,255,255,.1); }
+
+.modal-body { padding: 20px 28px; }
+.modal-footer {
+  padding: 0 28px 24px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* ── FORM ── */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.form-col-full { grid-column: 1 / -1; }
+
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+
+label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sub);
+  text-transform: uppercase;
+  letter-spacing: .6px;
+}
+
+input[type="text"],
+input[type="date"],
+textarea {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-size: 13.5px;
+  font-family: var(--font-b);
+  outline: none;
+  transition: border-color .2s;
+  width: 100%;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(124,58,237,.1);
+}
+
+textarea { resize: vertical; min-height: 80px; }
+
+.form-group select {
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 10px 14px;
+  width: 100%;
+}
+
+/* ── NOTIFY TOGGLE ── */
+.notify-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(45,212,191,.05);
+  border: 1px solid rgba(45,212,191,.15);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 4px;
+}
+
+.notify-info h4 {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--teal);
+  margin-bottom: 2px;
+}
+
+.notify-info p {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.toggle {
+  position: relative;
+  width: 40px; height: 22px;
+  flex-shrink: 0;
+}
+
+.toggle input { display: none; }
+
+.toggle-track {
+  width: 40px; height: 22px;
+  background: var(--border);
+  border-radius: 11px;
+  cursor: pointer;
+  transition: background .2s;
+  display: block;
+}
+
+.toggle input:checked + .toggle-track { background: var(--teal-d); }
+
+.toggle-thumb {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 16px; height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform .2s;
+  pointer-events: none;
+}
+
+.toggle input:checked ~ .toggle-thumb { transform: translateX(18px); }
+
+/* ── TOAST ── */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 20px 40px rgba(0,0,0,.4);
+  animation: toastIn .3s cubic-bezier(.34,1.56,.64,1);
+  max-width: 320px;
+}
+
+@keyframes toastIn {
+  from { transform: translateX(100%) scale(.9); opacity: 0; }
+  to   { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+.toast.success { border-left: 3px solid var(--teal); }
+.toast.error   { border-left: 3px solid var(--red); }
+.toast.info    { border-left: 3px solid var(--purple-l); }
+
+.toast-icon { font-size: 18px; flex-shrink: 0; }
+.toast-msg  { color: var(--text); }
+
+/* ── LOADER ── */
+.spinner {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .shell { grid-template-columns: 1fr; }
+  aside { display: none; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .form-grid { grid-template-columns: 1fr; }
+}
+</style>
 </head>
 <body>
 
-<!-- Header -->
-<div class="header">
-    <h1><span>⚖️</span> Panel del Abogado</h1>
-    <div class="header-stats">
-        <span class="stat-badge" id="stat-total">Total: 0</span>
-        <span class="stat-badge" id="stat-activos">Activos: 0</span>
-        <span class="stat-badge" id="stat-pendientes">Pendientes: 0</span>
-    </div>
-</div>
+<div class="ambient ambient-1"></div>
+<div class="ambient ambient-2"></div>
 
-<!-- Main -->
-<div class="container">
-    
-    <!-- Toolbar -->
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside>
+    <div class="logo">
+      <div class="logo-mark">
+        <div class="logo-icon">⚖️</div>
+        <div>
+          <div class="logo-text">Minka</div>
+          <div class="logo-sub">Estudio Jurídico</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-section">Principal</div>
+    <div class="nav-item active" onclick="setView('casos')">
+      <span class="nav-icon">📁</span> Casos
+    </div>
+    <div class="nav-item" onclick="setView('stats')">
+      <span class="nav-icon">📊</span> Métricas
+    </div>
+
+    <div class="nav-section">Sistema</div>
+    <div class="nav-item">
+      <span class="nav-icon">⚙️</span> Configuración
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="status-badge">
+        <div class="status-dot"></div>
+        Bot activo en WhatsApp
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div>
+        <div class="page-title">Gestión de <span>Casos</span></div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px;">Panel del abogado</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="loadCasos()">↻ Actualizar</button>
+        <button class="btn btn-primary" onclick="openModal()">＋ Nuevo caso</button>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat-card purple">
+        <div class="stat-icon">📁</div>
+        <div class="stat-label">Total casos</div>
+        <div class="stat-value" id="stat-total">—</div>
+        <div class="stat-sub">registrados</div>
+      </div>
+      <div class="stat-card teal">
+        <div class="stat-icon">⚙️</div>
+        <div class="stat-label">Activos</div>
+        <div class="stat-value" id="stat-activos">—</div>
+        <div class="stat-sub">en proceso</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">✅</div>
+        <div class="stat-label">Resueltos</div>
+        <div class="stat-value" id="stat-resueltos">—</div>
+        <div class="stat-sub">cerrados</div>
+      </div>
+      <div class="stat-card yellow">
+        <div class="stat-icon">📄</div>
+        <div class="stat-label">Docs. pendientes</div>
+        <div class="stat-value" id="stat-docs">—</div>
+        <div class="stat-sub">requieren acción</div>
+      </div>
+    </div>
+
+    <!-- TOOLBAR -->
     <div class="toolbar">
-        <div class="toolbar-left">
-            <button class="filter-btn active" data-filtro="">Todos</button>
-            <button class="filter-btn" data-filtro="nuevo">Nuevos</button>
-            <button class="filter-btn" data-filtro="en_tramite">En trámite</button>
-            <button class="filter-btn" data-filtro="en_audiencia">En audiencia</button>
-            <button class="filter-btn" data-filtro="pendiente_documento">Pend. documento</button>
-            <button class="filter-btn" data-filtro="resuelto">Resueltos</button>
-            <input type="text" class="search-input" id="searchInput" placeholder="Buscar por nombre...">
-        </div>
-        <button class="btn-primary" onclick="abrirModalNuevo()">+ Nuevo caso</button>
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Buscar por nombre, teléfono, expediente..." oninput="filterCasos()"/>
+      </div>
+      <select id="filter-estado" onchange="filterCasos()">
+        <option value="">Todos los estados</option>
+        <option value="nuevo">Nuevo</option>
+        <option value="en_tramite">En trámite</option>
+        <option value="en_audiencia">En audiencia</option>
+        <option value="pendiente_documento">Pend. documento</option>
+        <option value="en_revision">En revisión</option>
+        <option value="en_apelacion">En apelación</option>
+        <option value="resuelto">Resuelto</option>
+        <option value="archivado">Archivado</option>
+      </select>
     </div>
 
-    <!-- Table -->
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Cliente</th>
-                    <th>Expediente</th>
-                    <th>Tipo</th>
-                    <th>Estado</th>
-                    <th>Próxima fecha</th>
-                    <th>Docs. pendientes</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="tablaCasos">
-            </tbody>
-        </table>
-        <div class="empty-state" id="emptyState" style="display:none;">
-            <h3>No hay casos registrados</h3>
-            <p>Agrega tu primer caso con el botón "+ Nuevo caso"</p>
-        </div>
+    <!-- TABLE -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Expediente</th>
+            <th>Tipo</th>
+            <th>Estado</th>
+            <th>Próxima fecha</th>
+            <th>Abogado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="casos-tbody">
+          <tr><td colspan="7"><div class="empty-state">
+            <div class="spinner" style="margin:0 auto;"></div>
+          </div></td></tr>
+        </tbody>
+      </table>
     </div>
+
+  </main>
 </div>
 
-<!-- Modal: Crear/Editar Caso -->
-<div class="modal-overlay" id="modalOverlay">
-    <div class="modal">
-        <h2 id="modalTitle">Nuevo caso</h2>
-        <input type="hidden" id="casoId">
-
-        <div class="form-row">
-            <div class="form-group">
-                <label>Nombre del cliente *</label>
-                <input type="text" id="nombreCliente" placeholder="Juan Pérez López">
-            </div>
-            <div class="form-group">
-                <label>Teléfono (WhatsApp) *</label>
-                <input type="text" id="telefono" placeholder="987654321">
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label>N° Expediente</label>
-                <input type="text" id="expediente" placeholder="00123-2026-0-1801-JR-CI-01">
-            </div>
-            <div class="form-group">
-                <label>Tipo de caso</label>
-                <select id="tipoCaso">
-                    <option value="">Seleccionar...</option>
-                    <option value="civil">Civil</option>
-                    <option value="penal">Penal</option>
-                    <option value="laboral">Laboral</option>
-                    <option value="familia">Familia</option>
-                    <option value="comercial">Comercial</option>
-                    <option value="administrativo">Administrativo</option>
-                    <option value="constitucional">Constitucional</option>
-                    <option value="tributario">Tributario</option>
-                    <option value="otro">Otro</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label>Estado</label>
-                <select id="estado">
-                    <option value="nuevo">Nuevo</option>
-                    <option value="en_tramite">En trámite</option>
-                    <option value="en_audiencia">En audiencia</option>
-                    <option value="pendiente_documento">Pendiente de documento</option>
-                    <option value="en_revision">En revisión</option>
-                    <option value="en_apelacion">En apelación</option>
-                    <option value="resuelto">Resuelto</option>
-                    <option value="archivado">Archivado</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Próxima fecha importante</label>
-                <input type="date" id="proximaFecha">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>Próxima acción</label>
-            <input type="text" id="proximaAccion" placeholder="Ej: Asistir a audiencia, presentar escrito...">
-        </div>
-
-        <div class="form-group">
-            <label>Documentos pendientes del cliente</label>
-            <textarea id="documentosPendientes" placeholder="Ej: DNI actualizado, contrato original, recibos de pago..."></textarea>
-        </div>
-
-        <div class="form-group">
-            <label>Abogado asignado</label>
-            <input type="text" id="abogadoAsignado" placeholder="Nombre del abogado">
-        </div>
-
-        <div class="form-group">
-            <label>Notas internas</label>
-            <textarea id="notas" placeholder="Notas internas que el bot NO compartirá con el cliente..."></textarea>
-        </div>
-
-        <div class="modal-actions">
-            <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
-            <button class="btn-primary" onclick="guardarCaso()">Guardar</button>
-        </div>
+<!-- MODAL CREAR / EDITAR -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Nuevo caso</div>
+      <div class="modal-close" onclick="closeModal()">✕</div>
     </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id"/>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nombre del cliente *</label>
+          <input type="text" id="f-nombre" placeholder="Juan Pérez García"/>
+        </div>
+        <div class="form-group">
+          <label>Teléfono *</label>
+          <input type="text" id="f-telefono" placeholder="940592068"/>
+        </div>
+        <div class="form-group">
+          <label>N° Expediente</label>
+          <input type="text" id="f-expediente" placeholder="EXP-2024-001"/>
+        </div>
+        <div class="form-group">
+          <label>Tipo de caso</label>
+          <input type="text" id="f-tipo" placeholder="Laboral, Civil, Penal..."/>
+        </div>
+        <div class="form-group">
+          <label>Estado</label>
+          <select id="f-estado">
+            <option value="nuevo">Nuevo</option>
+            <option value="en_tramite">En trámite</option>
+            <option value="en_audiencia">En audiencia</option>
+            <option value="pendiente_documento">Pendiente de documento</option>
+            <option value="en_revision">En revisión</option>
+            <option value="en_apelacion">En apelación</option>
+            <option value="resuelto">Resuelto</option>
+            <option value="archivado">Archivado</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Próxima fecha</label>
+          <input type="date" id="f-fecha"/>
+        </div>
+        <div class="form-group form-col-full">
+          <label>Próxima acción</label>
+          <input type="text" id="f-accion" placeholder="Presentar escrito de apelación"/>
+        </div>
+        <div class="form-group form-col-full">
+          <label>Documentos pendientes</label>
+          <input type="text" id="f-docs" placeholder="DNI, partida de nacimiento..."/>
+        </div>
+        <div class="form-group">
+          <label>Abogado asignado</label>
+          <input type="text" id="f-abogado" placeholder="Dr. Carlos Ríos"/>
+        </div>
+        <div class="form-group">
+          <label>Notas internas</label>
+          <input type="text" id="f-notas" placeholder="Solo visible para el equipo"/>
+        </div>
+      </div>
+
+      <!-- Notify toggle (solo al editar) -->
+      <div class="notify-row" id="notify-row" style="display:none; margin-top:14px;">
+        <div class="notify-info">
+          <h4>📲 Notificar al cliente por WhatsApp</h4>
+          <p>Minka enviará un mensaje automático con el nuevo estado</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="f-notificar" checked/>
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" id="save-btn" onclick="saveCaso()">
+        Guardar caso
+      </button>
+    </div>
+  </div>
 </div>
 
-<!-- Toast -->
-<div class="toast" id="toast"></div>
+<!-- TOASTS -->
+<div class="toast-container" id="toasts"></div>
 
 <script>
-    const API = '/api/casos';
-    let filtroActual = '';
-    let busquedaActual = '';
+// ─── CONFIG ───
+const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? ''
+  : 'https://katia-jorkat-production.up.railway.app';
 
-    // ============================================================
-    // Cargar datos
-    // ============================================================
-    
-    async function cargarCasos() {
-        try {
-            const url = filtroActual ? `${API}?estado=${filtroActual}` : API;
-            const res = await fetch(url);
-            const data = await res.json();
-            
-            let casos = data.casos || [];
-            
-            // Filtro de búsqueda local
-            if (busquedaActual) {
-                const q = busquedaActual.toLowerCase();
-                casos = casos.filter(c => 
-                    c.nombre_cliente.toLowerCase().includes(q) ||
-                    (c.expediente && c.expediente.toLowerCase().includes(q)) ||
-                    c.telefono.includes(q)
-                );
-            }
-            
-            renderTabla(casos);
-            actualizarStats(data.casos || []);
-        } catch (err) {
-            mostrarToast('Error al cargar casos', true);
-        }
-    }
+// ─── STATE ───
+let allCasos = [];
 
-    function renderTabla(casos) {
-        const tbody = document.getElementById('tablaCasos');
-        const empty = document.getElementById('emptyState');
-        
-        if (casos.length === 0) {
-            tbody.innerHTML = '';
-            empty.style.display = 'block';
-            return;
-        }
-        
-        empty.style.display = 'none';
-        tbody.innerHTML = casos.map(c => `
-            <tr>
-                <td>
-                    <div class="cliente-nombre">${esc(c.nombre_cliente)}</div>
-                    <div class="cliente-tel">${esc(c.telefono)}</div>
-                </td>
-                <td>${esc(c.expediente || '—')}</td>
-                <td>${esc(c.tipo_caso || '—')}</td>
-                <td><span class="estado-badge estado-${c.estado}">${formatEstado(c.estado)}</span></td>
-                <td>${formatFecha(c.proxima_fecha)}</td>
-                <td>${esc(c.documentos_pendientes || '—')}</td>
-                <td>
-                    <div class="row-actions">
-                        <button class="btn-icon" onclick="editarCaso(${c.id})" title="Editar">✏️</button>
-                        <button class="btn-icon delete" onclick="confirmarEliminar(${c.id})" title="Eliminar">🗑️</button>
-                    </div>
-                </td>
-            </tr>
-        `).join('');
-    }
+// ─── INIT ───
+loadCasos();
+loadStats();
 
-    function actualizarStats(casos) {
-        document.getElementById('stat-total').textContent = `Total: ${casos.length}`;
-        const activos = casos.filter(c => !['resuelto', 'archivado'].includes(c.estado)).length;
-        const pendientes = casos.filter(c => c.estado === 'pendiente_documento').length;
-        document.getElementById('stat-activos').textContent = `Activos: ${activos}`;
-        document.getElementById('stat-pendientes').textContent = `Pendientes: ${pendientes}`;
-    }
+// ─── HELPERS ───
+function toast(msg, type = 'info', icon = '💬') {
+  const t = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span class="toast-icon">${icon}</span><span class="toast-msg">${msg}</span>`;
+  t.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
 
-    // ============================================================
-    // CRUD
-    // ============================================================
-    
-    function abrirModalNuevo() {
-        document.getElementById('modalTitle').textContent = 'Nuevo caso';
-        document.getElementById('casoId').value = '';
-        limpiarFormulario();
-        document.getElementById('modalOverlay').classList.add('active');
-    }
+function getInitials(name) {
+  return (name || '?').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+}
 
-    async function editarCaso(id) {
-        try {
-            const res = await fetch(`${API}/${id}`);
-            const caso = await res.json();
-            
-            document.getElementById('modalTitle').textContent = 'Editar caso';
-            document.getElementById('casoId').value = caso.id;
-            document.getElementById('nombreCliente').value = caso.nombre_cliente || '';
-            document.getElementById('telefono').value = caso.telefono || '';
-            document.getElementById('expediente').value = caso.expediente || '';
-            document.getElementById('tipoCaso').value = caso.tipo_caso || '';
-            document.getElementById('estado').value = caso.estado || 'nuevo';
-            document.getElementById('proximaFecha').value = caso.proxima_fecha || '';
-            document.getElementById('proximaAccion').value = caso.proxima_accion || '';
-            document.getElementById('documentosPendientes').value = caso.documentos_pendientes || '';
-            document.getElementById('abogadoAsignado').value = caso.abogado_asignado || '';
-            document.getElementById('notas').value = caso.notas || '';
-            
-            document.getElementById('modalOverlay').classList.add('active');
-        } catch (err) {
-            mostrarToast('Error al cargar caso', true);
-        }
-    }
+const ESTADO_LABELS = {
+  nuevo:                '📋 Nuevo',
+  en_tramite:           '⚙️ En trámite',
+  en_audiencia:         '⚖️ En audiencia',
+  pendiente_documento:  '📄 Pend. documento',
+  en_revision:          '🔍 En revisión',
+  en_apelacion:         '📢 En apelación',
+  resuelto:             '✅ Resuelto',
+  archivado:            '🗂️ Archivado',
+};
 
-    async function guardarCaso() {
-        const id = document.getElementById('casoId').value;
-        const data = {
-            nombre_cliente: document.getElementById('nombreCliente').value.trim(),
-            telefono: document.getElementById('telefono').value.trim(),
-            expediente: document.getElementById('expediente').value.trim(),
-            tipo_caso: document.getElementById('tipoCaso').value,
-            estado: document.getElementById('estado').value,
-            proxima_fecha: document.getElementById('proximaFecha').value,
-            proxima_accion: document.getElementById('proximaAccion').value.trim(),
-            documentos_pendientes: document.getElementById('documentosPendientes').value.trim(),
-            abogado_asignado: document.getElementById('abogadoAsignado').value.trim(),
-            notas: document.getElementById('notas').value.trim(),
-        };
+function badgeHTML(estado) {
+  const label = ESTADO_LABELS[estado] || estado;
+  return `<span class="badge badge-${estado}"><span class="badge-dot"></span>${label}</span>`;
+}
 
-        if (!data.nombre_cliente || !data.telefono) {
-            mostrarToast('Nombre y teléfono son obligatorios', true);
-            return;
-        }
+function formatDate(d) {
+  if (!d) return '—';
+  const [y, m, day] = d.split('-');
+  if (!y) return d;
+  const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return `${parseInt(day)} ${months[parseInt(m)-1]} ${y}`;
+}
 
-        try {
-            const url = id ? `${API}/${id}` : API;
-            const method = id ? 'PUT' : 'POST';
-            
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            
-            if (!res.ok) throw new Error('Error al guardar');
-            
-            mostrarToast(id ? 'Caso actualizado' : 'Caso creado');
-            cerrarModal();
-            cargarCasos();
-        } catch (err) {
-            mostrarToast('Error al guardar caso', true);
-        }
-    }
+// ─── LOAD CASOS ───
+async function loadCasos() {
+  try {
+    const r = await fetch(`${API}/api/casos`);
+    allCasos = await r.json();
+    renderTable(allCasos);
+  } catch (e) {
+    renderEmpty('No se pudo conectar al servidor');
+  }
+}
 
-    async function confirmarEliminar(id) {
-        if (!confirm('¿Estás seguro de eliminar este caso?')) return;
-        
-        try {
-            const res = await fetch(`${API}/${id}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error();
-            mostrarToast('Caso eliminado');
-            cargarCasos();
-        } catch (err) {
-            mostrarToast('Error al eliminar', true);
-        }
-    }
+async function loadStats() {
+  try {
+    const r = await fetch(`${API}/api/casos/stats`);
+    const s = await r.json();
+    document.getElementById('stat-total').textContent = s.total;
+    document.getElementById('stat-activos').textContent = s.activos;
+    document.getElementById('stat-resueltos').textContent = s.resueltos;
+    const docs = (s.por_estado?.pendiente_documento || 0);
+    document.getElementById('stat-docs').textContent = docs;
+  } catch {}
+}
 
-    // ============================================================
-    // UI helpers
-    // ============================================================
-    
-    function cerrarModal() {
-        document.getElementById('modalOverlay').classList.remove('active');
-    }
+function filterCasos() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const estado = document.getElementById('filter-estado').value;
+  const filtered = allCasos.filter(c => {
+    const matchQ = !q ||
+      (c.nombre_cliente || '').toLowerCase().includes(q) ||
+      (c.telefono || '').toLowerCase().includes(q) ||
+      (c.expediente || '').toLowerCase().includes(q);
+    const matchE = !estado || c.estado === estado;
+    return matchQ && matchE;
+  });
+  renderTable(filtered);
+}
 
-    function limpiarFormulario() {
-        ['nombreCliente', 'telefono', 'expediente', 'proximaFecha', 
-         'proximaAccion', 'documentosPendientes', 'abogadoAsignado', 'notas'].forEach(id => {
-            document.getElementById(id).value = '';
-        });
-        document.getElementById('tipoCaso').value = '';
-        document.getElementById('estado').value = 'nuevo';
-    }
+function renderTable(casos) {
+  const tbody = document.getElementById('casos-tbody');
+  if (!casos.length) { renderEmpty(); return; }
 
-    function formatEstado(estado) {
-        const map = {
-            nuevo: 'Nuevo',
-            en_tramite: 'En trámite',
-            en_audiencia: 'En audiencia',
-            pendiente_documento: 'Pend. documento',
-            en_revision: 'En revisión',
-            en_apelacion: 'En apelación',
-            resuelto: 'Resuelto',
-            archivado: 'Archivado',
-        };
-        return map[estado] || estado;
-    }
+  tbody.innerHTML = casos.map(c => `
+    <tr>
+      <td>
+        <div class="client-cell">
+          <div class="avatar">${getInitials(c.nombre_cliente)}</div>
+          <div>
+            <div class="client-name">${c.nombre_cliente || '—'}</div>
+            <div class="client-phone">${c.telefono || ''}</div>
+          </div>
+        </div>
+      </td>
+      <td>${c.expediente ? `<span class="expediente-tag">${c.expediente}</span>` : '—'}</td>
+      <td style="color:var(--sub);font-size:13px;">${c.tipo_caso || '—'}</td>
+      <td>${badgeHTML(c.estado)}</td>
+      <td style="color:var(--sub);font-size:13px;">${formatDate(c.proxima_fecha)}</td>
+      <td style="color:var(--sub);font-size:13px;">${c.abogado_asignado || '—'}</td>
+      <td>
+        <div class="row-actions">
+          <button class="btn btn-ghost btn-sm" onclick="editCaso(${c.id})">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCaso(${c.id}, '${c.nombre_cliente}')">🗑</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
 
-    function formatFecha(fecha) {
-        if (!fecha) return '—';
-        try {
-            const d = new Date(fecha + 'T00:00:00');
-            return d.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
-        } catch { return fecha; }
-    }
+function renderEmpty(msg = 'No hay casos registrados') {
+  const tbody = document.getElementById('casos-tbody');
+  tbody.innerHTML = `
+    <tr><td colspan="7"><div class="empty-state">
+      <div class="empty-icon">⚖️</div>
+      <div class="empty-title">${msg}</div>
+      <div class="empty-sub">Agrega el primer caso usando el botón de arriba</div>
+    </div></td></tr>`;
+}
 
-    function esc(str) {
-        if (!str) return '';
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
+// ─── MODAL ───
+function openModal(caso = null) {
+  document.getElementById('modal-title').textContent = caso ? 'Editar caso' : 'Nuevo caso';
+  document.getElementById('edit-id').value = caso?.id || '';
+  document.getElementById('f-nombre').value = caso?.nombre_cliente || '';
+  document.getElementById('f-telefono').value = caso?.telefono || '';
+  document.getElementById('f-expediente').value = caso?.expediente || '';
+  document.getElementById('f-tipo').value = caso?.tipo_caso || '';
+  document.getElementById('f-estado').value = caso?.estado || 'nuevo';
+  document.getElementById('f-fecha').value = caso?.proxima_fecha || '';
+  document.getElementById('f-accion').value = caso?.proxima_accion || '';
+  document.getElementById('f-docs').value = caso?.documentos_pendientes || '';
+  document.getElementById('f-abogado').value = caso?.abogado_asignado || '';
+  document.getElementById('f-notas').value = caso?.notas || '';
+  document.getElementById('f-notificar').checked = true;
+  document.getElementById('notify-row').style.display = caso ? 'flex' : 'none';
+  document.getElementById('modal').classList.add('open');
+}
 
-    function mostrarToast(msg, error = false) {
-        const toast = document.getElementById('toast');
-        toast.textContent = msg;
-        toast.className = `toast active ${error ? 'error' : ''}`;
-        setTimeout(() => toast.classList.remove('active'), 3000);
-    }
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
 
-    // ============================================================
-    // Event listeners
-    // ============================================================
-    
-    // Filtros
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            filtroActual = btn.dataset.filtro;
-            cargarCasos();
-        });
+function editCaso(id) {
+  const c = allCasos.find(x => x.id === id);
+  if (c) openModal(c);
+}
+
+// ─── SAVE ───
+async function saveCaso() {
+  const btn = document.getElementById('save-btn');
+  const id = document.getElementById('edit-id').value;
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const telefono = document.getElementById('f-telefono').value.trim();
+
+  if (!nombre || !telefono) {
+    toast('Nombre y teléfono son obligatorios', 'error', '❌');
+    return;
+  }
+
+  const payload = {
+    nombre_cliente:       nombre,
+    telefono:             telefono,
+    expediente:           document.getElementById('f-expediente').value.trim() || null,
+    tipo_caso:            document.getElementById('f-tipo').value.trim() || null,
+    estado:               document.getElementById('f-estado').value,
+    proxima_fecha:        document.getElementById('f-fecha').value || null,
+    proxima_accion:       document.getElementById('f-accion').value.trim() || null,
+    documentos_pendientes:document.getElementById('f-docs').value.trim() || null,
+    abogado_asignado:     document.getElementById('f-abogado').value.trim() || null,
+    notas:                document.getElementById('f-notas').value.trim() || null,
+  };
+
+  if (id) {
+    payload.notificar_cliente = document.getElementById('f-notificar').checked;
+  }
+
+  btn.innerHTML = '<span class="spinner"></span> Guardando...';
+  btn.disabled = true;
+
+  try {
+    const url = id ? `${API}/api/casos/${id}` : `${API}/api/casos`;
+    const method = id ? 'PUT' : 'POST';
+    const r = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
 
-    // Búsqueda
-    document.getElementById('searchInput').addEventListener('input', (e) => {
-        busquedaActual = e.target.value;
-        cargarCasos();
-    });
+    if (!r.ok) throw new Error(await r.text());
 
-    // Cerrar modal con Escape o click fuera
-    document.getElementById('modalOverlay').addEventListener('click', (e) => {
-        if (e.target === e.currentTarget) cerrarModal();
-    });
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') cerrarModal();
-    });
+    const result = await r.json();
+    closeModal();
 
-    // Cargar al inicio
-    cargarCasos();
+    if (id) {
+      if (result._notificacion_enviada) {
+        toast(`✅ Caso actualizado y WhatsApp enviado a ${nombre}`, 'success', '📲');
+      } else {
+        toast(`Caso de ${nombre} actualizado`, 'success', '✅');
+      }
+    } else {
+      toast(`Caso de ${nombre} creado`, 'success', '📁');
+    }
+
+    await loadCasos();
+    await loadStats();
+
+  } catch (e) {
+    toast('Error al guardar: ' + e.message, 'error', '❌');
+  } finally {
+    btn.innerHTML = 'Guardar caso';
+    btn.disabled = false;
+  }
+}
+
+// ─── DELETE ───
+async function deleteCaso(id, nombre) {
+  if (!confirm(`¿Eliminar el caso de ${nombre}?`)) return;
+  try {
+    const r = await fetch(`${API}/api/casos/${id}`, { method: 'DELETE' });
+    if (!r.ok) throw new Error();
+    toast(`Caso de ${nombre} eliminado`, 'info', '🗑');
+    await loadCasos();
+    await loadStats();
+  } catch {
+    toast('Error al eliminar', 'error', '❌');
+  }
+}
+
+// ─── VIEW SWITCH ───
+function setView(v) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+
+// ─── CLOSE ON OVERLAY CLICK ───
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ─── KEYBOARD ───
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
 </script>
 </body>
 </html>
