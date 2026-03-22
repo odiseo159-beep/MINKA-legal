@@ -12,6 +12,7 @@ from agent.cases_db import (
     eliminar_caso,
 )
 from agent.document_extractor import extraer_datos_documento
+from agent.legal_advisor import generar_consejo_procesal
 
 router = APIRouter()
 
@@ -35,6 +36,7 @@ class CaseCreate(BaseModel):
     abogado_asignado: Optional[str] = None
 
 class CaseUpdate(BaseModel):
+    telefono: Optional[str] = None
     nombre_cliente: Optional[str] = None
     expediente: Optional[str] = None
     tipo_caso: Optional[str] = None
@@ -224,6 +226,27 @@ async def api_extraer_documento(archivo: UploadFile = File(...)):
     except Exception as e:
         print(f"[Extracción] ❌ Error inesperado: {e}")
         raise HTTPException(status_code=500, detail="Error al procesar el documento con IA.")
+
+# ─────────────────────────────────────────────
+# Endpoint — Consejo procesal por caso
+# ─────────────────────────────────────────────
+
+@router.get("/api/casos/{caso_id}/consejo")
+def api_consejo_procesal(caso_id: int):
+    """
+    Dado un caso registrado, devuelve:
+    - La siguiente etapa procesal
+    - El plazo legal aplicable
+    - La fecha límite sugerida
+    - Los documentos que hay que preparar
+    - La norma que lo sustenta
+    """
+    caso = obtener_caso(caso_id)
+    if not caso:
+        raise HTTPException(status_code=404, detail="Caso no encontrado")
+
+    consejo = generar_consejo_procesal(caso)
+    return consejo
 
 # ─────────────────────────────────────────────
 # Dashboard (sirve dashboard.html)
