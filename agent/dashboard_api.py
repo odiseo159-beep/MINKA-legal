@@ -5,8 +5,11 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import Optional
 from agent.cases_db import (
-    get_all_cases, get_case_by_id, create_case,
-    update_case, delete_case, get_case_by_phone
+    listar_casos,
+    obtener_caso,
+    crear_caso,
+    actualizar_caso,
+    eliminar_caso,
 )
 
 router = APIRouter()
@@ -40,7 +43,7 @@ class CaseUpdate(BaseModel):
     documentos_pendientes: Optional[str] = None
     notas: Optional[str] = None
     abogado_asignado: Optional[str] = None
-    notificar_cliente: Optional[bool] = True  # ← NUEVO: controla si se notifica
+    notificar_cliente: Optional[bool] = True
 
 # ─────────────────────────────────────────────
 # Notificación proactiva vía Whapi
@@ -57,13 +60,13 @@ ESTADOS_LABELS = {
     "archivado":           "🗂️ Archivado",
 }
 
-def normalizar_telefono(telefono: str) -> str:
-    """Convierte teléfono a formato WhatsApp: 51XXXXXXXXX"""
+def _tel_whatsapp(telefono: str) -> str:
+    """Convierte teléfono normalizado (9 dígitos) a formato Whapi: 51XXXXXXXXX"""
     t = telefono.strip().replace(" ", "").replace("-", "").replace("+", "")
-    if t.startswith("51") and len(t) == 11:
-        return t
     if len(t) == 9:
         return f"51{t}"
+    if t.startswith("51") and len(t) == 11:
+        return t
     return t
 
 async def enviar_notificacion_whatsapp(caso: dict) -> bool:
@@ -72,40 +75,34 @@ async def enviar_notificacion_whatsapp(caso: dict) -> bool:
         print("[Notificación] WHAPI_TOKEN no configurado, omitiendo.")
         return False
 
-    telefono = normalizar_telefono(caso.get("telefono", ""))
-    nombre = caso.get("nombre_cliente", "cliente")
-    estado = caso.get("estado", "")
+    telefono_wa  = _tel_whatsapp(caso.get("telefono", ""))
+    nombre       = caso.get("nombre_cliente", "cliente")
+    estado       = caso.get("estado", "")
     estado_label = ESTADOS_LABELS.get(estado, estado)
-    expediente = caso.get("expediente", "")
-    proxima_fecha = caso.get("proxima_fecha", "")
-    proxima_accion = caso.get("proxima_accion", "")
-    documentos = caso.get("documentos_pendientes", "")
+    expediente   = caso.get("expediente") or ""
+    proxima_fecha   = caso.get("proxima_fecha") or ""
+    proxima_accion  = caso.get("proxima_accion") or ""
+    documentos      = caso.get("documentos_pendientes") or ""
 
-    # Construir mensaje
     lineas = [
         f"👋 Hola {nombre}, le escribimos del estudio jurídico.",
-        f"",
-        f"*Su caso ha sido actualizado:*",
-        f"📁 Expediente: {expediente}" if expediente else "",
+        "",
+        "*Su caso ha sido actualizado:*",
+        f"📁 Expediente: {expediente}" if expediente else None,
         f"📊 Estado: {estado_label}",
     ]
-
     if proxima_fecha:
         lineas.append(f"📅 Próxima fecha: {proxima_fecha}")
     if proxima_accion:
         lineas.append(f"▶️ Próxima acción: {proxima_accion}")
     if documentos:
         lineas.append(f"📎 Documentos pendientes: {documentos}")
-
-    lineas += [
-        f"",
-        f"Si tiene consultas, puede escribirme aquí mismo. 🤖 _Minka_",
-    ]
+    lineas += ["", "Si tiene consultas, puede escribirme aquí mismo. 🤖 _Minka_"]
 
     mensaje = "\n".join(l for l in lineas if l is not None)
 
     payload = {
-        "to": f"{telefono}@s.whatsapp.net",
+        "to": f"{telefono_wa}@s.whatsapp.net",
         "body": mensaje,
         "typing_time": 1,
     }
@@ -120,12 +117,9 @@ async def enviar_notificacion_whatsapp(caso: dict) -> bool:
                 },
                 json=payload,
             )
-            if response.status_code in (200, 201):
-                print(f"[Notificación] ✅ Enviada a {telefono}")
-                return True
-            else:
-                print(f"[Notificación] ❌ Error {response.status_code}: {response.text}")
-                return False
+            ok = response.status_code in (200, 201)
+            print(f"[Notificación] {'✅' if ok else '❌'} {response.status_code} → {telefono_wa}")
+            return ok
     except Exception as e:
         print(f"[Notificación] ❌ Excepción: {e}")
         return False
@@ -135,21 +129,19 @@ async def enviar_notificacion_whatsapp(caso: dict) -> bool:
 # ─────────────────────────────────────────────
 
 @router.get("/api/casos")
-def listar_casos(estado: Optional[str] = None, buscar: Optional[str] = None):
-    casos = get_all_cases()
-    if estado:
-        casos = [c for c in casos if c.get("estado") == estado]
+def api_listar_casos(estado: Optional[str] = None, buscar: Optional[str] = None):
+    casos = listar_casos(filtro_estado=estado)
     if buscar:
-        buscar_lower = buscar.lower()
+        q = buscar.lower()
         casos = [c for c in casos if
-                 buscar_lower in (c.get("nombre_cliente") or "").lower() or
-                 buscar_lower in (c.get("expediente") or "").lower() or
-                 buscar_lower in (c.get("telefono") or "").lower()]
+                 q in (c.get("nombre_cliente") or "").lower() or
+                 q in (c.get("expediente") or "").lower() or
+                 q in (c.get("telefono") or "").lower()]
     return casos
 
 @router.get("/api/casos/stats")
-def obtener_stats():
-    casos = get_all_cases()
+def api_stats():
+    casos = listar_casos()
     total = len(casos)
     por_estado = {}
     for c in casos:
@@ -165,53 +157,47 @@ def obtener_stats():
     }
 
 @router.get("/api/casos/{caso_id}")
-def obtener_caso(caso_id: int):
-    caso = get_case_by_id(caso_id)
+def api_obtener_caso(caso_id: int):
+    caso = obtener_caso(caso_id)
     if not caso:
         raise HTTPException(status_code=404, detail="Caso no encontrado")
     return caso
 
 @router.post("/api/casos", status_code=201)
-def crear_caso(data: CaseCreate):
-    nuevo = create_case(data.dict())
-    return nuevo
+def api_crear_caso(data: CaseCreate):
+    return crear_caso(data.dict())
 
 @router.put("/api/casos/{caso_id}")
-async def actualizar_caso(caso_id: int, data: CaseUpdate):
-    caso_existente = get_case_by_id(caso_id)
+async def api_actualizar_caso(caso_id: int, data: CaseUpdate):
+    caso_existente = obtener_caso(caso_id)
     if not caso_existente:
         raise HTTPException(status_code=404, detail="Caso no encontrado")
 
-    notificar = data.notificar_cliente
+    notificar   = data.notificar_cliente
     update_data = data.dict(exclude_none=True, exclude={"notificar_cliente"})
+    caso_actualizado = actualizar_caso(caso_id, update_data)
 
-    caso_actualizado = update_case(caso_id, update_data)
-
-    # ─── NOTIFICACIÓN PROACTIVA ───
     notificacion_enviada = False
     if notificar and caso_actualizado:
         notificacion_enviada = await enviar_notificacion_whatsapp(caso_actualizado)
 
-    return {
-        **caso_actualizado,
-        "_notificacion_enviada": notificacion_enviada,
-    }
+    return {**caso_actualizado, "_notificacion_enviada": notificacion_enviada}
 
 @router.delete("/api/casos/{caso_id}")
-def eliminar_caso(caso_id: int):
-    caso = get_case_by_id(caso_id)
+def api_eliminar_caso(caso_id: int):
+    caso = obtener_caso(caso_id)
     if not caso:
         raise HTTPException(status_code=404, detail="Caso no encontrado")
-    delete_case(caso_id)
+    eliminar_caso(caso_id)
     return {"ok": True, "mensaje": "Caso eliminado"}
 
 # ─────────────────────────────────────────────
-# Dashboard (sirve el HTML estático)
+# Dashboard (sirve index.html)
 # ─────────────────────────────────────────────
 
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard():
-    html_path = os.path.join(os.path.dirname(__file__), "static", "dashboard.html")
+    html_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
     if os.path.exists(html_path):
         with open(html_path, "r", encoding="utf-8") as f:
             return f.read()
