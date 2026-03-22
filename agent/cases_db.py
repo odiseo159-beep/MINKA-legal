@@ -7,6 +7,9 @@ from datetime import datetime
 
 DB_PATH = os.getenv("DATABASE_PATH", "agentkit.db")
 
+# Crear directorio de la base de datos si no existe (ej: /app/data/ en Railway)
+os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
+
 
 def init_cases_db():
     """Crea la tabla de casos si no existe."""

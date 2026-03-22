@@ -17,6 +17,10 @@ load_dotenv()
 
 # Configuración de base de datos — usa DATABASE_PATH para SQLite (compartido con cases_db.py)
 DATABASE_PATH = os.getenv("DATABASE_PATH", "agentkit.db")
+
+# Crear directorio de la base de datos si no existe (ej: /app/data/ en Railway)
+os.makedirs(os.path.dirname(DATABASE_PATH) or ".", exist_ok=True)
+
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///./{DATABASE_PATH}")
 
 # Si es PostgreSQL en producción, ajustar el esquema de URL
