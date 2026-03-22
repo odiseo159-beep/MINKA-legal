@@ -1,376 +1,205 @@
-# AgentKit — WhatsApp AI Agent Builder
+# Minka — Asistente Legal AI por WhatsApp
 
-Construye tu propio agente de WhatsApp con inteligencia artificial en menos de 30 minutos.
-No necesitas saber programar. Claude Code construye todo por ti.
+> *Minka: trabajo colectivo en quechua. Abogado + IA + Cliente, unidos.*
 
-<!-- ![AgentKit Demo](demo.gif) -->
-
----
-
-## Que es AgentKit?
-
-AgentKit es un proyecto que usa **Claude Code** (la herramienta de programacion de Anthropic)
-para generar un agente de WhatsApp completo y personalizado para tu negocio.
-
-Tu solo respondes preguntas sobre tu negocio. Claude Code se encarga de:
-- Escribir todo el codigo
-- Configurar la conexion con WhatsApp
-- Crear un "cerebro" con IA que sabe sobre tu negocio
-- Dejarlo listo para que tus clientes le escriban
+**Minka** es un asistente de IA para estudios jurídicos que mantiene informados a los clientes sobre el estado de sus casos legales, 24/7 por WhatsApp. El abogado solo actualiza. Minka se encarga del resto.
 
 ---
 
-## Como funciona? (El flujo completo)
+## El problema
 
-### Paso 1: Tu clonas el repo y corres un comando
+El **72% de los clientes de abogados** sienten que no reciben suficiente comunicación sobre su caso. El abogado está en audiencia, el cliente escribe sin respuesta. Minka resuelve esto.
 
-```bash
-git clone https://github.com/Hainrixz/whatsapp-agentkit.git
-cd whatsapp-agentkit
-bash start.sh
-```
+---
 
-`start.sh` solo verifica que tengas Python 3.11+ y Claude Code instalados.
+## ¿Qué hace Minka?
 
-### Paso 2: Abres Claude Code y escribes /build-agent
+### Para el cliente (por WhatsApp)
+- Consulta el estado de su caso 24/7
+- Recibe respuestas inmediatas y personalizadas
+- Sabe qué documentos le faltan presentar
+- Recibe notificaciones automáticas cuando su caso es actualizado
 
-```bash
-claude
-# Dentro de Claude Code escribe:
-/build-agent
-```
+### Para el abogado (dashboard web)
+- Registra y gestiona casos con CRUD completo
+- Sube expedientes en PDF o Word → Claude AI extrae los datos automáticamente
+- Cambia el estado del caso con un clic → el cliente recibe WhatsApp al instante
+- Consulta el consejo procesal: próxima etapa, plazo legal, documentos a preparar y norma aplicable
 
-Esto activa el sistema. Claude Code lee las instrucciones de `CLAUDE.md` y empieza
-a guiarte paso a paso.
+---
 
-### Paso 3: Claude Code te entrevista (5 minutos)
+## Stack técnico
 
-Te hace 10 preguntas, una por una:
+| Capa | Tecnología |
+|------|-----------|
+| IA | Claude AI (Anthropic) — `claude-sonnet-4-6` |
+| Backend | FastAPI + Uvicorn (Python 3.11) |
+| Mensajería | WhatsApp vía Whapi.cloud |
+| Base de datos | SQLite con volumen persistente |
+| Deploy | Docker + Railway |
+| Dashboard | HTML/JS estático (Vercel) |
 
-1. **Nombre de tu negocio** — ej: "Cafeteria El Buen Sabor"
-2. **A que se dedica** — ej: "Vendemos cafe de especialidad y postres artesanales"
-3. **Para que quieres el agente** — responder preguntas, agendar citas, tomar pedidos, etc.
-4. **Nombre del agente** — ej: "Sofia" (el nombre que veran tus clientes)
-5. **Tono de comunicacion** — profesional, amigable, vendedor, o empatico
-6. **Horario de atencion** — ej: "Lunes a Viernes 9am a 6pm"
-7. **Archivos de tu negocio** — menu, precios, FAQ (los pones en la carpeta /knowledge)
-8. **API Key de Anthropic** — la llave para usar Claude AI (te guia a obtenerla)
-9. **Proveedor de WhatsApp** — eliges entre Whapi.cloud, Meta, o Twilio
-10. **Credenciales del proveedor** — el token o keys de tu servicio de WhatsApp
+---
 
-### Paso 4: Claude Code construye tu agente (2-5 minutos)
-
-Con tus respuestas, genera automaticamente estos archivos:
+## Arquitectura
 
 ```
-tu-proyecto/
-├── agent/                     ← EL AGENTE COMPLETO
-│   ├── main.py                Servidor web que recibe mensajes de WhatsApp
-│   ├── brain.py               Conexion con Claude AI (el cerebro)
-│   ├── memory.py              Guarda el historial de cada cliente
-│   ├── tools.py               Herramientas especificas de tu negocio
-│   └── providers/             Conexion con tu servicio de WhatsApp
-│       ├── base.py            Interfaz comun
-│       ├── __init__.py        Selecciona el proveedor automaticamente
-│       └── whapi.py           Adaptador (o meta.py, o twilio.py)
+Cliente WhatsApp
+      ↓
+Whapi.cloud → POST /webhook/messages
+      ↓
+FastAPI (main.py)
+      ↓
+providers/whapi.py  →  normaliza mensaje
+memory.py           →  historial por cliente
+case_tools.py       →  busca caso por teléfono (SQLite)
+brain.py            →  Claude AI genera respuesta
+legal_advisor.py    →  consejo procesal (base de conocimiento)
+      ↓
+Respuesta → WhatsApp → Cliente
+```
+
+---
+
+## Estructura del proyecto
+
+```
+minka-legal/
+├── agent/
+│   ├── main.py                  # Servidor FastAPI
+│   ├── brain.py                 # Conexión con Claude AI
+│   ├── memory.py                # Historial de conversaciones (SQLite)
+│   ├── cases_db.py              # CRUD de casos legales
+│   ├── case_tools.py            # Lookup de casos por teléfono
+│   ├── dashboard_api.py         # API REST + notificaciones proactivas
+│   ├── document_extractor.py    # Extracción de datos de PDF/DOCX con Claude
+│   ├── legal_advisor.py         # Motor de consejo procesal
+│   └── static/
+│       └── dashboard.html       # Dashboard del abogado
 │
-├── config/                    ← CONFIGURACION
-│   ├── business.yaml          Datos de tu negocio
-│   └── prompts.yaml           El "prompt" que define la personalidad del agente
+├── config/
+│   ├── business.yaml            # Datos del estudio jurídico
+│   └── prompts.yaml             # System prompt de Minka
 │
-├── knowledge/                 ← TUS ARCHIVOS
-│   └── (menu.pdf, precios.txt, etc.)
+├── knowledge/
+│   ├── asistente_legal_knowledge.txt   # Conocimiento general del bot
+│   └── procesos_legales.json           # Base de conocimiento procesal (4 procesos)
+│
+├── dashboard/
+│   └── index.html               # Dashboard para Vercel
 │
 ├── tests/
-│   └── test_local.py          Simulador de chat en tu terminal
+│   └── test_local.py            # Simulador de chat en terminal
 │
-├── requirements.txt           Dependencias de Python
-├── Dockerfile                 Para produccion
-├── docker-compose.yml         Orquestacion
-└── .env                       Tus API keys (seguro, nunca se sube)
+├── Dockerfile
+├── requirements.txt
+└── .env.example
 ```
-
-### Paso 5: Pruebas tu agente en la terminal (5 minutos)
-
-Claude Code ejecuta un simulador de chat donde TU escribes como si fueras un cliente:
-
-```
-Tu: Hola, que horarios tienen?
-Agente: Hola! Nuestro horario es de Lunes a Viernes de 9am a 6pm.
-        Quieres que te ayude con algo mas?
-
-Tu: Cuanto cuesta el cafe americano?
-Agente: El cafe americano tiene un precio de $45 pesos.
-        Te gustaria ordenar uno?
-```
-
-Si algo no te gusta, le dices a Claude Code y lo ajusta al momento.
-
-### Paso 6: Deploy a produccion (opcional, 10 minutos)
-
-Cuando estes satisfecho con tu agente, Claude Code te guia para ponerlo en linea:
-
-1. **Claude Code prepara tu proyecto** para produccion (ajusta configuracion)
-2. **Tu lo subes a GitHub** — Claude Code te da los comandos exactos para crear tu repo
-3. **Conectas Railway** — entras a [railway.app](https://railway.app), le das tu repo de GitHub y Railway lo deployea automaticamente
-4. **Configuras las variables** — Claude Code te dice exactamente cuales poner en Railway (las mismas API keys de tu .env)
-5. **Configuras el webhook** — Claude Code te guia para conectar tu proveedor de WhatsApp con la URL de Railway
-
-Despues de esto, cualquier persona que te escriba por WhatsApp sera atendida por tu agente.
-
-**Nota:** No necesitas saber de servidores ni de deploy. Claude Code te dice cada paso, que escribir y donde hacer click.
 
 ---
 
-## Como funciona el agente ya en produccion?
+## Instalación y desarrollo local
 
-```
-Un cliente escribe "Hola" por WhatsApp
-         |
-         v
-Tu proveedor de WhatsApp (Whapi/Meta/Twilio) recibe el mensaje
-         |
-         v
-Envia el mensaje a tu servidor en Railway via webhook
-         |
-         v
-agent/providers/ → Normaliza el mensaje (cada proveedor tiene formato diferente)
-         |
-         v
-agent/memory.py → Busca el historial de ESE cliente (por numero de telefono)
-         |
-         v
-agent/brain.py → Envia a Claude AI:
-                 - El system prompt (personalidad + info de tu negocio)
-                 - El historial de la conversacion
-                 - El mensaje nuevo del cliente
-         |
-         v
-Claude AI genera una respuesta inteligente
-         |
-         v
-agent/providers/ → Envia la respuesta de vuelta por WhatsApp
-         |
-         v
-El cliente recibe la respuesta en segundos
-```
-
-**Cosas importantes:**
-- Cada cliente tiene su propio historial. Si alguien habla contigo y vuelve al dia siguiente, el agente recuerda la conversacion anterior.
-- El agente NUNCA inventa informacion. Solo responde con lo que tu le diste.
-- Si no sabe algo, responde: "No tengo esa informacion, dejame conectarte con alguien del equipo."
-
----
-
-## Requisitos previos
-
-Necesitas 4 cosas antes de empezar:
-
-### 1. Python 3.11 o superior
-- **Mac**: `brew install python` o descarga de [python.org](https://python.org/downloads)
-- **Windows**: Descarga de [python.org](https://python.org/downloads) (marca "Add to PATH")
-- **Linux**: `sudo apt install python3.11`
-- Verifica: `python3 --version`
-
-### 2. Claude Code
+### 1. Clonar el repositorio
 ```bash
-# Primero necesitas Node.js: https://nodejs.org
-npm install -g @anthropic-ai/claude-code
-
-# Autenticate (solo la primera vez)
-claude
+git clone https://github.com/odiseo159-beep/MINKA-legal.git
+cd minka-legal
 ```
 
-### 3. API Key de Anthropic
-1. Ve a [platform.anthropic.com](https://platform.anthropic.com/settings/api-keys)
-2. Crea una cuenta o inicia sesion
-3. Ve a Settings → API Keys → Create Key
-4. Copia la key (empieza con `sk-ant-...`)
-
-### 4. Cuenta de WhatsApp API (elige una)
-
-| Proveedor | Dificultad | Costo | Mejor para |
-|-----------|-----------|-------|------------|
-| [Whapi.cloud](https://whapi.cloud) | Facil | Sandbox gratis | Empezar rapido, probar |
-| [Meta Cloud API](https://developers.facebook.com) | Media | Gratis por conversacion | Produccion seria |
-| [Twilio](https://twilio.com) | Media | Pago por mensaje | Empresas, alta confiabilidad |
-
-**Si no estas seguro, empieza con Whapi.cloud.** Es la opcion mas rapida — te registras, copias un token, y listo.
-
----
-
-## Inicio rapido (3 comandos)
-
+### 2. Crear entorno virtual e instalar dependencias
 ```bash
-# 1. Clona el repositorio
-git clone https://github.com/Hainrixz/whatsapp-agentkit.git
-cd whatsapp-agentkit
-
-# 2. Verifica tu entorno
-bash start.sh
-
-# 3. Abre Claude Code y construye tu agente
-claude
-# Escribe: /build-agent
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-Claude Code te guia desde ahi. Solo responde las preguntas.
-
----
-
-## Proveedores de WhatsApp
-
-AgentKit soporta 3 proveedores. Tu eliges cual usar durante el setup.
-
-### Whapi.cloud (recomendado para empezar)
-- Registrate en [whapi.cloud](https://whapi.cloud)
-- Tienen un sandbox gratuito (no necesitas verificar nada)
-- Solo necesitas: **1 token**
-- Ideal para probar y para negocios pequenos
-
-### Meta Cloud API (oficial)
-- Configura en [developers.facebook.com](https://developers.facebook.com)
-- Es la API oficial de WhatsApp (de Meta/Facebook)
-- Necesitas: **Access Token** + **Phone Number ID** + **Verify Token**
-- Requiere cuenta de Facebook Business verificada
-- Gratis por conversacion (pagas solo por conversaciones iniciadas por ti)
-
-### Twilio
-- Registrate en [twilio.com](https://twilio.com)
-- Muy confiable, excelente documentacion
-- Necesitas: **Account SID** + **Auth Token** + **Phone Number**
-- Tiene sandbox para probar gratis
-- Pago por mensaje en produccion
-
----
-
-## Casos de uso
-
-| Tipo de negocio | Que hace el agente | Ejemplo |
-|-----------------|-------------------|---------|
-| **Restaurante** | Responde sobre menu, horarios, ubicacion | "El platillo del dia es..." |
-| **Clinica/Salon** | Agenda citas y reservaciones | "Tu cita quedo para el martes a las 3pm" |
-| **Inmobiliaria** | Califica leads y envia info de propiedades | "Tenemos 3 departamentos en tu rango..." |
-| **Tienda online** | Toma pedidos por WhatsApp | "Tu pedido de 2 pasteles quedo confirmado" |
-| **SaaS/Software** | Soporte tecnico post-venta | "Para resetear tu contrasena, sigue estos pasos..." |
-| **Cualquier negocio** | Responde preguntas frecuentes 24/7 | "Nuestro horario es..." |
-
----
-
-## Comandos utiles (despues del setup)
-
+### 3. Configurar variables de entorno
 ```bash
-# Probar el agente sin WhatsApp (chat en terminal)
-python tests/test_local.py
+cp .env.example .env
+# Editar .env con tus credenciales
+```
 
-# Arrancar el servidor localmente
+Variables requeridas:
+```env
+ANTHROPIC_API_KEY=sk-ant-...
+WHAPI_TOKEN=tu_token_whapi
+WHAPI_API_URL=https://gate.whapi.cloud
+DATABASE_PATH=./data/minka.db
+```
+
+### 4. Iniciar el servidor
+```bash
 uvicorn agent.main:app --reload --port 8000
+```
 
-# Build Docker para produccion
-docker compose up --build
-
-# Ver logs del agente
-docker compose logs -f agent
+### 5. Probar el bot en terminal
+```bash
+python tests/test_local.py
 ```
 
 ---
 
-## Personalizar tu agente despues
+## Variables de entorno en Railway
 
-No necesitas tocar codigo. Abre Claude Code y pidele cambios en lenguaje natural:
+| Variable | Descripción |
+|----------|-------------|
+| `ANTHROPIC_API_KEY` | API key de Anthropic (Claude) |
+| `WHAPI_TOKEN` | Token de Whapi.cloud |
+| `WHAPI_API_URL` | URL de la API de Whapi |
+| `DATABASE_PATH` | `/app/data/minka.db` |
+
+---
+
+## Base de conocimiento procesal
+
+Minka incluye conocimiento legal para 4 tipos de proceso peruano:
+
+| Proceso | Norma base | Etapas |
+|---------|-----------|--------|
+| Proceso Ordinario Laboral | Ley N° 29497 | 12 |
+| Proceso Penal — Estafa | CPP D.Leg. 957 | 17 |
+| Proceso Único de Alimentos | CNA + CPC | 10 |
+| Proceso Sumarísimo de Desalojo | CPC Arts. 546° y 585° | 11 |
+
+El motor en `legal_advisor.py` calcula automáticamente:
+- La siguiente etapa procesal
+- El plazo en días hábiles (con feriados peruanos 2025-2026)
+- Los documentos a preparar
+- La norma legal aplicable
+
+---
+
+## Reglas del bot
+
+- ✅ Identifica al cliente **solo por número de teléfono**
+- ✅ Responde solo con información **registrada en la base de datos**
+- ✅ Envía **notificaciones proactivas** cuando el abogado actualiza un caso
+- ❌ **Nunca** inventa información
+- ❌ **Nunca** da asesoría legal — solo informa el estado
+- ❌ **Nunca** comparte notas internas del abogado
+
+---
+
+## Deploy
+
+El proyecto hace deploy automático en Railway al hacer push a `main`:
 
 ```bash
-# Cambiar como responde el agente
-claude "El agente esta siendo muy formal. Hazlo mas amigable y casual."
-
-# Agregar informacion nueva
-claude "Agregamos un nuevo servicio de delivery. Actualiza el agente."
-
-# Agregar una herramienta
-claude "Quiero que el agente pueda consultar disponibilidad de citas."
-
-# Cambiar de proveedor de WhatsApp
-claude "Quiero migrar de Whapi a Meta Cloud API."
+git add -A
+git commit -m "descripción del cambio"
+git push
 ```
 
----
-
-## Stack tecnico
-
-Para los curiosos, esto es lo que se usa por debajo:
-
-| Componente | Tecnologia | Para que sirve |
-|-----------|-----------|----------------|
-| IA | Claude AI (claude-sonnet-4-6) | Genera las respuestas inteligentes |
-| Servidor | FastAPI + Uvicorn | Recibe los webhooks de WhatsApp |
-| WhatsApp | Whapi.cloud / Meta / Twilio | Conecta con WhatsApp (tu eliges) |
-| Base de datos | SQLite (local) / PostgreSQL (prod) | Guarda historial de conversaciones |
-| Deploy | Docker + Railway | Pone tu agente en internet |
-| Config | python-dotenv + YAML | Maneja API keys y configuracion |
+El dashboard en Vercel también se actualiza automáticamente desde la carpeta `/dashboard`.
 
 ---
 
-## Arquitectura (para desarrolladores)
+## Autor
 
-```
-WhatsApp (cliente)
-    |
-    v
-Proveedor (Whapi/Meta/Twilio) ←→ agent/providers/ (normaliza formato)
-    |
-    v
-FastAPI (agent/main.py) ←→ agent/memory.py (historial SQLite)
-    |
-    v
-Claude API (agent/brain.py) ←→ config/prompts.yaml (personalidad)
-    |
-    v
-Respuesta enviada de vuelta por WhatsApp
-```
+**Daniel** — Fundador de [SimplifAI](https://simplifai.pe)
 
-El sistema usa un **patron adaptador** para proveedores de WhatsApp. Cada proveedor
-(Whapi, Meta, Twilio) implementa la misma interfaz, asi que `main.py` no sabe ni le
-importa cual estas usando. Solo llama `proveedor.parsear_webhook()` y
-`proveedor.enviar_mensaje()`.
+Abogado de formación, ahora enfocado en soluciones de IA para el sector legal peruano.
 
 ---
 
-## Preguntas frecuentes
-
-**Necesito saber programar?**
-No. Claude Code escribe todo el codigo por ti. Tu solo respondes preguntas.
-
-**Cuanto cuesta?**
-- AgentKit es gratis y open source
-- Claude API: pagas por uso (~$3/millon de tokens, muy barato para un bot)
-- WhatsApp: depende del proveedor (Whapi tiene sandbox gratis)
-- Railway: plan gratis disponible para proyectos pequenos
-
-**Puedo usar esto con mi negocio real?**
-Si. Despues de las pruebas locales, lo subes a Railway y cualquier cliente
-que te escriba por WhatsApp sera atendido por tu agente.
-
-**Y si el agente no sabe algo?**
-Responde algo como: "No tengo esa informacion, dejame conectarte con alguien
-de nuestro equipo." Nunca inventa datos.
-
-**Puedo tener multiples agentes?**
-Si. Clona el repo varias veces, uno por negocio. Cada agente es independiente.
-
-**Puedo cambiar de proveedor de WhatsApp despues?**
-Si. Abre Claude Code y dile: "Quiero cambiar de Whapi a Meta Cloud API."
-El regenerara los archivos necesarios.
-
----
-
-## Creditos
-
-Creado por **Todo de IA** — [@soyenriquerocha](https://instagram.com/soyenriquerocha)
-
-Construido con [Claude Code](https://claude.ai/claude-code) para builders de LATAM.
-
----
-
-## Licencia
-
-MIT — Usa este proyecto como quieras, para lo que quieras.
+*Minka — Trabajo colectivo para la justicia.*

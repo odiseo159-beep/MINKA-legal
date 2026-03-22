@@ -1,9 +1,9 @@
 # tests/test_local.py — Simulador de chat en terminal
-# Generado por AgentKit
+# Minka — Asistente Legal AI
 
 """
-Prueba a Katia sin necesitar WhatsApp.
-Simula una conversación en la terminal como si fueras un cliente de Jorkat.
+Prueba a Minka sin necesitar WhatsApp.
+Simula una conversación en la terminal como si fueras un cliente del estudio.
 """
 
 import asyncio
@@ -25,7 +25,7 @@ async def main():
 
     print()
     print("=" * 55)
-    print("   Katia — Asesor Jorkat | Test Local")
+    print("   Minka — Asistente Legal | Test Local")
     print("=" * 55)
     print()
     print("  Escribe mensajes como si fueras un cliente.")
@@ -59,7 +59,7 @@ async def main():
         historial = await obtener_historial(TELEFONO_TEST)
 
         # Generar respuesta
-        print("\nKatia: ", end="", flush=True)
+        print("\nMinka: ", end="", flush=True)
         respuesta = await generar_respuesta(mensaje, historial)
         print(respuesta)
         print()
