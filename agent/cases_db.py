@@ -35,7 +35,10 @@ def init_cases_db():
 
 def normalizar_telefono(telefono: str) -> str:
     """Normaliza el número de teléfono para búsqueda consistente.
-    Elimina espacios, guiones, y el prefijo +51 si existe."""
+    Elimina espacios, guiones, sufijos WhatsApp (@s.whatsapp.net) y prefijos +51/51."""
+    # Eliminar sufijo de WhatsApp (ej: 51912345678@s.whatsapp.net)
+    if "@" in telefono:
+        telefono = telefono.split("@")[0]
     telefono = telefono.strip().replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
     if telefono.startswith("+51"):
         telefono = telefono[3:]

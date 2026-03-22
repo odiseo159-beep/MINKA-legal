@@ -22,8 +22,12 @@ class ProveedorWhapi(ProveedorWhatsApp):
         body = await request.json()
         mensajes = []
         for msg in body.get("messages", []):
+            # Whapi envía chat_id como "51912345678@s.whatsapp.net" — limpiar el sufijo
+            chat_id = msg.get("chat_id", "")
+            telefono = chat_id.split("@")[0] if "@" in chat_id else chat_id
+            logger.info(f"[WHAPI] chat_id recibido: '{chat_id}' → teléfono limpio: '{telefono}'")
             mensajes.append(MensajeEntrante(
-                telefono=msg.get("chat_id", ""),
+                telefono=telefono,
                 texto=msg.get("text", {}).get("body", ""),
                 mensaje_id=msg.get("id", ""),
                 es_propio=msg.get("from_me", False),
