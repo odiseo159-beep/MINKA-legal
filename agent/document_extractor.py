@@ -9,32 +9,36 @@ import re
 import anthropic
 
 CAMPOS_EXTRAIBLES = [
-    "nombre_cliente", "telefono", "expediente",
-    "tipo_caso", "documentos_pendientes", "abogado_asignado",
+    "nombre_cliente", "telefono", "expediente", "tipo_caso",
+    "abogado_asignado", "documentos_pendientes",
+    "proxima_fecha", "proxima_accion",
 ]
 
 CAMPOS_REQUERIDOS = ["nombre_cliente", "telefono"]
 
 PROMPT_EXTRACCION = """Eres un asistente especializado en extracción de datos de documentos legales peruanos.
 
-Analiza el documento adjunto y extrae ÚNICAMENTE los siguientes campos si los encuentras con certeza:
+Analiza el documento adjunto y extrae ÚNICAMENTE los siguientes campos si los encuentras de forma EXPLÍCITA:
 
-- nombre_cliente: Nombre completo del cliente o demandante/denunciante
-- telefono: Número de teléfono del cliente (solo dígitos, sin prefijo +51)
-- expediente: Número de expediente judicial o administrativo
-- tipo_caso: Tipo o materia del caso (ej: Laboral, Civil, Penal, Familia, Administrativo)
-- documentos_pendientes: Documentos que se mencionan como pendientes de presentar o adjuntar
-- abogado_asignado: Nombre del abogado, letrado o defensor asignado al caso
+- nombre_cliente: Nombre completo del cliente, demandante o denunciante principal
+- telefono: Número de teléfono del cliente (solo los 9 dígitos, sin +51 ni 51)
+- expediente: Número de expediente judicial o carpeta fiscal (ej: 01234-2025-0-1801-JR-LA-09)
+- tipo_caso: Materia o tipo del proceso (ej: Laboral, Penal - Estafa, Alimentos, Civil - Desalojo)
+- abogado_asignado: Nombre del abogado o letrado que patrocina al cliente
+- documentos_pendientes: Documentos que el juzgado o fiscalía ha requerido presentar o subsanar
+- proxima_fecha: Fecha de la próxima audiencia, diligencia o plazo que aparezca EXPLÍCITAMENTE en el documento. Formato YYYY-MM-DD. Solo si está escrita con claridad (ej: "15 de abril de 2026" → "2026-04-15")
+- proxima_accion: Descripción breve de la próxima acción procesal mencionada en el documento (ej: "Audiencia de Conciliación", "Contestar demanda", "Subsanar demanda en 5 días hábiles")
 
 REGLAS IMPORTANTES:
-1. Solo extrae datos EXPLÍCITAMENTE en el documento. NO inventes ni inferras.
-2. Si un campo no está claramente en el documento, omítelo del JSON.
-3. Para el teléfono, devuelve solo los 9 dígitos (sin +51 ni 51).
-4. NO extraigas fechas de audiencia ni próximas acciones — requieren criterio del abogado.
-5. Devuelve ÚNICAMENTE un objeto JSON válido, sin texto adicional, sin markdown.
+1. Solo extrae datos EXPLÍCITAMENTE escritos en el documento. NO inventes ni inferras plazos.
+2. Para proxima_fecha: usa SOLO fechas ya fijadas/programadas que aparezcan en el texto. Si hay varias, usa la más próxima futura.
+3. Para proxima_accion: describe la acción mencionada en el documento, no la que tú creas que debería hacerse.
+4. Para el teléfono, devuelve solo los 9 dígitos (sin +51 ni 51).
+5. Si un campo no está en el documento, omítelo completamente del JSON.
+6. Devuelve ÚNICAMENTE un objeto JSON válido, sin texto adicional, sin markdown, sin explicaciones.
 
-Formato exacto:
-{"nombre_cliente": "...", "telefono": "...", "expediente": "...", "tipo_caso": "...", "documentos_pendientes": "...", "abogado_asignado": "..."}
+Formato exacto (incluye solo los campos que encontraste):
+{"nombre_cliente": "...", "telefono": "...", "expediente": "...", "tipo_caso": "...", "abogado_asignado": "...", "documentos_pendientes": "...", "proxima_fecha": "YYYY-MM-DD", "proxima_accion": "..."}
 
 Si no encuentras ningún campo, devuelve: {}
 """

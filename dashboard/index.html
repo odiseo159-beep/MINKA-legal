@@ -7,19 +7,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
 :root {
-  --bg:       #0a0b14;
-  --surface:  #111222;
-  --card:     #161728;
-  --border:   #1e2035;
-  --purple:   #7c3aed;
-  --purple-l: #a855f7;
-  --teal:     #2dd4bf;
-  --teal-d:   #0d9488;
+  --bg:       #0d1117;
+  --surface:  #0a1628;
+  --card:     #0f1e35;
+  --border:   #1a3050;
+  --accent:   #e8650a;
+  --accent-l: #f5892e;
+  --accent-d: #c2530a;
+  --navy:     #1a3a5c;
+  --navy-l:   #2a5080;
+  --teal:     #38bdf8;
+  --teal-d:   #0369a1;
   --red:      #f43f5e;
   --yellow:   #fbbf24;
-  --text:     #e8eaf6;
-  --muted:    #6b7280;
-  --sub:      #9ca3af;
+  --text:     #e2e8f0;
+  --muted:    #64748b;
+  --sub:      #94a3b8;
   --font-h:   'Syne', sans-serif;
   --font-b:   'DM Sans', sans-serif;
 }
@@ -55,12 +58,12 @@ body::before {
 }
 .ambient-1 {
   width: 600px; height: 600px;
-  background: radial-gradient(circle, rgba(124,58,237,.12), transparent 70%);
+  background: radial-gradient(circle, rgba(232,101,10,.10), transparent 70%);
   top: -200px; left: -200px;
 }
 .ambient-2 {
   width: 400px; height: 400px;
-  background: radial-gradient(circle, rgba(45,212,191,.08), transparent 70%);
+  background: radial-gradient(circle, rgba(26,58,92,.25), transparent 70%);
   bottom: -100px; right: -100px;
 }
 
@@ -100,7 +103,7 @@ aside {
 
 .logo-icon {
   width: 36px; height: 36px;
-  background: linear-gradient(135deg, var(--purple), var(--purple-l));
+  background: linear-gradient(135deg, var(--accent-d), var(--accent-l));
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -148,9 +151,9 @@ aside {
 
 .nav-item:hover { color: var(--text); background: rgba(255,255,255,.03); }
 .nav-item.active {
-  color: var(--purple-l);
-  border-left-color: var(--purple);
-  background: rgba(124,58,237,.08);
+  color: var(--accent-l);
+  border-left-color: var(--accent);
+  background: rgba(232,101,10,.08);
 }
 
 .nav-icon { font-size: 16px; width: 20px; text-align: center; }
@@ -202,7 +205,7 @@ main {
   letter-spacing: -.5px;
 }
 
-.page-title span { color: var(--purple-l); }
+.page-title span { color: var(--accent-l); }
 
 .topbar-actions {
   display: flex;
@@ -232,32 +235,35 @@ main {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 2px;
+  height: 3px;
 }
 
-.stat-card.purple::before { background: linear-gradient(90deg, var(--purple), var(--purple-l)); }
+.stat-card.purple::before { background: linear-gradient(90deg, var(--accent-d), var(--accent-l)); }
 .stat-card.teal::before   { background: linear-gradient(90deg, var(--teal-d), var(--teal)); }
 .stat-card.yellow::before { background: linear-gradient(90deg, #d97706, var(--yellow)); }
 .stat-card.green::before  { background: linear-gradient(90deg, #059669, #34d399); }
 
-.stat-card:hover { border-color: #2a2d45; }
+.stat-card:hover { border-color: var(--navy-l); }
 
 .stat-label {
   font-size: 11px;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: .8px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .stat-value {
   font-family: var(--font-h);
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 800;
-  line-height: 1;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.stat-card.purple .stat-value { color: var(--purple-l); }
+.stat-card.purple .stat-value { color: var(--accent-l); }
 .stat-card.teal   .stat-value { color: var(--teal); }
 .stat-card.yellow .stat-value { color: var(--yellow); }
 .stat-card.green  .stat-value { color: #34d399; }
@@ -303,7 +309,7 @@ main {
   transition: border-color .2s;
 }
 
-.search-box input:focus { border-color: var(--purple); }
+.search-box input:focus { border-color: var(--accent); }
 .search-box input::placeholder { color: var(--muted); }
 
 .search-icon {
@@ -328,7 +334,7 @@ select {
   transition: border-color .2s;
 }
 
-select:focus { border-color: var(--purple); }
+select:focus { border-color: var(--accent); }
 
 /* ── BUTTONS ── */
 .btn {
@@ -347,17 +353,17 @@ select:focus { border-color: var(--purple); }
 }
 
 .btn-primary {
-  background: var(--purple);
+  background: var(--accent);
   color: #fff;
 }
-.btn-primary:hover { background: #6d28d9; transform: translateY(-1px); }
+.btn-primary:hover { background: var(--accent-d); transform: translateY(-1px); }
 
 .btn-ghost {
   background: transparent;
   border: 1px solid var(--border);
   color: var(--sub);
 }
-.btn-ghost:hover { border-color: var(--purple); color: var(--purple-l); background: rgba(124,58,237,.05); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent-l); background: rgba(232,101,10,.05); }
 
 .btn-danger {
   background: rgba(244,63,94,.12);
@@ -367,11 +373,11 @@ select:focus { border-color: var(--purple); }
 .btn-danger:hover { background: rgba(244,63,94,.2); }
 
 .btn-teal {
-  background: rgba(45,212,191,.1);
-  border: 1px solid rgba(45,212,191,.2);
+  background: rgba(56,189,248,.1);
+  border: 1px solid rgba(56,189,248,.2);
   color: var(--teal);
 }
-.btn-teal:hover { background: rgba(45,212,191,.2); }
+.btn-teal:hover { background: rgba(56,189,248,.2); }
 
 .btn-sm { padding: 6px 12px; font-size: 12px; }
 
@@ -424,13 +430,13 @@ tbody tr:hover { background: rgba(255,255,255,.025); }
 .avatar {
   width: 32px; height: 32px;
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--purple), var(--purple-l));
+  background: linear-gradient(135deg, var(--navy), var(--navy-l));
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
   font-weight: 700;
-  color: #fff;
+  color: var(--accent-l);
   flex-shrink: 0;
 }
 
@@ -449,11 +455,11 @@ tbody tr:hover { background: rgba(255,255,255,.025); }
 .expediente-tag {
   font-family: 'Courier New', monospace;
   font-size: 12px;
-  background: rgba(124,58,237,.1);
-  color: var(--purple-l);
+  background: rgba(232,101,10,.1);
+  color: var(--accent-l);
   padding: 3px 8px;
   border-radius: 5px;
-  border: 1px solid rgba(124,58,237,.2);
+  border: 1px solid rgba(232,101,10,.2);
 }
 
 /* ── STATUS BADGE ── */
@@ -609,8 +615,8 @@ textarea {
 }
 
 input:focus, textarea:focus, select:focus {
-  border-color: var(--purple);
-  box-shadow: 0 0 0 3px rgba(124,58,237,.1);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(232,101,10,.1);
 }
 
 textarea { resize: vertical; min-height: 80px; }
@@ -709,7 +715,7 @@ textarea { resize: vertical; min-height: 80px; }
 
 .toast.success { border-left: 3px solid var(--teal); }
 .toast.error   { border-left: 3px solid var(--red); }
-.toast.info    { border-left: 3px solid var(--purple-l); }
+.toast.info    { border-left: 3px solid var(--accent-l); }
 
 .toast-icon { font-size: 18px; flex-shrink: 0; }
 .toast-msg  { color: var(--text); }
@@ -875,8 +881,8 @@ tbody tr:hover .quick-actions { opacity: 1; }
 
 .upload-drop:hover,
 .upload-drop.drag-over {
-  border-color: var(--purple);
-  background: rgba(124,58,237,.06);
+  border-color: var(--accent);
+  background: rgba(232,101,10,.06);
 }
 
 .upload-icon { font-size: 28px; margin-bottom: 8px; }
@@ -897,13 +903,13 @@ tbody tr:hover .quick-actions { opacity: 1; }
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(124,58,237,.08);
-  border: 1px solid rgba(124,58,237,.2);
+  background: rgba(232,101,10,.08);
+  border: 1px solid rgba(232,101,10,.2);
   border-radius: 12px;
   padding: 14px 16px;
   margin-top: 10px;
   font-size: 13.5px;
-  color: var(--purple-l);
+  color: var(--accent-l);
 }
 
 /* Resultado de extracción */
@@ -989,7 +995,268 @@ input.required-missing {
   background: var(--border);
 }
 
-/* ── RESPONSIVE ── */
+/* ── CONSEJO PROCESAL DRAWER ── */
+.drawer-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  backdrop-filter: blur(3px);
+  z-index: 150;
+}
+.drawer-overlay.open { display: block; }
+
+.drawer {
+  position: fixed;
+  top: 0; right: 0;
+  width: 420px;
+  max-width: 95vw;
+  height: 100vh;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  z-index: 151;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+  overflow: hidden;
+}
+
+.drawer.open { transform: translateX(0); }
+
+.drawer-header {
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.drawer-title {
+  font-family: var(--font-h);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.drawer-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.drawer-close {
+  width: 28px; height: 28px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: all .15s;
+}
+.drawer-close:hover { color: var(--text); background: rgba(255,255,255,.1); }
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Sección del drawer */
+.d-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.d-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,.02);
+}
+
+.d-section-icon { font-size: 16px; }
+
+.d-section-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--sub);
+}
+
+.d-section-body { padding: 14px 16px; }
+
+/* Etapa actual → siguiente */
+.etapa-flow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.etapa-pill {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.etapa-pill.actual {
+  background: rgba(100,116,139,.15);
+  color: var(--sub);
+  border: 1px solid rgba(100,116,139,.2);
+}
+
+.etapa-pill.siguiente {
+  background: rgba(232,101,10,.12);
+  color: var(--accent-l);
+  border: 1px solid rgba(232,101,10,.25);
+}
+
+.etapa-arrow {
+  color: var(--muted);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.etapa-desc {
+  font-size: 12.5px;
+  color: var(--sub);
+  line-height: 1.5;
+  margin-top: 10px;
+}
+
+/* Fecha límite */
+.fecha-limit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fecha-big {
+  font-family: var(--font-h);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.fecha-big.urgent  { color: #f87171; }
+.fecha-big.warning { color: var(--yellow); }
+.fecha-big.ok      { color: var(--accent-l); }
+
+.fecha-detail { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* Plazo badge */
+.plazo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(232,101,10,.1);
+  color: var(--accent-l);
+  border: 1px solid rgba(232,101,10,.2);
+  margin-top: 8px;
+}
+
+/* Documentos */
+.doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.doc-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--sub);
+  line-height: 1.4;
+}
+
+.doc-bullet {
+  width: 18px; height: 18px;
+  background: rgba(232,101,10,.1);
+  border: 1px solid rgba(232,101,10,.2);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--accent-l);
+}
+
+/* Norma */
+.norma-text {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* Advertencia */
+.d-warning {
+  background: rgba(244,63,94,.06);
+  border: 1px solid rgba(244,63,94,.2);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 12.5px;
+  color: #f87171;
+  line-height: 1.5;
+}
+
+/* Loading state */
+.drawer-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+/* Error state */
+.drawer-error {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+}
+
+.drawer-error-icon { font-size: 32px; margin-bottom: 10px; }
+.drawer-error-msg  { font-size: 13px; }
+
+/* Botón editar al pie */
+.drawer-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* Row clickeable */
+tbody tr { cursor: pointer; }
+tbody tr.selected { background: rgba(232,101,10,.04); } */
 @media (max-width: 900px) {
   .shell { grid-template-columns: 1fr; }
   aside { display: none; }
@@ -1230,6 +1497,29 @@ input.required-missing {
   </div>
 </div>
 
+<!-- DRAWER — Consejo Procesal -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div>
+      <div class="drawer-title" id="drawer-title">Consejo Procesal</div>
+      <div class="drawer-subtitle" id="drawer-subtitle"></div>
+    </div>
+    <div class="drawer-close" onclick="closeDrawer()">✕</div>
+  </div>
+  <div class="drawer-body" id="drawer-body">
+    <div class="drawer-loading">
+      <span class="spinner"></span> Analizando expediente...
+    </div>
+  </div>
+  <div class="drawer-footer">
+    <button class="btn btn-ghost" style="width:100%;justify-content:center;"
+            id="drawer-edit-btn" onclick="editFromDrawer()">
+      ✏️ Editar caso completo
+    </button>
+  </div>
+</div>
+
 <!-- CONFIRM MODAL — cambio rápido de estado -->
 <div class="confirm-overlay" id="confirm-modal">
   <div class="confirm-box">
@@ -1431,8 +1721,10 @@ function renderTable(casos) {
         <div class="quick-actions">
           ${quickBtns}
           ${nexts.length ? '<div class="quick-divider"></div>' : ''}
-          <button class="btn btn-ghost btn-sm" onclick="editCaso(${c.id})">✏️</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteCaso(${c.id}, '${(c.nombre_cliente||'').replace(/'/g,"\\'")}')">🗑</button>
+          <button class="btn btn-teal btn-sm" title="Consejo procesal"
+            onclick="event.stopPropagation();openDrawer(${c.id})">⚖️</button>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editCaso(${c.id})">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteCaso(${c.id}, '${(c.nombre_cliente||'').replace(/'/g,"\\'")}')">🗑</button>
         </div>
       </td>
     </tr>`;
@@ -1447,6 +1739,178 @@ function renderEmpty(msg = 'No hay casos registrados') {
       <div class="empty-title">${msg}</div>
       <div class="empty-sub">Agrega el primer caso usando el botón de arriba</div>
     </div></td></tr>`;
+}
+
+// ─── DRAWER — CONSEJO PROCESAL ───
+let _drawerCasoId = null;
+
+function openDrawer(id) {
+  _drawerCasoId = id;
+  const caso = allCasos.find(c => c.id === id);
+
+  // Highlight fila
+  document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('selected'));
+  const filas = document.querySelectorAll('tbody tr');
+  filas.forEach(r => {
+    if (r.innerHTML.includes(`openDrawer(${id})`)) r.classList.add('selected');
+  });
+
+  // Títulos
+  document.getElementById('drawer-title').textContent =
+    caso ? `${caso.nombre_cliente}` : 'Consejo Procesal';
+  document.getElementById('drawer-subtitle').textContent =
+    caso ? `${caso.expediente || ''} · ${caso.tipo_caso || ''}` : '';
+
+  // Loading
+  document.getElementById('drawer-body').innerHTML = `
+    <div class="drawer-loading">
+      <span class="spinner"></span> Analizando expediente...
+    </div>`;
+
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+
+  cargarConsejo(id);
+}
+
+function closeDrawer() {
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+  document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('selected'));
+  _drawerCasoId = null;
+}
+
+function editFromDrawer() {
+  if (_drawerCasoId) {
+    closeDrawer();
+    editCaso(_drawerCasoId);
+  }
+}
+
+async function cargarConsejo(id) {
+  try {
+    const r = await fetch(`${API}/api/casos/${id}/consejo`);
+    const data = await r.json();
+    renderConsejo(data);
+  } catch (e) {
+    document.getElementById('drawer-body').innerHTML = `
+      <div class="drawer-error">
+        <div class="drawer-error-icon">⚠️</div>
+        <div class="drawer-error-msg">No se pudo cargar el consejo procesal.<br>${e.message}</div>
+      </div>`;
+  }
+}
+
+function renderConsejo(d) {
+  if (!d.tiene_consejo) {
+    document.getElementById('drawer-body').innerHTML = `
+      <div class="drawer-error">
+        <div class="drawer-error-icon">📋</div>
+        <div class="drawer-error-msg" style="color:var(--sub);">${d.motivo || d.mensaje || 'Sin información procesal disponible.'}</div>
+      </div>`;
+    return;
+  }
+
+  const caso = allCasos.find(c => c.id === _drawerCasoId);
+
+  // Fecha urgency
+  let fechaClass = 'ok', fechaIcon = '📅';
+  if (d.proxima_fecha_sugerida) {
+    const diff = (new Date(d.proxima_fecha_sugerida) - new Date()) / 86400000;
+    if (diff < 0)   { fechaClass = 'urgent';  fechaIcon = '🚨'; }
+    else if (diff <= 7)  { fechaClass = 'urgent';  fechaIcon = '⚠️'; }
+    else if (diff <= 14) { fechaClass = 'warning'; fechaIcon = '📅'; }
+  }
+
+  // Docs HTML
+  const docsHTML = (d.documentos_requeridos || []).length
+    ? `<div class="doc-list">
+        ${d.documentos_requeridos.map((doc, i) => `
+          <div class="doc-item">
+            <div class="doc-bullet">${i+1}</div>
+            <span>${doc}</span>
+          </div>`).join('')}
+       </div>`
+    : `<div style="font-size:13px;color:var(--muted);">No se identificaron documentos específicos para esta etapa.</div>`;
+
+  // Advertencia
+  const warnHTML = d.advertencia
+    ? `<div class="d-warning">${d.advertencia}</div>` : '';
+
+  // Notas
+  const notasHTML = d.notas
+    ? `<div class="d-section">
+        <div class="d-section-header">
+          <span class="d-section-icon">💡</span>
+          <span class="d-section-title">Notas importantes</span>
+        </div>
+        <div class="d-section-body">
+          <div style="font-size:12.5px;color:var(--sub);line-height:1.6;">${d.notas}</div>
+        </div>
+       </div>` : '';
+
+  document.getElementById('drawer-body').innerHTML = `
+
+    ${warnHTML}
+
+    <!-- Proceso y etapas -->
+    <div class="d-section">
+      <div class="d-section-header">
+        <span class="d-section-icon">⚖️</span>
+        <span class="d-section-title">${d.tipo_proceso}</span>
+      </div>
+      <div class="d-section-body">
+        <div class="etapa-flow">
+          <span class="etapa-pill actual">${d.etapa_actual}</span>
+          <span class="etapa-arrow">→</span>
+          <span class="etapa-pill siguiente">${d.siguiente_etapa}</span>
+        </div>
+        <div class="etapa-desc">${d.siguiente_descripcion || ''}</div>
+      </div>
+    </div>
+
+    <!-- Fecha y plazo -->
+    <div class="d-section">
+      <div class="d-section-header">
+        <span class="d-section-icon">${fechaIcon}</span>
+        <span class="d-section-title">Plazo y fecha límite</span>
+      </div>
+      <div class="d-section-body">
+        ${d.proxima_fecha_sugerida ? `
+          <div class="fecha-limit">
+            <div>
+              <div class="fecha-big ${fechaClass}">${formatDate(d.proxima_fecha_sugerida)}</div>
+              <div class="fecha-detail">Fecha límite estimada</div>
+            </div>
+          </div>` : `<div style="font-size:13px;color:var(--muted);">No hay plazo fijo para esta etapa. Coordinar con el juzgado.</div>`}
+        ${d.plazo_descripcion
+          ? `<div class="plazo-badge">⏱ ${d.plazo_descripcion}</div>` : ''}
+      </div>
+    </div>
+
+    <!-- Documentos -->
+    <div class="d-section">
+      <div class="d-section-header">
+        <span class="d-section-icon">📄</span>
+        <span class="d-section-title">Documentos a preparar (${(d.documentos_requeridos||[]).length})</span>
+      </div>
+      <div class="d-section-body">${docsHTML}</div>
+    </div>
+
+    <!-- Norma legal -->
+    ${d.norma ? `
+    <div class="d-section">
+      <div class="d-section-header">
+        <span class="d-section-icon">📚</span>
+        <span class="d-section-title">Fundamento legal</span>
+      </div>
+      <div class="d-section-body">
+        <div class="norma-text">${d.norma}</div>
+      </div>
+    </div>` : ''}
+
+    ${notasHTML}
+  `;
 }
 
 // ─── QUICK ESTADO ───
@@ -1512,6 +1976,8 @@ const CAMPO_IDS = {
   tipo_caso:             'f-tipo',
   abogado_asignado:      'f-abogado',
   documentos_pendientes: 'f-docs',
+  proxima_fecha:         'f-fecha',
+  proxima_accion:        'f-accion',
 };
 
 const CAMPO_LABELS = {
@@ -1521,6 +1987,8 @@ const CAMPO_LABELS = {
   tipo_caso:             'Tipo de caso',
   abogado_asignado:      'Abogado asignado',
   documentos_pendientes: 'Documentos pendientes',
+  proxima_fecha:         'Próxima fecha',
+  proxima_accion:        'Próxima acción',
 };
 
 function handleDrop(e) {
@@ -1547,7 +2015,7 @@ async function procesarArchivo(file) {
   status.style.display = 'block';
   status.innerHTML = `
     <div class="extract-loading">
-      <span class="spinner" style="border-top-color:var(--purple-l);border-color:rgba(168,85,247,.2)"></span>
+      <span class="spinner" style="border-top-color:var(--accent-l);border-color:rgba(232,101,10,.2)"></span>
       Claude está analizando el documento... esto toma unos segundos
     </div>`;
 
@@ -1765,7 +2233,7 @@ document.getElementById('confirm-modal').addEventListener('click', function(e) {
 
 // ─── KEYBOARD ───
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeModal(); closeConfirm(); }
+  if (e.key === 'Escape') { closeModal(); closeConfirm(); closeDrawer(); }
 });
 </script>
 </body>
