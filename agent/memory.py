@@ -15,8 +15,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Configuración de base de datos
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./agentkit.db")
+# Configuración de base de datos — usa DATABASE_PATH para SQLite (compartido con cases_db.py)
+DATABASE_PATH = os.getenv("DATABASE_PATH", "agentkit.db")
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///./{DATABASE_PATH}")
 
 # Si es PostgreSQL en producción, ajustar el esquema de URL
 if DATABASE_URL.startswith("postgresql://"):
