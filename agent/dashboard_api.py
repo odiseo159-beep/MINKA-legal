@@ -197,7 +197,7 @@ def api_eliminar_caso(caso_id: int):
 
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard():
-    html_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
+    html_path = os.path.join(os.path.dirname(__file__), "static", "dashboard.html")
     if os.path.exists(html_path):
         with open(html_path, "r", encoding="utf-8") as f:
             return f.read()
