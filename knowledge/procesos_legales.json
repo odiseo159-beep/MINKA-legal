@@ -1,0 +1,748 @@
+{
+  "version": "1.0",
+  "descripcion": "Base de conocimiento procesal peruano para Minka Legal AI",
+  "generado_desde": "kb_proceso_*.json — Minka Project Files",
+  "procesos": {
+    "laboral": {
+      "nombre": "Proceso Ordinario Laboral",
+      "norma_base": "Ley N° 29497 — Nueva Ley Procesal del Trabajo",
+      "normas_complementarias": [
+        "D.S. N° 003-97-TR (TUO del D.Leg. 728)",
+        "Código Procesal Civil (aplicación supletoria)",
+        "Ley N° 26636 (aplicación supletoria en lo no previsto)"
+      ],
+      "etapas": [
+        {
+          "id": "presentacion_de_la_demanda",
+          "etapa": "Presentación de la demanda",
+          "descripcion": "El demandante presenta el escrito de demanda ante la mesa de partes del juzgado laboral competente, cumpliendo los requisitos de admisibilidad y procedencia. Debe incluir la identificación de las partes, el petitorio con montos específicos, los fundamentos de hecho y de derecho, los medios probatorios ofrecidos y los anexos. Se paga tasa judicial por ofrecimiento de pruebas.",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de demanda firmado por abogado y demandante",
+            "Copia del DNI del demandante",
+            "Medios probatorios (boletas de pago, contrato de trabajo, etc.)",
+            "Tasa judicial por ofrecimiento de pruebas",
+            "Copias de la demanda y anexos para el demandado",
+            "Constancia de habilitación del abogado (opcional, se verifica en sistema)"
+          ],
+          "norma": "Arts. 16, 17 y 42, Ley N° 29497; Arts. 424, 425, CPC",
+          "etapa_siguiente": "calificacion_de_la_demanda",
+          "notas": ""
+        },
+        {
+          "id": "calificacion_de_la_demanda",
+          "etapa": "Calificación de la demanda",
+          "descripcion": "El juez revisa si la demanda cumple con los requisitos de admisibilidad (formales) y procedencia (sustanciales). Si cumple, emite la Resolución N° 1 admitiendo la demanda. Si tiene defectos subsanables, declara inadmisible y otorga plazo para subsanar. Si tiene defectos insubsanables, la declara improcedente.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 16, 17, Ley N° 29497; Arts. 426, 427, CPC",
+          "etapa_siguiente": "admision_de_la_demanda",
+          "notas": ""
+        },
+        {
+          "id": "admision_de_la_demanda",
+          "etapa": "Admisión de la demanda",
+          "descripcion": "El juez emite auto admisorio (Resolución N° 1). Se corre traslado de la demanda al demandado, se le notifica con la demanda, sus anexos y la resolución en su domicilio real y procesal. Se señala fecha para la audiencia de conciliación. El demandado queda emplazado para contestar la demanda.",
+          "plazo_dias": 10,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Art. 42, Ley N° 29497",
+          "etapa_siguiente": "contestacion_de_la_demanda",
+          "notas": "El plazo de 10 días hábiles es para que el demandado conteste la demanda, contados desde la notificación. La audiencia de conciliación se fija entre los 20 y 30 días hábiles de la calificación."
+        },
+        {
+          "id": "contestacion_de_la_demanda",
+          "etapa": "Contestación de la demanda",
+          "descripcion": "El demandado presenta su escrito de contestación dentro del plazo otorgado, pudiendo contradecir los hechos, ofrecer medios probatorios, proponer excepciones y defensas previas, y formular reconvención si corresponde. Si no contesta dentro del plazo, se le declara rebelde.",
+          "plazo_dias": 10,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de contestación de demanda",
+            "Medios probatorios del demandado",
+            "Copia del poder del representante legal (si es persona jurídica)",
+            "Copia del DNI o ficha RUC del demandado",
+            "Tasa judicial por ofrecimiento de pruebas"
+          ],
+          "norma": "Art. 19, Ley N° 29497; Art. 442, CPC",
+          "etapa_siguiente": "audiencia_de_conciliacion",
+          "notas": "Si el demandado es declarado rebelde, se presumen ciertos los hechos alegados por el demandante, salvo prueba en contrario. La rebeldía no implica automáticamente sentencia favorable."
+        },
+        {
+          "id": "audiencia_de_conciliacion",
+          "etapa": "Audiencia de Conciliación",
+          "descripcion": "Primera audiencia del proceso. Es dirigida personalmente por el juez. Se inicia con la acreditación de las partes, se verifica poderes, y el juez invita a las partes a conciliar. Si hay acuerdo conciliatorio total, se aprueba y tiene calidad de cosa juzgada. Si hay acuerdo parcial, se continúa el proceso por las pretensiones no conciliadas. Si no hay acuerdo, el juez fija los hechos controvertidos y resuelve excepciones, cuestiones probatorias, y admite los medios probatorios. Se señala fecha para la audiencia de juzgamiento.",
+          "plazo_dias": null,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "DNI original de las partes para acreditación",
+            "Poder vigente del representante legal (persona jurídica)",
+            "Propuesta conciliatoria (opcional, puede ser verbal)"
+          ],
+          "norma": "Arts. 43, 44, Ley N° 29497",
+          "etapa_siguiente": "audiencia_de_juzgamiento",
+          "notas": "La inasistencia del demandante a la audiencia de conciliación provoca el archivo del proceso. La inasistencia del demandado genera rebeldía automática y presunción legal relativa de verdad de los hechos. Ambas partes pueden asistir con abogado y representante con poder suficiente para conciliar."
+        },
+        {
+          "id": "audiencia_de_juzgamiento",
+          "etapa": "Audiencia de Juzgamiento",
+          "descripcion": "Audiencia central del proceso donde se actúan todos los medios probatorios admitidos. Se desarrolla en las siguientes etapas: (1) Confrontación de posiciones: alegatos iniciales de ambas partes, máximo 10 minutos cada uno; (2) Actuación probatoria: declaración de parte, testimoniales, pericias, exhibición de documentos, inspección judicial; (3) Alegatos finales: máximo 5 minutos cada parte; (4) Sentencia: el juez puede dictar sentencia inmediatamente o reservar su decisión dentro de los 5 días hábiles siguientes. Todo se registra en audio y video.",
+          "plazo_dias": null,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "DNI original de las partes",
+            "Documentos originales ofrecidos como prueba (para exhibición)",
+            "Testigos debidamente citados (si fueron admitidos)"
+          ],
+          "norma": "Arts. 44, 45, 46, 47, Ley N° 29497",
+          "etapa_siguiente": "sentencia",
+          "notas": "La audiencia es oral, pública e improrrogable. Si el demandante no asiste, el juez puede emitir sentencia con la prueba actuada. Si el demandado rebelde no asiste, se tiene por ciertos los hechos. El juez dirige la actuación probatoria con amplias facultades y puede ordenar pruebas de oficio."
+        },
+        {
+          "id": "sentencia",
+          "etapa": "Sentencia",
+          "descripcion": "El juez emite sentencia declarando fundada, fundada en parte o infundada la demanda. Si es fundada, ordena el pago de la indemnización por despido arbitrario y los beneficios sociales truncos, con intereses legales, costas y costos. La sentencia puede ser emitida inmediatamente al finalizar la audiencia de juzgamiento o dentro de los 5 días hábiles siguientes si el juez reserva su decisión. El fallo se notifica a ambas partes.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Art. 47, Ley N° 29497; Art. 122, CPC",
+          "etapa_siguiente": "recurso_de_apelacion",
+          "notas": "La sentencia debe contener: parte expositiva (resumen del proceso), parte considerativa (análisis de hechos y derecho) y parte resolutiva (decisión del juez). Se notifica electrónicamente a las casillas de los abogados."
+        },
+        {
+          "id": "recurso_de_apelacion",
+          "etapa": "Recurso de Apelación",
+          "descripcion": "La parte que no esté conforme con la sentencia puede interponer recurso de apelación dentro del plazo legal. La apelación se presenta por escrito ante el mismo juez que emitió la sentencia, fundamentando el error de hecho o de derecho. Se concede apelación con efecto suspensivo (la sentencia no se ejecuta hasta que la Sala resuelva). El expediente se eleva a la Sala Laboral de la Corte Superior.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de apelación con fundamentación del agravio",
+            "Tasa judicial de apelación de sentencia"
+          ],
+          "norma": "Arts. 32, 33, Ley N° 29497",
+          "etapa_siguiente": "vista_de_la_causa_en_sala_laboral",
+          "notas": "La apelación debe ser fundamentada: indicar el error de hecho o de derecho, el agravio que causa y la pretensión impugnatoria (revocatoria o nulidad). Sin fundamentación, se declara inadmisible. La parte contraria tiene 5 días para absolver el traslado."
+        },
+        {
+          "id": "vista_de_la_causa_en_sala_laboral",
+          "etapa": "Vista de la Causa en Sala Laboral",
+          "descripcion": "La Sala Laboral de la Corte Superior programa audiencia de vista de la causa. En esta audiencia, los abogados de las partes exponen oralmente sus argumentos sobre los agravios de la apelación. La Sala puede solicitar informes complementarios o disponer actuaciones probatorias de oficio. Luego de la vista, la Sala emite sentencia de vista confirmando, revocando o modificando la sentencia de primera instancia.",
+          "plazo_dias": null,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de absolución de apelación (parte contraria)",
+            "Informe oral (solicitud opcional del abogado)"
+          ],
+          "norma": "Arts. 33, 34, Ley N° 29497",
+          "etapa_siguiente": "sentencia_de_vista_segunda_instancia",
+          "notas": "La Sala tiene 5 días hábiles luego de la vista de la causa para emitir sentencia. Si confirma la sentencia de primera instancia, queda firme y ejecutoriada. Si la revoca, la parte afectada puede interponer recurso de casación ante la Corte Suprema si la cuantía supera las 100 URP."
+        },
+        {
+          "id": "sentencia_de_vista_segunda_instancia",
+          "etapa": "Sentencia de Vista (Segunda Instancia)",
+          "descripcion": "La Sala Laboral emite sentencia de vista resolviendo la apelación. Puede confirmar (total o parcialmente), revocar o declarar nula la sentencia de primera instancia. Si confirma, la sentencia queda firme. Si revoca, modifica el fallo a favor del apelante. Si anula, devuelve al juzgado para que emita nueva sentencia subsanando los vicios.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 33, 34, 35, Ley N° 29497",
+          "etapa_siguiente": "recurso_de_casacion",
+          "notas": ""
+        },
+        {
+          "id": "recurso_de_casacion",
+          "etapa": "Recurso de Casación",
+          "descripcion": "Recurso extraordinario ante la Corte Suprema, procedente solo cuando la cuantía supera las 100 URP y se alega infracción normativa o apartamiento de precedentes vinculantes. Se interpone dentro de los 10 días hábiles de notificada la sentencia de vista. No es una tercera instancia: la Corte Suprema solo revisa cuestiones de derecho, no valora pruebas.",
+          "plazo_dias": 10,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de casación fundamentando la infracción normativa",
+            "Tasa judicial de casación"
+          ],
+          "norma": "Arts. 34, 35, 36, 37, Ley N° 29497",
+          "etapa_siguiente": "ejecucion_de_sentencia",
+          "notas": "La casación solo procede por: (1) infracción normativa que incida directamente sobre la decisión; (2) apartamiento inmotivado del precedente judicial. No suspende la ejecución de la sentencia salvo que se otorgue medida cautelar."
+        },
+        {
+          "id": "ejecucion_de_sentencia",
+          "etapa": "Ejecución de sentencia",
+          "descripcion": "Una vez firme la sentencia (consentida o ejecutoriada), el demandante solicita su ejecución. El juez requiere al demandado el cumplimiento del fallo en un plazo de 3 días hábiles. Si no cumple voluntariamente, se procede a la ejecución forzada: embargo de cuentas bancarias, bienes muebles e inmuebles, retención de haberes, inscripción de medida cautelar, y eventualmente remate de bienes. Se calculan intereses legales y se aprueban la liquidación de costas y costos.",
+          "plazo_dias": 3,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito solicitando ejecución de sentencia",
+            "Propuesta de liquidación de intereses legales",
+            "Propuesta de liquidación de costas y costos"
+          ],
+          "norma": "Art. 57, Ley N° 29497; Arts. 713 y ss., CPC",
+          "etapa_siguiente": null,
+          "notas": "El demandado puede observar la liquidación dentro de 3 días hábiles. Si se aprueba la liquidación, se requiere el pago bajo apercibimiento de ejecución forzada. En caso de empresas, se puede embargar cuentas bancarias directamente vía SIJE."
+        }
+      ]
+    },
+    "penal": {
+      "nombre": "Proceso Penal Común — Delito de Estafa",
+      "norma_base": "Código Procesal Penal — D.Leg. N° 957 (Nuevo Código Procesal Penal)",
+      "normas_complementarias": [
+        "Código Penal — D.Leg. N° 635, Art. 196 (Estafa) y Art. 197 (Agravantes)",
+        "Código Civil, Art. 923 (Propiedad) y Arts. 1351 y ss. (Contratos)",
+        "Ley N° 30076 (Modificaciones al Código Penal y CPP sobre seguridad ciudadana)",
+        "Ley N° 30077 (Ley contra el crimen organizado, si aplica concurso)"
+      ],
+      "etapas": [
+        {
+          "id": "denuncia_penal",
+          "etapa": "Denuncia penal",
+          "descripcion": "El agraviado (o cualquier persona) presenta la denuncia penal ante la Fiscalía Provincial Penal o ante la Policía Nacional del Perú. La denuncia debe contener la narración detallada de los hechos, identificación del denunciado (si se conoce), medios probatorios y la calificación jurídica. También puede interponerse ante la comisaría de la jurisdicción donde ocurrieron los hechos. El fiscal recibe la denuncia y evalúa si los hechos revisten carácter delictivo.",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de denuncia firmado por el denunciante y abogado",
+            "Copia del DNI del denunciante",
+            "Medios probatorios del delito (comprobantes de pago, contratos, documentos falsos, capturas de WhatsApp, etc.)",
+            "Certificación notarial de capturas de pantalla (recomendado)",
+            "Búsqueda registral de SUNARP del bien involucrado (en caso de estafa inmobiliaria)"
+          ],
+          "norma": "Arts. 326, 328, 329, CPP",
+          "etapa_siguiente": "diligencias_preliminares",
+          "notas": "La denuncia puede ser verbal (se levanta acta) o escrita. No requiere firma de abogado, pero es recomendable. El plazo de prescripción para el delito de estafa es de 6 años (pena máxima del tipo base) contados desde la consumación del delito."
+        },
+        {
+          "id": "diligencias_preliminares",
+          "etapa": "Diligencias Preliminares",
+          "descripcion": "El fiscal evalúa la denuncia y, si considera que los hechos revisten carácter delictivo, dispone el inicio de diligencias preliminares mediante Disposición N° 1. El objetivo es realizar actos urgentes e inaplazables para determinar si existen indicios suficientes de la comisión del delito y la vinculación del denunciado. Se practican declaraciones, pericias, oficios a entidades y otras diligencias. El fiscal puede disponer la intervención de la PNP para determinadas diligencias.",
+          "plazo_dias": 120,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [],
+          "norma": "Arts. 330, 331, 332, 333, 334, CPP",
+          "etapa_siguiente": "formalizacion_de_la_investigacion_preparatoria",
+          "notas": "El plazo de 120 días calendario es el máximo para investigaciones simples. Si el caso es complejo (pluralidad de investigados, pericias pendientes, investigado no habido), el fiscal puede solicitar al juez un plazo mayor: hasta 8 meses. Al vencer el plazo, el fiscal debe decidir si formaliza la investigación preparatoria o archiva la denuncia."
+        },
+        {
+          "id": "formalizacion_de_la_investigacion_preparatoria",
+          "etapa": "Formalización de la Investigación Preparatoria",
+          "descripcion": "Si el fiscal determina que existen indicios reveladores de la comisión del delito, que la acción penal no ha prescrito y que se ha individualizado al imputado, emite la Disposición de Formalización de la Investigación Preparatoria y la comunica al Juez de Investigación Preparatoria. A partir de este momento, el investigado pasa a ser formalmente imputado. Se le notifica con los cargos y se le requiere declarar con asistencia de abogado defensor. Se suspende el plazo de prescripción de la acción penal.",
+          "plazo_dias": 120,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "Disposición fiscal de formalización",
+            "Comunicación al Juez de Investigación Preparatoria"
+          ],
+          "norma": "Arts. 334, 335, 336, 337, CPP",
+          "etapa_siguiente": "conclusion_de_la_investigacion_preparatoria",
+          "notas": "El plazo de 120 días calendario es para la investigación preparatoria formalizada (adicional a las diligencias preliminares). En casos complejos, el plazo se amplía a 8 meses. En casos de crimen organizado, hasta 36 meses. Durante esta etapa, el fiscal continúa reuniendo elementos de convicción y el imputado puede solicitar diligencias de descargo. El imputado puede solicitar al juez el control del plazo si considera que el fiscal está excediendo los plazos."
+        },
+        {
+          "id": "constitucion_en_actor_civil",
+          "etapa": "Constitución en Actor Civil",
+          "descripcion": "El agraviado que desea obtener reparación civil dentro del proceso penal debe constituirse en Actor Civil ante el Juez de Investigación Preparatoria. Esto le permite participar activamente en el proceso: ofrecer pruebas, formular pretensión civil, intervenir en audiencias y recurrir resoluciones que afecten su pretensión económica. La solicitud debe presentarse antes de que el fiscal culmine la investigación preparatoria. Si no se constituye, el fiscal representa sus intereses civiles.",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de constitución en actor civil",
+            "Prueba del daño patrimonial sufrido (monto de la estafa)",
+            "Copia del DNI del agraviado",
+            "Poder del abogado",
+            "Comprobantes de transferencia y otros documentos que acrediten el perjuicio"
+          ],
+          "norma": "Arts. 98, 99, 100, 101, 102, CPP",
+          "etapa_siguiente": "medidas_de_coercion_procesal",
+          "notas": "La constitución en actor civil permite solicitar una reparación civil específica: devolución del dinero estafado (S/ 45,000), intereses legales desde la fecha del perjuicio, indemnización por daño moral, costas y costos. El juez aprueba la constitución si el solicitante es efectivamente agraviado. El actor civil no puede pedir pena, solo reparación."
+        },
+        {
+          "id": "medidas_de_coercion_procesal",
+          "etapa": "Medidas de coerción procesal",
+          "descripcion": "Durante la investigación, el fiscal puede solicitar al juez medidas de coerción personal (detención preliminar, prisión preventiva, comparecencia con restricciones, impedimento de salida del país) y medidas de coerción real (embargo, incautación, inhibición de disponer bienes) contra el imputado. En casos de estafa, lo más frecuente es solicitar: comparecencia con restricciones, impedimento de salida del país y embargo preventivo sobre los bienes del imputado para asegurar el pago de la reparación civil.",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Requerimiento fiscal de medida de coerción",
+            "Elementos de convicción que sustenten la medida",
+            "Acreditación del peligro procesal o peligro de obstaculización"
+          ],
+          "norma": "Arts. 253 al 320, CPP (Medidas de coerción procesal); Arts. 268 al 285 (Prisión preventiva); Arts. 302 al 320 (Embargo y secuestro)",
+          "etapa_siguiente": "conclusion_de_la_investigacion_preparatoria",
+          "notas": "Las medidas de coerción requieren audiencia ante el juez con presencia del fiscal, el imputado y su defensa. El juez evalúa: fundados y graves elementos de convicción, prognosis de pena superior a 4 años, y peligro procesal (peligro de fuga u obstaculización). En estafa por S/ 45,000, la pena probable es de 3 a 6 años, por lo que la prisión preventiva es posible pero no automática."
+        },
+        {
+          "id": "conclusion_de_la_investigacion_preparatoria",
+          "etapa": "Conclusión de la Investigación Preparatoria",
+          "descripcion": "El fiscal emite Disposición de Conclusión de la Investigación Preparatoria cuando considera que ha reunido suficientes elementos de convicción o cuando ha vencido el plazo. Dentro de los 15 días siguientes, el fiscal debe decidir: formular acusación, solicitar sobreseimiento, o formular requerimiento mixto (acusar por unos cargos y sobreseer por otros).",
+          "plazo_dias": 15,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 343, 344, CPP",
+          "etapa_siguiente": "acusacion_fiscal",
+          "notas": "Si el fiscal no se pronuncia dentro de los 15 días, el imputado o el actor civil pueden solicitar al juez que le requiera pronunciarse. Si el fiscal tampoco cumple, el juez puede remitir copias al Fiscal Superior para que designe otro fiscal."
+        },
+        {
+          "id": "acusacion_fiscal",
+          "etapa": "Acusación fiscal",
+          "descripcion": "El fiscal presenta el requerimiento de acusación ante el Juez de Investigación Preparatoria. La acusación contiene: identificación del acusado, relación precisa de los hechos, calificación jurídica (Art. 196 CP — Estafa), medios de prueba que ofrece para el juicio, la pena solicitada y el monto de reparación civil. La acusación marca el paso de la investigación a la etapa intermedia. Se notifica al acusado y al actor civil para que formulen observaciones.",
+          "plazo_dias": 10,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Requerimiento de acusación fiscal",
+            "Lista de testigos y peritos para el juicio oral",
+            "Medios de prueba ofrecidos",
+            "Pretensión penal (pena solicitada)",
+            "Pretensión civil (reparación civil, si el agraviado no se constituyó en actor civil)"
+          ],
+          "norma": "Arts. 349, 350, CPP",
+          "etapa_siguiente": "audiencia_preliminar_de_control_de_acusacion",
+          "notas": "Las partes tienen 10 días hábiles para examinar la acusación, formular observaciones (defectos formales), deducir excepciones, solicitar sobreseimiento, ofrecer pruebas nuevas, objetar la admisión de pruebas del fiscal u ofrecer convenciones probatorias (acuerdos sobre hechos no controvertidos)."
+        },
+        {
+          "id": "audiencia_preliminar_de_control_de_acusacion",
+          "etapa": "Audiencia Preliminar de Control de Acusación",
+          "descripcion": "El Juez de Investigación Preparatoria convoca a audiencia preliminar (etapa intermedia). En esta audiencia se debate: la validez formal de la acusación, las excepciones y medios de defensa, las observaciones de las partes, la admisión de los medios probatorios para el juicio, y las convenciones probatorias. El juez decide qué pruebas se admiten para el juicio oral. Al finalizar, emite el Auto de Enjuiciamiento, remitiendo el caso al Juzgado Penal para juicio oral.",
+          "plazo_dias": null,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de observaciones, excepciones u oposiciones (de cada parte)",
+            "Ofrecimiento de medios probatorios adicionales",
+            "Propuesta de convenciones probatorias"
+          ],
+          "norma": "Arts. 351, 352, 353, 354, CPP",
+          "etapa_siguiente": "auto_de_enjuiciamiento",
+          "notas": "La audiencia es oral, pública y con presencia obligatoria del fiscal y el abogado defensor del acusado. Si el defensor no asiste, se reprograma una vez; si falta nuevamente, se designa defensor público. El juez no puede actuar de oficio: solo admite o rechaza las pruebas ofrecidas por las partes. El auto de enjuiciamiento es irrecurrible."
+        },
+        {
+          "id": "auto_de_enjuiciamiento",
+          "etapa": "Auto de Enjuiciamiento",
+          "descripcion": "El Juez de Investigación Preparatoria emite el auto de enjuiciamiento, que contiene: la identificación del acusado, el delito imputado, los medios de prueba admitidos para el juicio, las partes constituidas (actor civil, tercero civil), y la orden de remitir el expediente judicial al Juzgado Penal Unipersonal o Colegiado (según la pena prevista). Para estafa con pena de hasta 6 años, corresponde Juzgado Penal Unipersonal.",
+          "plazo_dias": 2,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 353, 354, CPP",
+          "etapa_siguiente": "auto_de_citacion_a_juicio_oral",
+          "notas": "El Juzgado Penal Unipersonal conoce los delitos con pena no mayor a 6 años. El Juzgado Penal Colegiado (3 jueces) conoce los delitos con pena mayor a 6 años. Para estafa básica (Art. 196, pena 1-6 años): unipersonal. Para estafa agravada (Art. 197, pena 4-8 años): colegiado."
+        },
+        {
+          "id": "auto_de_citacion_a_juicio_oral",
+          "etapa": "Auto de Citación a Juicio Oral",
+          "descripcion": "El Juez Penal (Unipersonal o Colegiado) recibe el expediente y emite auto de citación a juicio, fijando fecha y hora para el inicio del juicio oral. Se notifica a todas las partes (fiscal, acusado, actor civil, testigos y peritos admitidos). El acusado es citado bajo apercibimiento de ser declarado contumaz si no asiste. El juicio debe instalarse dentro de un plazo razonable.",
+          "plazo_dias": null,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 355, 367, CPP",
+          "etapa_siguiente": "auto_de_citacion_a_juicio_oral",
+          "notas": ""
+        },
+        {
+          "id": "juicio_oral",
+          "etapa": "Juicio Oral",
+          "descripcion": "Etapa central del proceso penal donde se practica toda la actividad probatoria y se decide la responsabilidad del acusado. Se desarrolla bajo los principios de oralidad, inmediación, publicidad, contradicción y concentración. Secuencia: (1) Alegatos de apertura del fiscal, el actor civil y la defensa; (2) Declaración del acusado (voluntaria, puede guardar silencio); (3) Actuación probatoria: examen de testigos, examen de peritos, oralización de documentales, exhibición de evidencia material; (4) Alegatos de clausura del fiscal, actor civil y defensa; (5) Última palabra del acusado; (6) Deliberación del juez; (7) Lectura de sentencia.",
+          "plazo_dias": null,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "DNI del acusado",
+            "Documentos originales admitidos como prueba",
+            "Testigos y peritos debidamente citados"
+          ],
+          "norma": "Arts. 356 al 403, CPP",
+          "etapa_siguiente": "sentencia",
+          "notas": "El juicio se desarrolla en sesiones continuas e ininterrumpidas. Solo puede suspenderse por razones de enfermedad, fuerza mayor, o cuando sea necesario resolver una cuestión incidental. La suspensión no puede exceder de 8 días hábiles; si se excede, el juicio se declara nulo y se reinicia. El fiscal tiene la carga de la prueba: debe demostrar la culpabilidad del acusado más allá de toda duda razonable."
+        },
+        {
+          "id": "sentencia",
+          "etapa": "Sentencia",
+          "descripcion": "El juez delibera y emite sentencia. Si es condenatoria: declara culpable al acusado por el delito de estafa, impone pena privativa de libertad (efectiva o suspendida), fija la reparación civil a favor del agraviado (devolución del monto estafado + intereses + indemnización por daño moral), e impone costas procesales. Si es absolutoria: declara inocente al acusado, ordena su libertad inmediata (si estaba detenido), y dispone el archivo del proceso. La sentencia se lee en audiencia pública.",
+          "plazo_dias": 8,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 394, 395, 396, 397, 398, 399, 400, CPP; Art. 196, Código Penal",
+          "etapa_siguiente": "recurso_de_apelacion_de_sentencia",
+          "notas": "Para estafa de S/ 45,000, la pena probable es de 3 a 5 años de pena privativa de libertad. Si la pena no supera 4 años y el acusado no tiene antecedentes, la pena puede ser suspendida (no ingresa a prisión, pero tiene reglas de conducta). La reparación civil incluye: devolución del capital (S/ 45,000), intereses legales desde septiembre 2024, y una indemnización por daño moral que fija el juez según su criterio."
+        },
+        {
+          "id": "recurso_de_apelacion_de_sentencia",
+          "etapa": "Recurso de Apelación de Sentencia",
+          "descripcion": "La parte que no esté conforme puede apelar la sentencia dentro de 5 días hábiles de la lectura integral. La apelación se presenta ante el mismo juzgado que emitió la sentencia y se eleva a la Sala Penal de Apelaciones de la Corte Superior. Puede apelar tanto el fiscal (si la sentencia es absolutoria o la pena es baja) como el acusado (si es condenado) o el actor civil (si la reparación civil es baja).",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de apelación fundamentando los agravios",
+            "Precisión de la pretensión impugnatoria (revocatoria o nulidad)"
+          ],
+          "norma": "Arts. 401, 404, 405, 416, CPP",
+          "etapa_siguiente": "audiencia_de_apelacion_en_sala_penal",
+          "notas": "La apelación de sentencia debe fundamentarse: indicar los errores de hecho o de derecho, el agravio que causa y la pretensión concreta (revocatoria, nulidad, modificación de la pena o reparación civil). Si la apelación es del acusado, no puede reformarse la sentencia en su perjuicio (prohibición de reformatio in peius). Si apela el fiscal, sí puede agravarse."
+        },
+        {
+          "id": "audiencia_de_apelacion_en_sala_penal",
+          "etapa": "Audiencia de Apelación en Sala Penal",
+          "descripcion": "La Sala Penal de Apelaciones programa audiencia de apelación. En esta audiencia, las partes exponen oralmente sus argumentos. Se puede actuar prueba nueva si fue admitida. La Sala puede examinar testigos y peritos nuevos. Luego de la audiencia, la Sala delibera y emite sentencia de vista (segunda instancia). Puede confirmar, revocar, modificar o anular la sentencia de primera instancia.",
+          "plazo_dias": null,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de absolución de apelación (parte contraria)",
+            "Ofrecimiento de nueva prueba (si corresponde)"
+          ],
+          "norma": "Arts. 420, 421, 422, 423, 424, 425, CPP",
+          "etapa_siguiente": "sentencia_de_vista_segunda_instancia",
+          "notas": ""
+        },
+        {
+          "id": "sentencia_de_vista_segunda_instancia",
+          "etapa": "Sentencia de Vista (Segunda Instancia)",
+          "descripcion": "La Sala Penal de Apelaciones emite sentencia de vista resolviendo la apelación. Puede: (1) confirmar la sentencia (culpabilidad, pena y reparación civil se mantienen); (2) revocar parcialmente (modifica la pena o la reparación civil); (3) revocar totalmente (absuelve al acusado si fue condenado, o condena si fue absuelto — solo si apeló el fiscal); (4) declarar nula la sentencia y ordenar nuevo juicio.",
+          "plazo_dias": 10,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 425, 426, CPP",
+          "etapa_siguiente": "recurso_de_casacion",
+          "notas": ""
+        },
+        {
+          "id": "recurso_de_casacion",
+          "etapa": "Recurso de Casación",
+          "descripcion": "Recurso extraordinario ante la Corte Suprema. Procede contra sentencias de segunda instancia cuando la pena impuesta es superior a 6 años de pena privativa de libertad, o por infracción de precepto constitucional, inobservancia de norma procesal, falta de motivación, o apartamiento de doctrina jurisprudencial. En casos de estafa con pena menor a 6 años, la casación tiene carácter excepcional y discrecional.",
+          "plazo_dias": 10,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de casación fundamentando la causal",
+            "Tasa judicial de casación"
+          ],
+          "norma": "Arts. 427, 428, 429, 430, 431, 432, 433, CPP",
+          "etapa_siguiente": "ejecucion_de_sentencia",
+          "notas": "La Corte Suprema solo revisa cuestiones de derecho, no valora pruebas. En estafa con pena de 3 a 5 años, la casación no procede de pleno derecho sino excepcionalmente si la Sala Suprema la admite discrecionalmente por interés casacional."
+        },
+        {
+          "id": "ejecucion_de_sentencia",
+          "etapa": "Ejecución de sentencia",
+          "descripcion": "Una vez firme la sentencia condenatoria, se procede a su ejecución. Respecto a la pena: si es efectiva, se ordena la captura e internamiento del sentenciado en un establecimiento penitenciario; si es suspendida, se fijan reglas de conducta que el sentenciado debe cumplir durante el periodo de prueba (2 a 5 años). Respecto a la reparación civil: se requiere al sentenciado el pago del monto fijado (devolución de S/ 45,000 + intereses + indemnización). Si no paga voluntariamente, se procede a ejecución forzada (embargo de bienes y cuentas bancarias). El incumplimiento de la reparación civil puede revocar la suspensión de la pena.",
+          "plazo_dias": 10,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito solicitando ejecución de sentencia",
+            "Propuesta de liquidación de reparación civil con intereses",
+            "Solicitud de embargo preventivo (si no se pagó)"
+          ],
+          "norma": "Arts. 488, 489, 490, 491, 492, 493, CPP; Art. 59, Código Penal (revocatoria de suspensión)",
+          "etapa_siguiente": null,
+          "notas": "Si la pena es suspendida y el sentenciado incumple las reglas de conducta (no paga la reparación civil, no firma control, comete nuevo delito), el juez puede: amonestar, prorrogar el periodo de prueba, o revocar la suspensión y ordenar el cumplimiento de la pena efectiva. El sentenciado queda inscrito en el Registro Nacional de Condenas del Poder Judicial."
+        }
+      ]
+    },
+    "familia_alimentos": {
+      "nombre": "Proceso Único de Alimentos",
+      "norma_base": "Código de los Niños y Adolescentes — Ley N° 27337, Arts. 164 al 182",
+      "normas_complementarias": [
+        "Código Civil, Arts. 472 al 487 (Derecho alimentario)",
+        "Código Procesal Civil, Arts. 546 al 607 (Proceso sumarísimo, aplicación supletoria)",
+        "Ley N° 28439 (Simplificación de reglas del proceso de alimentos)",
+        "Ley N° 31464 (Ley que garantiza el pago de pensiones alimenticias)",
+        "D.Leg. N° 1377 (Fortalecimiento de protección de niños y adolescentes)"
+      ],
+      "etapas": [
+        {
+          "id": "presentacion_de_la_demanda",
+          "etapa": "Presentación de la demanda",
+          "descripcion": "La madre, padre o tutor del menor presenta la demanda de alimentos ante el Juzgado de Paz Letrado competente (domicilio del demandante o del demandado, a elección del demandante). Debe acreditar el vínculo familiar con el menor y el estado de necesidad. Se adjunta la partida de nacimiento del menor, pruebas de los gastos y, opcionalmente, pruebas de los ingresos del demandado. No requiere firma de abogado si la cuantía solicitada no excede 20 URP. Puede solicitar asignación anticipada de alimentos en el mismo escrito.",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de demanda (puede usar formato pre-impreso del Poder Judicial)",
+            "Partida de nacimiento del menor alimentista (original o copia certificada)",
+            "Copia del DNI de la demandante",
+            "Constancia de matrícula escolar o estudios del menor",
+            "Boletas, recibos y comprobantes de gastos del menor",
+            "Boletas de pago o constancia de ingresos de la demandante",
+            "Pruebas de los ingresos del demandado (opcional, se puede solicitar de oficio)",
+            "Tasa judicial (exonerada si la cuantía no supera 20 URP)"
+          ],
+          "norma": "Arts. 164, 167, Código de los Niños y Adolescentes; Art. 424, CPC; Ley N° 28439",
+          "etapa_siguiente": "calificacion_de_la_demanda",
+          "notas": ""
+        },
+        {
+          "id": "calificacion_de_la_demanda",
+          "etapa": "Calificación de la demanda",
+          "descripcion": "El juez verifica los requisitos de admisibilidad y procedencia. Verifica que se haya acreditado el vínculo paterno-filial mediante partida de nacimiento con reconocimiento, sentencia de filiación o prueba de ADN. Si la demanda cumple los requisitos, la admite mediante Resolución N° 1. El juez puede declarar inadmisible la demanda si falta algún requisito formal, concediendo plazo para subsanación.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 165, 166, Código de los Niños y Adolescentes; Arts. 426, 427, CPC",
+          "etapa_siguiente": "admision_de_la_demanda_y_asignacion_anticipada",
+          "notas": ""
+        },
+        {
+          "id": "admision_de_la_demanda_y_asignacion_anticipada",
+          "etapa": "Admisión de la demanda y Asignación Anticipada",
+          "descripcion": "El juez emite auto admisorio. Si se solicitó asignación anticipada de alimentos y el alimentista es menor de edad, el juez la concede de oficio sin necesidad de acreditar urgencia ni peligro en la demora. Se fija un monto provisional (usualmente entre 15% y 25% de los ingresos del obligado) que tiene vigencia hasta que se emita sentencia definitiva. Se corre traslado de la demanda al demandado y se señala fecha para la audiencia única. Se notifica al demandado con la demanda, la resolución admisoria y la orden de asignación anticipada.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Art. 675, CPC; Art. 92, Código de los Niños y Adolescentes; Ley N° 28439",
+          "etapa_siguiente": "contestacion_de_la_demanda",
+          "notas": "La asignación anticipada es ejecutable inmediatamente. Si el obligado es trabajador dependiente, se oficia al empleador para la retención directa. El incumplimiento de la asignación anticipada puede dar lugar a apercibimiento de remisión de copias al Ministerio Público por omisión de asistencia familiar."
+        },
+        {
+          "id": "contestacion_de_la_demanda",
+          "etapa": "Contestación de la demanda",
+          "descripcion": "El demandado tiene 5 días hábiles desde la notificación para contestar la demanda. Puede negar los hechos, ofrecer pruebas de sus ingresos reales, alegar carga familiar adicional, proponer una pensión menor o reconvenir. Si no contesta dentro del plazo, se le declara rebelde y se presumen ciertos los hechos expuestos por la demandante. La contestación debe incluir declaración jurada de ingresos y carga familiar.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de contestación de demanda",
+            "Declaración jurada de ingresos (obligatoria por ley)",
+            "Boletas de pago o constancia de ingresos",
+            "Pruebas de carga familiar (partidas de nacimiento de otros hijos, si los tiene)",
+            "Copia del DNI del demandado"
+          ],
+          "norma": "Art. 168, Código de los Niños y Adolescentes; Art. 554, CPC; Ley N° 28439",
+          "etapa_siguiente": "audiencia_unica",
+          "notas": "Si el demandado no presenta declaración jurada de ingresos, se presume que percibe al menos una remuneración mínima vital. La rebeldía genera presunción relativa de verdad sobre los hechos alegados en la demanda."
+        },
+        {
+          "id": "audiencia_unica",
+          "etapa": "Audiencia Única",
+          "descripcion": "Audiencia central del proceso donde se concentran las etapas de saneamiento procesal, conciliación, fijación de puntos controvertidos, admisión y actuación de medios probatorios, alegatos y sentencia. El juez dirige personalmente la audiencia. Secuencia: (1) Saneamiento: el juez verifica la relación procesal válida; (2) Conciliación: invita a las partes a llegar a un acuerdo sobre el monto de la pensión; (3) Si no hay acuerdo, fija los puntos controvertidos; (4) Admite y actúa los medios probatorios; (5) Escucha alegatos de ambas partes; (6) Puede emitir sentencia en el acto o reservar fallo.",
+          "plazo_dias": null,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "DNI original de ambas partes",
+            "Documentos originales ofrecidos como prueba",
+            "Testigos (si fueron admitidos)"
+          ],
+          "norma": "Arts. 170, 171, Código de los Niños y Adolescentes; Arts. 554, 555, CPC",
+          "etapa_siguiente": "sentencia",
+          "notas": "Si el demandante no asiste, se archiva el proceso. Si el demandado no asiste, se le declara rebelde y el juez puede emitir sentencia con la prueba existente. Si ambas partes concilian, el acuerdo tiene calidad de sentencia y es ejecutable. El juez puede ordenar pruebas de oficio (oficiar a SUNAT, empleadores, bancos para verificar ingresos reales del demandado)."
+        },
+        {
+          "id": "sentencia",
+          "etapa": "Sentencia",
+          "descripcion": "El juez emite sentencia fijando el monto de la pensión de alimentos como porcentaje de los ingresos del obligado o como monto fijo. Considera: las necesidades del alimentista (educación, salud, vivienda, vestido, recreación), las posibilidades económicas del obligado, la carga familiar del obligado, y el aporte de ambos padres. La pensión rige desde el día siguiente de la notificación con la demanda (o desde la fecha de interposición si se solicitó). Incluye liquidación de pensiones devengadas si corresponde.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Art. 481, Código Civil; Arts. 92, 93, Código de los Niños y Adolescentes",
+          "etapa_siguiente": "recurso_de_apelacion",
+          "notas": "La sentencia fija la pensión como porcentaje (usualmente entre 20% y 60% de los ingresos del obligado) o como monto fijo (cuando no se puede determinar ingreso exacto). La pensión incluye conceptos remunerativos y no remunerativos de libre disponibilidad, gratificaciones, CTS y cualquier otro ingreso. El monto se actualiza automáticamente con los incrementos salariales del obligado."
+        },
+        {
+          "id": "recurso_de_apelacion",
+          "etapa": "Recurso de Apelación",
+          "descripcion": "La parte que no esté conforme puede apelar la sentencia. La apelación se interpone por escrito ante el mismo juez dentro de los 3 días hábiles de notificada la sentencia. Se concede apelación SIN efecto suspensivo: esto significa que la pensión fijada en sentencia se ejecuta inmediatamente aunque se haya apelado. El expediente se eleva al Juzgado de Familia como segunda instancia.",
+          "plazo_dias": 3,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de apelación fundamentando los agravios",
+            "Tasa judicial de apelación (si aplica)"
+          ],
+          "norma": "Art. 178, Código de los Niños y Adolescentes; Arts. 556, 376, CPC",
+          "etapa_siguiente": "sentencia_de_vista_segunda_instancia",
+          "notas": "La apelación de sentencia de alimentos se concede SIN efecto suspensivo, lo que significa que la pensión fijada se cobra durante la apelación. Si el Juzgado de Familia confirma la sentencia, queda firme. Si la revoca, se ajusta el monto. No procede recurso de casación en proceso de alimentos por ser materia sumarísima."
+        },
+        {
+          "id": "sentencia_de_vista_segunda_instancia",
+          "etapa": "Sentencia de Vista (Segunda Instancia)",
+          "descripcion": "El Juzgado de Familia (o Sala de Familia, según organización del distrito judicial) resuelve la apelación. Puede confirmar, revocar o modificar el monto de la pensión. La sentencia de segunda instancia es definitiva e inimpugnable en el proceso de alimentos (no procede casación). Una vez notificada, queda ejecutoriada.",
+          "plazo_dias": 10,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Art. 178, Código de los Niños y Adolescentes; Art. 558, CPC",
+          "etapa_siguiente": "ejecucion_de_sentencia",
+          "notas": ""
+        },
+        {
+          "id": "ejecucion_de_sentencia",
+          "etapa": "Ejecución de sentencia",
+          "descripcion": "Una vez firme la sentencia, se requiere al obligado su cumplimiento. Si es trabajador dependiente, se oficia al empleador para la retención directa del porcentaje fijado sobre la remuneración y depósito en la cuenta de la demandante. Si es trabajador independiente, debe depositar el monto fijo mensualmente. Se liquidan las pensiones devengadas (desde la notificación con la demanda hasta la sentencia, descontando la asignación anticipada ya cobrada). El incumplimiento genera proceso penal por omisión de asistencia familiar.",
+          "plazo_dias": 3,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito solicitando ejecución de sentencia",
+            "Propuesta de liquidación de pensiones devengadas",
+            "Número de cuenta bancaria para depósito de pensión"
+          ],
+          "norma": "Arts. 566, 566-A, CPC; Art. 149, Código Penal (Omisión de asistencia familiar)",
+          "etapa_siguiente": "apercibimiento_y_remision_al_ministerio_publico",
+          "notas": ""
+        },
+        {
+          "id": "apercibimiento_y_remision_al_ministerio_publico",
+          "etapa": "Apercibimiento y remisión al Ministerio Público",
+          "descripcion": "Si el obligado incumple con el pago de la pensión (devengadas o mensuales), el juez lo requiere bajo apercibimiento de remitir copias certificadas al Ministerio Público para que inicie investigación por el delito de Omisión de Asistencia Familiar (Art. 149 del Código Penal). Si persiste el incumplimiento, se remiten las copias y el fiscal inicia la acción penal. La pena es de hasta 3 años de pena privativa de la libertad. Adicionalmente, el obligado moroso se inscribe en el Registro de Deudores Alimentarios Morosos (REDAM).",
+          "plazo_dias": 3,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito solicitando apercibimiento",
+            "Liquidación de pensiones devengadas aprobada",
+            "Resolución que requiere pago bajo apercibimiento"
+          ],
+          "norma": "Art. 149, Código Penal; Ley N° 28970 (Ley del REDAM); Ley N° 31464",
+          "etapa_siguiente": null,
+          "notas": "El delito de omisión de asistencia familiar es de acción pública. La pena es no menor de 1 ni mayor de 3 años. Si el obligado ha simulado otra obligación alimentaria o ha renunciado a su trabajo, la pena es no menor de 1 ni mayor de 4 años. La inscripción en REDAM impide acceder a créditos, contratos con el Estado y otros beneficios."
+        }
+      ]
+    },
+    "civil_desalojo": {
+      "nombre": "Proceso Sumarísimo — Desalojo por Falta de Pago",
+      "norma_base": "Código Procesal Civil, Arts. 546 al 607 (Proceso sumarísimo) y Arts. 585 al 596 (Desalojo)",
+      "normas_complementarias": [
+        "Código Civil, Arts. 1666 al 1712 (Contrato de arrendamiento)",
+        "Ley N° 30201 (Registro de Deudores Judiciales Morosos y cláusula de allanamiento futuro)",
+        "D.Leg. N° 1177 (Régimen de promoción del arrendamiento para vivienda)",
+        "Ley N° 30933 (Ley que regula el procedimiento especial de desalojo con intervención notarial)",
+        "Cuarta Disposición Final del D.Leg. N° 1069 (Modificaciones al CPC)"
+      ],
+      "etapas": [
+        {
+          "id": "presentacion_de_la_demanda",
+          "etapa": "Presentación de la demanda",
+          "descripcion": "El arrendador (propietario o quien tenga derecho a la restitución) presenta la demanda de desalojo ante el juzgado competente. Debe acreditar su derecho sobre el inmueble (título de propiedad o contrato de arrendamiento que lo autorice a subarrendar), la existencia del contrato de arrendamiento, el incumplimiento en el pago de la renta por dos o más meses consecutivos, y haber requerido previamente el pago mediante carta notarial. Se debe indicar con precisión la dirección del inmueble materia de desalojo.",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de demanda firmado por abogado",
+            "Copia del DNI del demandante",
+            "Contrato de arrendamiento (original o copia legalizada notarialmente)",
+            "Copia literal de la partida registral del inmueble (SUNARP)",
+            "Carta notarial de requerimiento de pago con cargo de recepción",
+            "Estados de cuenta bancarios o recibos que acrediten el impago",
+            "Tasa judicial de proceso sumarísimo",
+            "Copias de la demanda y anexos para notificación al demandado"
+          ],
+          "norma": "Arts. 546 inc. 4, 585, 586, CPC; Art. 1697 inc. 1, Código Civil",
+          "etapa_siguiente": "calificacion_de_la_demanda",
+          "notas": ""
+        },
+        {
+          "id": "calificacion_de_la_demanda",
+          "etapa": "Calificación de la demanda",
+          "descripcion": "El juez verifica los requisitos de admisibilidad y procedencia. Verifica especialmente: (1) que el demandante tenga legitimidad para obrar (sea propietario, arrendador o administrador del bien); (2) que exista contrato de arrendamiento; (3) que se acredite el incumplimiento de al menos 2 meses de renta; (4) que se haya cursado requerimiento previo de pago. Si los documentos están en copia simple, puede requerir la presentación de originales o copias legalizadas antes de admitir.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 424, 425, 426, 427, CPC",
+          "etapa_siguiente": "admision_de_la_demanda",
+          "notas": ""
+        },
+        {
+          "id": "subsanacion_de_la_demanda",
+          "etapa": "Subsanación de la demanda",
+          "descripcion": "Si el juez declaró inadmisible la demanda por defectos formales, el demandante debe subsanar dentro del plazo concedido (generalmente 5 días hábiles). Debe presentar los documentos faltantes en original o copia legalizada. En el caso del expediente de referencia, se requirió presentar el contrato de arrendamiento notarizado original, la carta notarial con cargo original y los recibos de los meses impagos. Si se subsana dentro del plazo, el juez admite la demanda. Si no se subsana, se archiva el expediente definitivamente.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de subsanación",
+            "Documentos requeridos por el juez en original o copia legalizada",
+            "En este caso: contrato de arrendamiento notarizado original, carta notarial original con cargo, recibos de alquiler impagos"
+          ],
+          "norma": "Art. 426, CPC",
+          "etapa_siguiente": "admision_de_la_demanda",
+          "notas": "El plazo de subsanación es perentorio e improrrogable. Si vence sin que el demandante subsane, el juez rechaza la demanda y ordena el archivo. El demandante puede presentar nueva demanda, pero pierde tiempo y debe pagar nueva tasa judicial."
+        },
+        {
+          "id": "admision_de_la_demanda",
+          "etapa": "Admisión de la demanda",
+          "descripcion": "El juez emite auto admisorio admitiendo la demanda en la vía del proceso sumarísimo. Se corre traslado al demandado (inquilino/arrendatario) para que conteste la demanda dentro de 5 días hábiles. Se notifica al demandado en el inmueble materia de desalojo. Si el contrato tiene cláusula de allanamiento futuro inscrita en el Registro de Deudores Judiciales Morosos (Ley 30201), el proceso es aún más expeditivo.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 547, 554, CPC",
+          "etapa_siguiente": "contestacion_de_la_demanda",
+          "notas": "La notificación al demandado se realiza obligatoriamente en el inmueble materia de desalojo, además de su domicilio procesal si lo tiene. Si no se le puede notificar personalmente, se deja aviso y se practica nueva notificación. Si aún así no se le encuentra, se notifica por edicto."
+        },
+        {
+          "id": "contestacion_de_la_demanda",
+          "etapa": "Contestación de la demanda",
+          "descripcion": "El demandado (arrendatario) tiene 5 días hábiles para contestar la demanda. Puede alegar que sí pagó (adjuntando recibos o comprobantes de transferencia), que el contrato ha vencido y no se le requirió desocupar, que el monto cobrado es incorrecto, que hay vicios en la notificación, o proponer excepciones. También puede hacer consignación judicial del monto adeudado. Si no contesta, se declara rebelde.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de contestación de demanda",
+            "Pruebas de pago de rentas (recibos, vouchers, transferencias)",
+            "Excepciones o defensas previas (si las propone)",
+            "Copia del DNI del demandado"
+          ],
+          "norma": "Arts. 548, 554, CPC; Art. 1697, Código Civil",
+          "etapa_siguiente": "audiencia_unica",
+          "notas": "El demandado puede evitar el desalojo si paga la totalidad de las rentas adeudadas más intereses antes de la sentencia (purgación de la mora en primera instancia). Este derecho solo puede ejercerse una vez. Si el demandado es declarado rebelde, la audiencia se realiza igualmente y el juez puede emitir sentencia con las pruebas del demandante."
+        },
+        {
+          "id": "audiencia_unica",
+          "etapa": "Audiencia Única",
+          "descripcion": "Audiencia donde se concentran todas las etapas procesales: saneamiento, conciliación, fijación de puntos controvertidos, admisión y actuación de pruebas, alegatos y sentencia. Secuencia: (1) El juez verifica la relación procesal válida (saneamiento); (2) Resuelve excepciones si las hay; (3) Invita a conciliar: el arrendatario puede ofrecer pagar la deuda y desocupar en un plazo; (4) Si no hay conciliación, fija puntos controvertidos; (5) Admite y actúa las pruebas; (6) Ambas partes presentan alegatos; (7) El juez puede emitir sentencia en el acto o reservar el fallo.",
+          "plazo_dias": null,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "DNI original de ambas partes",
+            "Documentos originales ofrecidos como prueba",
+            "Testigos (si fueron admitidos)"
+          ],
+          "norma": "Arts. 554, 555, 556, CPC",
+          "etapa_siguiente": "sentencia",
+          "notas": "Si el demandante no asiste, se archiva el proceso. Si el demandado no asiste, se le declara rebelde y el juez puede emitir sentencia inmediata. La conciliación puede incluir acuerdos como: pago fraccionado de la deuda, plazo para desocupar el inmueble, condonación parcial de intereses, etc."
+        },
+        {
+          "id": "sentencia",
+          "etapa": "Sentencia",
+          "descripcion": "El juez emite sentencia declarando fundada o infundada la demanda. Si es fundada, ordena al demandado la restitución del inmueble dentro de un plazo de 6 días hábiles, bajo apercibimiento de lanzamiento (desalojo forzoso con auxilio de la fuerza pública). También puede ordenar el pago de las rentas adeudadas, intereses legales, costas y costos del proceso, e indemnización por daños si se acreditan. La sentencia puede emitirse en la audiencia o dentro de los 5 días hábiles siguientes.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 555, 556, 591, 592, CPC",
+          "etapa_siguiente": "recurso_de_apelacion",
+          "notas": "La sentencia de desalojo es una sentencia de condena que ordena una obligación de hacer (restituir el bien). El plazo de 6 días para desocupar es contado desde la notificación de la sentencia o desde que queda consentida/ejecutoriada, según el caso. Si hay ocupantes precarios adicionales (familiares del arrendatario, subarrendatarios no autorizados), la orden de lanzamiento los incluye."
+        },
+        {
+          "id": "recurso_de_apelacion",
+          "etapa": "Recurso de Apelación",
+          "descripcion": "La parte vencida puede apelar la sentencia dentro de 3 días hábiles de notificada. La apelación de sentencia de desalojo se concede CON efecto suspensivo, lo que significa que el lanzamiento queda suspendido hasta que la segunda instancia resuelva. Sin embargo, si el contrato tiene cláusula de allanamiento futuro (Ley 30201), la apelación se concede SIN efecto suspensivo y el lanzamiento se ejecuta. El expediente se eleva a la Sala Civil de la Corte Superior.",
+          "plazo_dias": 3,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de apelación fundamentando los agravios",
+            "Tasa judicial de apelación de sentencia"
+          ],
+          "norma": "Arts. 556, 376, 371, CPC; Ley N° 30201",
+          "etapa_siguiente": "sentencia_de_vista_segunda_instancia",
+          "notas": "La apelación debe ser fundamentada. El demandado apelante no puede alegar hechos nuevos ni ofrecer pruebas nuevas salvo que sean posteriores a la sentencia. La parte que no apeló puede adherirse a la apelación al absolver el traslado."
+        },
+        {
+          "id": "sentencia_de_vista_segunda_instancia",
+          "etapa": "Sentencia de Vista (Segunda Instancia)",
+          "descripcion": "La Sala Civil de la Corte Superior revisa la apelación y emite sentencia de vista. Puede confirmar, revocar o anular la sentencia de primera instancia. Si confirma la orden de desalojo, la sentencia queda ejecutoriada y se procede al lanzamiento. La Sala resuelve sin audiencia de vista, solo con los actuados del expediente, salvo que considere necesaria una audiencia complementaria.",
+          "plazo_dias": 10,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 558, 376, CPC",
+          "etapa_siguiente": "ejecucion_de_sentencia_y_lanzamiento",
+          "notas": "En procesos sumarísimos no procede recurso de casación (Art. 385 CPC). La sentencia de vista es la resolución definitiva. Si se confirma el desalojo, el demandado ya no tiene recurso impugnatorio y debe desocupar el inmueble."
+        },
+        {
+          "id": "ejecucion_de_sentencia_y_lanzamiento",
+          "etapa": "Ejecución de sentencia y Lanzamiento",
+          "descripcion": "Una vez firme la sentencia, el demandante solicita la ejecución. El juez emite resolución ordenando al demandado que desocupe el inmueble dentro de 6 días hábiles. Si no desocupa voluntariamente, se programa el lanzamiento: diligencia de desalojo forzoso con intervención del Secretario Judicial, presencia policial (PNP) y un cerrajero. Se levanta acta del lanzamiento, se inventarían los bienes del demandado que quedan en el inmueble, y se hace entrega del bien al demandante. Los bienes del demandado se guardan en depósito por 2 meses; si no los recoge, se rematan.",
+          "plazo_dias": 6,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito solicitando ejecución de sentencia y lanzamiento",
+            "Propuesta de liquidación de rentas devengadas, intereses, costas y costos",
+            "Solicitud de auxilio de la Fuerza Pública (oficio a la PNP)"
+          ],
+          "norma": "Arts. 592, 593, 594, CPC",
+          "etapa_siguiente": "cobro_de_rentas_adeudadas",
+          "notas": "El lanzamiento se ejecuta contra todos los ocupantes del inmueble, incluyendo terceros no demandados que habiten el bien. El juez puede ordenar el descerraje del inmueble si el demandado no abre la puerta. Los costos del lanzamiento (cerrajero, transporte de bienes, depósito) son de cargo del demandado y se incluyen en la liquidación de costas. Si el demandado reingresa al inmueble después del lanzamiento, incurre en delito de usurpación (Art. 202 CP)."
+        },
+        {
+          "id": "cobro_de_rentas_adeudadas",
+          "etapa": "Cobro de rentas adeudadas",
+          "descripcion": "Paralelamente o después del lanzamiento, el demandante puede ejecutar el cobro de las rentas impagas, intereses legales, costas y costos del proceso. Se presenta liquidación detallada al juzgado. Si el demandado no paga voluntariamente, se procede a embargo de sus bienes o cuentas bancarias. También puede iniciarse un proceso ejecutivo separado si la liquidación no es impugnada.",
+          "plazo_dias": 3,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Liquidación detallada de rentas adeudadas con intereses",
+            "Propuesta de costas y costos procesales"
+          ],
+          "norma": "Arts. 713 y ss., CPC; Art. 1242, Código Civil (intereses moratorios)",
+          "etapa_siguiente": null,
+          "notas": ""
+        }
+      ]
+    }
+  }
+}
