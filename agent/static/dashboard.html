@@ -726,6 +726,141 @@ textarea { resize: vertical; min-height: 80px; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── QUICK STATE BUTTONS ── */
+.quick-actions {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  opacity: 0;
+  transition: opacity .15s;
+}
+
+tbody tr:hover .quick-actions { opacity: 1; }
+
+.quick-estado-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 7px;
+  font-size: 11.5px;
+  font-family: var(--font-b);
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all .15s;
+  white-space: nowrap;
+}
+
+.quick-estado-btn:hover { transform: translateY(-1px); }
+
+.qe-en_tramite       { background: rgba(251,191,36,.1);  border-color: rgba(251,191,36,.25); color: #fbbf24; }
+.qe-en_audiencia     { background: rgba(239,68,68,.1);   border-color: rgba(239,68,68,.25);  color: #f87171; }
+.qe-pendiente_documento { background: rgba(249,115,22,.1); border-color: rgba(249,115,22,.25); color: #fb923c; }
+.qe-en_revision      { background: rgba(45,212,191,.1);  border-color: rgba(45,212,191,.25); color: #2dd4bf; }
+.qe-resuelto         { background: rgba(52,211,153,.1);  border-color: rgba(52,211,153,.25); color: #34d399; }
+.qe-archivado        { background: rgba(107,114,128,.1); border-color: rgba(107,114,128,.25);color: #9ca3af; }
+
+.quick-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+/* ── DATE URGENCY ── */
+.date-urgent  { color: #f87171 !important; font-weight: 600; }
+.date-warning { color: #fbbf24 !important; font-weight: 500; }
+.date-ok      { color: var(--sub); }
+
+/* ── UPDATED AT ── */
+.updated-at {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── CONFIRM MODAL (cambio de estado) ── */
+.confirm-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm-overlay.open { display: flex; }
+
+.confirm-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  width: 400px;
+  max-width: 95vw;
+  padding: 28px;
+  box-shadow: 0 40px 80px rgba(0,0,0,.6);
+  animation: slideUp .2s cubic-bezier(.34,1.56,.64,1);
+}
+
+.confirm-icon {
+  font-size: 32px;
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+.confirm-title {
+  font-family: var(--font-h);
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.confirm-sub {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.confirm-estado-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 14px;
+  background: rgba(255,255,255,.03);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.confirm-arrow { color: var(--muted); font-size: 18px; }
+
+.confirm-notify {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(45,212,191,.05);
+  border: 1px solid rgba(45,212,191,.15);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+}
+
+.confirm-notify-info { font-size: 13px; color: var(--teal); font-weight: 500; }
+.confirm-notify-sub  { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.confirm-actions .btn { flex: 1; justify-content: center; }
+
 /* ── RESPONSIVE ── */
 @media (max-width: 900px) {
   .shell { grid-template-columns: 1fr; }
@@ -847,7 +982,7 @@ textarea { resize: vertical; min-height: 80px; }
             <th>Tipo</th>
             <th>Estado</th>
             <th>Próxima fecha</th>
-            <th>Abogado</th>
+            <th>Actualizado</th>
             <th></th>
           </tr>
         </thead>
@@ -945,6 +1080,37 @@ textarea { resize: vertical; min-height: 80px; }
   </div>
 </div>
 
+<!-- CONFIRM MODAL — cambio rápido de estado -->
+<div class="confirm-overlay" id="confirm-modal">
+  <div class="confirm-box">
+    <div class="confirm-icon">⚡</div>
+    <div class="confirm-title" id="confirm-title">Cambiar estado</div>
+    <div class="confirm-sub" id="confirm-sub">¿Confirmas el cambio de estado?</div>
+    <div class="confirm-estado-preview">
+      <span id="confirm-badge-from"></span>
+      <span class="confirm-arrow">→</span>
+      <span id="confirm-badge-to"></span>
+    </div>
+    <div class="confirm-notify">
+      <div>
+        <div class="confirm-notify-info">📲 Notificar al cliente</div>
+        <div class="confirm-notify-sub">Minka enviará un WhatsApp automático</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="confirm-notificar" checked/>
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
+    </div>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancelar</button>
+      <button class="btn btn-primary" id="confirm-ok-btn" onclick="ejecutarCambioEstado()">
+        Confirmar cambio
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- TOASTS -->
 <div class="toast-container" id="toasts"></div>
 
@@ -999,6 +1165,49 @@ function formatDate(d) {
   return `${parseInt(day)} ${months[parseInt(m)-1]} ${y}`;
 }
 
+function dateUrgencyClass(d) {
+  if (!d) return 'date-ok';
+  const diff = (new Date(d) - new Date()) / (1000 * 60 * 60 * 24);
+  if (diff < 0)  return 'date-urgent';   // vencida
+  if (diff <= 7) return 'date-urgent';   // ≤ 7 días → rojo
+  if (diff <= 14) return 'date-warning'; // 7-14 días → amarillo
+  return 'date-ok';
+}
+
+function timeAgo(isoStr) {
+  if (!isoStr) return '—';
+  const d = new Date(isoStr.replace(' ', 'T'));
+  const diff = Math.floor((Date.now() - d) / 1000);
+  if (diff < 60)   return 'ahora';
+  if (diff < 3600) return `hace ${Math.floor(diff/60)} min`;
+  if (diff < 86400)return `hace ${Math.floor(diff/3600)} h`;
+  const days = Math.floor(diff/86400);
+  return days === 1 ? 'ayer' : `hace ${days} días`;
+}
+
+// Estados "siguientes" sugeridos por estado actual
+const NEXT_ESTADOS = {
+  nuevo:               ['en_tramite', 'pendiente_documento'],
+  en_tramite:          ['en_audiencia', 'en_revision', 'pendiente_documento'],
+  en_audiencia:        ['en_revision', 'en_apelacion', 'resuelto'],
+  pendiente_documento: ['en_tramite', 'en_revision'],
+  en_revision:         ['en_tramite', 'en_audiencia', 'resuelto'],
+  en_apelacion:        ['en_revision', 'resuelto'],
+  resuelto:            ['archivado'],
+  archivado:           [],
+};
+
+const ESTADO_SHORT = {
+  nuevo:               '📋 Nuevo',
+  en_tramite:          '⚙️ Trámite',
+  en_audiencia:        '⚖️ Audiencia',
+  pendiente_documento: '📄 Doc. pend.',
+  en_revision:         '🔍 Revisión',
+  en_apelacion:        '📢 Apelación',
+  resuelto:            '✅ Resuelto',
+  archivado:           '🗂️ Archivado',
+};
+
 // ─── LOAD CASOS ───
 async function loadCasos() {
   try {
@@ -1040,7 +1249,19 @@ function renderTable(casos) {
   const tbody = document.getElementById('casos-tbody');
   if (!casos.length) { renderEmpty(); return; }
 
-  tbody.innerHTML = casos.map(c => `
+  tbody.innerHTML = casos.map(c => {
+    const nexts = (NEXT_ESTADOS[c.estado] || []).slice(0, 2);
+    const quickBtns = nexts.map(e =>
+      `<button class="quick-estado-btn qe-${e}"
+        onclick="iniciarCambioEstado(${c.id},'${c.estado}','${e}','${(c.nombre_cliente||'').replace(/'/g,"\\'")}')">
+        ${ESTADO_SHORT[e]}
+      </button>`
+    ).join('');
+
+    const dateClass = dateUrgencyClass(c.proxima_fecha);
+    const urgentIcon = dateClass === 'date-urgent' ? ' ⚠️' : '';
+
+    return `
     <tr>
       <td>
         <div class="client-cell">
@@ -1054,16 +1275,18 @@ function renderTable(casos) {
       <td>${c.expediente ? `<span class="expediente-tag">${c.expediente}</span>` : '—'}</td>
       <td style="color:var(--sub);font-size:13px;">${c.tipo_caso || '—'}</td>
       <td>${badgeHTML(c.estado)}</td>
-      <td style="color:var(--sub);font-size:13px;">${formatDate(c.proxima_fecha)}</td>
-      <td style="color:var(--sub);font-size:13px;">${c.abogado_asignado || '—'}</td>
+      <td class="${dateClass}" style="font-size:13px;">${formatDate(c.proxima_fecha)}${urgentIcon}</td>
+      <td class="updated-at">${timeAgo(c.fecha_actualizacion)}</td>
       <td>
-        <div class="row-actions">
+        <div class="quick-actions">
+          ${quickBtns}
+          ${nexts.length ? '<div class="quick-divider"></div>' : ''}
           <button class="btn btn-ghost btn-sm" onclick="editCaso(${c.id})">✏️</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteCaso(${c.id}, '${c.nombre_cliente}')">🗑</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCaso(${c.id}, '${(c.nombre_cliente||'').replace(/'/g,"\\'")}')">🗑</button>
         </div>
       </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
 }
 
 function renderEmpty(msg = 'No hay casos registrados') {
@@ -1074,6 +1297,61 @@ function renderEmpty(msg = 'No hay casos registrados') {
       <div class="empty-title">${msg}</div>
       <div class="empty-sub">Agrega el primer caso usando el botón de arriba</div>
     </div></td></tr>`;
+}
+
+// ─── QUICK ESTADO ───
+let _pendingCambio = null;
+
+function iniciarCambioEstado(id, estadoActual, nuevoEstado, nombre) {
+  _pendingCambio = { id, nuevoEstado, nombre };
+
+  document.getElementById('confirm-title').textContent = `Cambiar estado de ${nombre}`;
+  document.getElementById('confirm-sub').textContent =
+    'Confirma el cambio antes de continuar. Puedes notificar al cliente automáticamente.';
+  document.getElementById('confirm-badge-from').innerHTML = badgeHTML(estadoActual);
+  document.getElementById('confirm-badge-to').innerHTML   = badgeHTML(nuevoEstado);
+  document.getElementById('confirm-notificar').checked = true;
+  document.getElementById('confirm-modal').classList.add('open');
+}
+
+function closeConfirm() {
+  document.getElementById('confirm-modal').classList.remove('open');
+  _pendingCambio = null;
+}
+
+async function ejecutarCambioEstado() {
+  if (!_pendingCambio) return;
+  const { id, nuevoEstado, nombre } = _pendingCambio;
+  const notificar = document.getElementById('confirm-notificar').checked;
+
+  const btn = document.getElementById('confirm-ok-btn');
+  btn.innerHTML = '<span class="spinner"></span> Cambiando...';
+  btn.disabled = true;
+
+  try {
+    const r = await fetch(`${API}/api/casos/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estado: nuevoEstado, notificar_cliente: notificar }),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const result = await r.json();
+    closeConfirm();
+
+    if (result._notificacion_enviada) {
+      toast(`Estado actualizado y WhatsApp enviado a ${nombre}`, 'success', '📲');
+    } else {
+      toast(`Estado de ${nombre} → ${ESTADO_SHORT[nuevoEstado]}`, 'success', '⚡');
+    }
+
+    await loadCasos();
+    await loadStats();
+  } catch (e) {
+    toast('Error al cambiar estado: ' + e.message, 'error', '❌');
+  } finally {
+    btn.innerHTML = 'Confirmar cambio';
+    btn.disabled = false;
+  }
 }
 
 // ─── MODAL ───
@@ -1195,10 +1473,13 @@ function setView(v) {
 document.getElementById('modal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
+document.getElementById('confirm-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeConfirm();
+});
 
 // ─── KEYBOARD ───
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Escape') { closeModal(); closeConfirm(); }
 });
 </script>
 </body>
