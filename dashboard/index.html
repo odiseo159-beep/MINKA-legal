@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Minka — Dashboard del Abogado</title>
+<title>Minka — Attorney Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
 :root {
@@ -442,7 +442,7 @@ tbody tr.selected { background: rgba(192,57,43,.04); border-left: 3px solid var(
 .row-actions { display: flex; gap: 5px; opacity: 0; transition: opacity .15s; }
 tbody tr:hover .row-actions { opacity: 1; }
 
-/* ── QUICK ESTADO ── */
+/* ── QUICK STATUS ── */
 .quick-actions {
   display: flex;
   gap: 5px;
@@ -721,7 +721,7 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
 .confirm-actions { display: flex; gap: 8px; }
 .confirm-actions .btn { flex: 1; justify-content: center; }
 
-/* ── DRAWER — Consejo Procesal ── */
+/* ── DRAWER — Legal Advisory ── */
 .drawer-overlay {
   display: none; position: fixed; inset: 0;
   background: rgba(0,0,0,.25); backdrop-filter: blur(2px); z-index: 150;
@@ -849,23 +849,23 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
       </div>
     </div>
 
-    <div class="nav-section" style="opacity:.4;">Principal</div>
+    <div class="nav-section" style="opacity:.4;">Main</div>
     <div class="nav-item active" onclick="setView('casos')">
-      <span class="nav-icon">📁</span> Casos
+      <span class="nav-icon">📁</span> Cases
     </div>
     <div class="nav-item disabled">
-      <span class="nav-icon">📊</span> Métricas
+      <span class="nav-icon">📊</span> Metrics
     </div>
 
-    <div class="nav-section" style="opacity:.4;">Sistema</div>
+    <div class="nav-section" style="opacity:.4;">System</div>
     <div class="nav-item disabled">
-      <span class="nav-icon">⚙️</span> Configuración
+      <span class="nav-icon">⚙️</span> Settings
     </div>
 
     <div class="sidebar-footer">
       <div class="status-badge">
         <div class="status-dot"></div>
-        Bot activo en WhatsApp
+        Bot active on WhatsApp
       </div>
     </div>
   </aside>
@@ -876,12 +876,12 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
     <!-- TOPBAR -->
     <div class="topbar">
       <div>
-        <div class="page-title">Gestión de <span>Casos</span></div>
-        <div style="font-size:13px;color:var(--muted);margin-top:4px;">Panel del abogado</div>
+        <div class="page-title">Gestión de <span>Cases</span></div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px;">Attorney panel</div>
       </div>
       <div class="topbar-actions">
-        <button class="btn btn-ghost btn-sm" onclick="loadCasos()">↻ Actualizar</button>
-        <button class="btn btn-primary" onclick="openModal()">＋ Nuevo caso</button>
+        <button class="btn btn-ghost btn-sm" onclick="loadCases()">↻ Refresh</button>
+        <button class="btn btn-primary" onclick="openModal()">＋ New case</button>
       </div>
     </div>
 
@@ -891,25 +891,25 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
         <div class="stat-icon">📁</div>
         <div class="stat-label">Total casos</div>
         <div class="stat-value" id="stat-total">—</div>
-        <div class="stat-sub">registrados</div>
+        <div class="stat-sub">registered</div>
       </div>
       <div class="stat-card teal">
         <div class="stat-icon">⚙️</div>
         <div class="stat-label">Activos</div>
         <div class="stat-value" id="stat-activos">—</div>
-        <div class="stat-sub">en proceso</div>
+        <div class="stat-sub">in progress</div>
       </div>
       <div class="stat-card green">
         <div class="stat-icon">✅</div>
-        <div class="stat-label">Resueltos</div>
+        <div class="stat-label">Resolveds</div>
         <div class="stat-value" id="stat-resueltos">—</div>
-        <div class="stat-sub">cerrados</div>
+        <div class="stat-sub">closed</div>
       </div>
       <div class="stat-card yellow">
         <div class="stat-icon">📄</div>
         <div class="stat-label">Docs. pendientes</div>
         <div class="stat-value" id="stat-docs">—</div>
-        <div class="stat-sub">requieren acción</div>
+        <div class="stat-sub">require action</div>
       </div>
     </div>
 
@@ -917,18 +917,18 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
     <div class="toolbar">
       <div class="search-box">
         <span class="search-icon">🔍</span>
-        <input type="text" id="search-input" placeholder="Buscar por nombre, teléfono, expediente..." oninput="filterCasos()"/>
+        <input type="text" id="search-input" placeholder="Search by name, phone, case number..." oninput="filterCases()"/>
       </div>
-      <select id="filter-estado" onchange="filterCasos()">
-        <option value="">Todos los estados</option>
-        <option value="nuevo">Nuevo</option>
-        <option value="en_tramite">En trámite</option>
-        <option value="en_audiencia">En audiencia</option>
-        <option value="pendiente_documento">Pend. documento</option>
-        <option value="en_revision">En revisión</option>
-        <option value="en_apelacion">En apelación</option>
-        <option value="resuelto">Resuelto</option>
-        <option value="archivado">Archivado</option>
+      <select id="filter-estado" onchange="filterCases()">
+        <option value="">All statuses</option>
+        <option value="nuevo">New</option>
+        <option value="en_tramite">In Progress</option>
+        <option value="en_audiencia">In Hearing</option>
+        <option value="pendiente_documento">Pend. document</option>
+        <option value="en_revision">In Review</option>
+        <option value="en_apelacion">In Appeal</option>
+        <option value="resuelto">Resolved</option>
+        <option value="archivado">Archived</option>
       </select>
     </div>
 
@@ -940,8 +940,8 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
             <th>Cliente</th>
             <th>Expediente</th>
             <th>Tipo</th>
-            <th>Estado</th>
-            <th>Próxima fecha</th>
+            <th>Status</th>
+            <th>Next date</th>
             <th>Actualizado</th>
             <th></th>
           </tr>
@@ -961,7 +961,7 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
 <div class="modal-overlay" id="modal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title" id="modal-title">Nuevo caso</div>
+      <div class="modal-title" id="modal-title">New case</div>
       <div class="modal-close" onclick="closeModal()">✕</div>
     </div>
     <div class="modal-body">
@@ -974,77 +974,77 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
              ondragleave="this.classList.remove('drag-over')"
              ondrop="handleDrop(event)">
           <div class="upload-icon">📎</div>
-          <div class="upload-title">Subir expediente o documento</div>
-          <div class="upload-sub">Arrastra un PDF o Word aquí, o haz clic para seleccionar</div>
-          <div class="upload-hint">.pdf · .docx · máx 10MB</div>
+          <div class="upload-title">Upload case document</div>
+          <div class="upload-sub">Drag a PDF or Word file here, or click to select</div>
+          <div class="upload-hint">.pdf · .docx · max 10MB</div>
         </div>
         <input type="file" id="file-input" accept=".pdf,.docx" style="display:none"
                onchange="procesarArchivo(this.files[0])"/>
 
-        <!-- Estado de extracción -->
+        <!-- Status de extracción -->
         <div id="extract-status" style="display:none;"></div>
       </div>
 
       <div class="form-divider" id="form-divider" style="display:none;">
-        <span>Datos del caso</span>
+        <span>Case data</span>
       </div>
       <div class="form-grid">
         <div class="form-group">
-          <label>Nombre del cliente *</label>
-          <input type="text" id="f-nombre" placeholder="Juan Pérez García"/>
+          <label>Client name *</label>
+          <input type="text" id="f-nombre" placeholder="John Smith"/>
         </div>
         <div class="form-group">
-          <label>Teléfono *</label>
+          <label>Phone *</label>
           <input type="text" id="f-telefono" placeholder="940592068"/>
         </div>
         <div class="form-group">
-          <label>N° Expediente</label>
-          <input type="text" id="f-expediente" placeholder="EXP-2024-001"/>
+          <label>Case No.</label>
+          <input type="text" id="f-expediente" placeholder="CASE-2024-001"/>
         </div>
         <div class="form-group">
-          <label>Tipo de caso</label>
-          <input type="text" id="f-tipo" placeholder="Laboral, Civil, Penal..."/>
+          <label>Case type</label>
+          <input type="text" id="f-tipo" placeholder="Labor, Civil, Criminal..."/>
         </div>
         <div class="form-group">
-          <label>Estado</label>
+          <label>Status</label>
           <select id="f-estado">
-            <option value="nuevo">Nuevo</option>
-            <option value="en_tramite">En trámite</option>
-            <option value="en_audiencia">En audiencia</option>
-            <option value="pendiente_documento">Pendiente de documento</option>
-            <option value="en_revision">En revisión</option>
-            <option value="en_apelacion">En apelación</option>
-            <option value="resuelto">Resuelto</option>
-            <option value="archivado">Archivado</option>
+            <option value="nuevo">New</option>
+            <option value="en_tramite">In Progress</option>
+            <option value="en_audiencia">In Hearing</option>
+            <option value="pendiente_documento">Pending Document</option>
+            <option value="en_revision">In Review</option>
+            <option value="en_apelacion">In Appeal</option>
+            <option value="resuelto">Resolved</option>
+            <option value="archivado">Archived</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Próxima fecha</label>
+          <label>Next date</label>
           <input type="date" id="f-fecha"/>
         </div>
         <div class="form-group form-col-full">
-          <label>Próxima acción</label>
-          <input type="text" id="f-accion" placeholder="Presentar escrito de apelación"/>
+          <label>Next action</label>
+          <input type="text" id="f-accion" placeholder="Submit appeal brief"/>
         </div>
         <div class="form-group form-col-full">
-          <label>Documentos pendientes</label>
-          <input type="text" id="f-docs" placeholder="DNI, partida de nacimiento..."/>
+          <label>Pending documents</label>
+          <input type="text" id="f-docs" placeholder="ID, birth certificate..."/>
         </div>
         <div class="form-group">
-          <label>Abogado asignado</label>
+          <label>Assigned attorney</label>
           <input type="text" id="f-abogado" placeholder="Dr. Carlos Ríos"/>
         </div>
         <div class="form-group">
-          <label>Notas internas</label>
-          <input type="text" id="f-notas" placeholder="Solo visible para el equipo"/>
+          <label>Internal notes</label>
+          <input type="text" id="f-notas" placeholder="Only visible to the team"/>
         </div>
       </div>
 
       <!-- Notify toggle (solo al editar) -->
       <div class="notify-row" id="notify-row" style="display:none; margin-top:14px;">
         <div class="notify-info">
-          <h4>📲 Notificar al cliente por WhatsApp</h4>
-          <p>Minka enviará un mensaje automático con el nuevo estado</p>
+          <h4>📲 Notify client via WhatsApp</h4>
+          <p>Minka will send an automatic message with the new status</p>
         </div>
         <label class="toggle">
           <input type="checkbox" id="f-notificar" checked/>
@@ -1054,33 +1054,33 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
       <button class="btn btn-primary" id="save-btn" onclick="saveCaso()">
-        Guardar caso
+        Save case
       </button>
     </div>
   </div>
 </div>
 
-<!-- DRAWER — Consejo Procesal -->
+<!-- DRAWER — Legal Advisory -->
 <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
   <div class="drawer-header">
     <div>
-      <div class="drawer-title" id="drawer-title">Consejo Procesal</div>
+      <div class="drawer-title" id="drawer-title">Legal Advisory</div>
       <div class="drawer-subtitle" id="drawer-subtitle"></div>
     </div>
     <div class="drawer-close" onclick="closeDrawer()">✕</div>
   </div>
   <div class="drawer-body" id="drawer-body">
     <div class="drawer-loading">
-      <span class="spinner"></span> Analizando expediente...
+      <span class="spinner"></span> Analyzing case...
     </div>
   </div>
   <div class="drawer-footer">
     <button class="btn btn-ghost" style="width:100%;justify-content:center;"
             id="drawer-edit-btn" onclick="editFromDrawer()">
-      ✏️ Editar caso completo
+      ✏️ Edit case completo
     </button>
   </div>
 </div>
@@ -1089,8 +1089,8 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
 <div class="confirm-overlay" id="confirm-modal">
   <div class="confirm-box">
     <div class="confirm-icon">⚡</div>
-    <div class="confirm-title" id="confirm-title">Cambiar estado</div>
-    <div class="confirm-sub" id="confirm-sub">¿Confirmas el cambio de estado?</div>
+    <div class="confirm-title" id="confirm-title">Change status</div>
+    <div class="confirm-sub" id="confirm-sub">Confirm status change?</div>
     <div class="confirm-estado-preview">
       <span id="confirm-badge-from"></span>
       <span class="confirm-arrow">→</span>
@@ -1098,8 +1098,8 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
     </div>
     <div class="confirm-notify">
       <div>
-        <div class="confirm-notify-info">📲 Notificar al cliente</div>
-        <div class="confirm-notify-sub">Minka enviará un WhatsApp automático</div>
+        <div class="confirm-notify-info">📲 Notify client</div>
+        <div class="confirm-notify-sub">Minka will send an automatic WhatsApp</div>
       </div>
       <label class="toggle">
         <input type="checkbox" id="confirm-notificar" checked/>
@@ -1108,9 +1108,9 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
       </label>
     </div>
     <div class="confirm-actions">
-      <button class="btn btn-ghost" onclick="closeConfirm()">Cancelar</button>
-      <button class="btn btn-primary" id="confirm-ok-btn" onclick="ejecutarCambioEstado()">
-        Confirmar cambio
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-primary" id="confirm-ok-btn" onclick="ejecutarCambioStatus()">
+        Confirm change
       </button>
     </div>
   </div>
@@ -1126,10 +1126,10 @@ const API = window.location.hostname === 'localhost' || window.location.hostname
   : 'https://katia-jorkat-production.up.railway.app';
 
 // ─── STATE ───
-let allCasos = [];
+let allCases = [];
 
 // ─── INIT ───
-loadCasos();
+loadCases();
 loadStats();
 
 // ─── HELPERS ───
@@ -1146,19 +1146,19 @@ function getInitials(name) {
   return (name || '?').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
 }
 
-const ESTADO_LABELS = {
-  nuevo:                '📋 Nuevo',
-  en_tramite:           '⚙️ En trámite',
-  en_audiencia:         '⚖️ En audiencia',
-  pendiente_documento:  '📄 Pend. documento',
-  en_revision:          '🔍 En revisión',
-  en_apelacion:         '📢 En apelación',
-  resuelto:             '✅ Resuelto',
-  archivado:            '🗂️ Archivado',
+const STATUS_LABELS = {
+  nuevo:                '📋 New',
+  en_tramite:           '⚙️ In Progress',
+  en_audiencia:         '⚖️ In Hearing',
+  pendiente_documento:  '📄 Pend. document',
+  en_revision:          '🔍 In Review',
+  en_apelacion:         '📢 In Appeal',
+  resuelto:             '✅ Resolved',
+  archivado:            '🗂️ Archived',
 };
 
 function badgeHTML(estado) {
-  const label = ESTADO_LABELS[estado] || estado;
+  const label = STATUS_LABELS[estado] || estado;
   return `<span class="badge badge-${estado}"><span class="badge-dot"></span>${label}</span>`;
 }
 
@@ -1190,8 +1190,8 @@ function timeAgo(isoStr) {
   return days === 1 ? 'ayer' : `hace ${days} días`;
 }
 
-// Estados "siguientes" sugeridos por estado actual
-const NEXT_ESTADOS = {
+// Statuss "siguientes" sugeridos por estado actual
+const NEXT_STATUSS = {
   nuevo:               ['en_tramite', 'pendiente_documento'],
   en_tramite:          ['en_audiencia', 'en_revision', 'pendiente_documento'],
   en_audiencia:        ['en_revision', 'en_apelacion', 'resuelto'],
@@ -1202,25 +1202,25 @@ const NEXT_ESTADOS = {
   archivado:           [],
 };
 
-const ESTADO_SHORT = {
-  nuevo:               '📋 Nuevo',
-  en_tramite:          '⚙️ Trámite',
-  en_audiencia:        '⚖️ Audiencia',
+const STATUS_SHORT = {
+  nuevo:               '📋 New',
+  en_tramite:          '⚙️ In Progress',
+  en_audiencia:        '⚖️ Hearing',
   pendiente_documento: '📄 Doc. pend.',
-  en_revision:         '🔍 Revisión',
-  en_apelacion:        '📢 Apelación',
-  resuelto:            '✅ Resuelto',
-  archivado:           '🗂️ Archivado',
+  en_revision:         '🔍 Review',
+  en_apelacion:        '📢 Appeal',
+  resuelto:            '✅ Resolved',
+  archivado:           '🗂️ Archived',
 };
 
 // ─── LOAD CASOS ───
-async function loadCasos() {
+async function loadCases() {
   try {
     const r = await fetch(`${API}/api/casos`);
-    allCasos = await r.json();
-    renderTable(allCasos);
+    allCases = await r.json();
+    renderTable(allCases);
   } catch (e) {
-    renderEmpty('No se pudo conectar al servidor');
+    renderEmpty('Could not connect to server');
   }
 }
 
@@ -1236,10 +1236,10 @@ async function loadStats() {
   } catch {}
 }
 
-function filterCasos() {
+function filterCases() {
   const q = document.getElementById('search-input').value.toLowerCase();
   const estado = document.getElementById('filter-estado').value;
-  const filtered = allCasos.filter(c => {
+  const filtered = allCases.filter(c => {
     const matchQ = !q ||
       (c.nombre_cliente || '').toLowerCase().includes(q) ||
       (c.telefono || '').toLowerCase().includes(q) ||
@@ -1255,11 +1255,11 @@ function renderTable(casos) {
   if (!casos.length) { renderEmpty(); return; }
 
   tbody.innerHTML = casos.map(c => {
-    const nexts = (NEXT_ESTADOS[c.estado] || []).slice(0, 2);
+    const nexts = (NEXT_STATUSS[c.estado] || []).slice(0, 2);
     const quickBtns = nexts.map(e =>
       `<button class="quick-estado-btn qe-${e}"
-        onclick="iniciarCambioEstado(${c.id},'${c.estado}','${e}','${(c.nombre_cliente||'').replace(/'/g,"\\'")}')">
-        ${ESTADO_SHORT[e]}
+        onclick="iniciarCambioStatus(${c.id},'${c.estado}','${e}','${(c.nombre_cliente||'').replace(/'/g,"\\'")}')">
+        ${STATUS_SHORT[e]}
       </button>`
     ).join('');
 
@@ -1296,13 +1296,13 @@ function renderTable(casos) {
   }).join('');
 }
 
-function renderEmpty(msg = 'No hay casos registrados') {
+function renderEmpty(msg = 'No hay casos registered') {
   const tbody = document.getElementById('casos-tbody');
   tbody.innerHTML = `
     <tr><td colspan="7"><div class="empty-state">
       <div class="empty-icon">⚖️</div>
       <div class="empty-title">${msg}</div>
-      <div class="empty-sub">Agrega el primer caso usando el botón de arriba</div>
+      <div class="empty-sub">Add the first case using the button above</div>
     </div></td></tr>`;
 }
 
@@ -1311,7 +1311,7 @@ let _drawerCasoId = null;
 
 function openDrawer(id) {
   _drawerCasoId = id;
-  const caso = allCasos.find(c => c.id === id);
+  const caso = allCases.find(c => c.id === id);
 
   // Highlight fila
   document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('selected'));
@@ -1322,14 +1322,14 @@ function openDrawer(id) {
 
   // Títulos
   document.getElementById('drawer-title').textContent =
-    caso ? `${caso.nombre_cliente}` : 'Consejo Procesal';
+    caso ? `${caso.nombre_cliente}` : 'Legal Advisory';
   document.getElementById('drawer-subtitle').textContent =
     caso ? `${caso.expediente || ''} · ${caso.tipo_caso || ''}` : '';
 
   // Loading
   document.getElementById('drawer-body').innerHTML = `
     <div class="drawer-loading">
-      <span class="spinner"></span> Analizando expediente...
+      <span class="spinner"></span> Analyzing case...
     </div>`;
 
   document.getElementById('drawer-overlay').classList.add('open');
@@ -1361,7 +1361,7 @@ async function cargarConsejo(id) {
     document.getElementById('drawer-body').innerHTML = `
       <div class="drawer-error">
         <div class="drawer-error-icon">⚠️</div>
-        <div class="drawer-error-msg">No se pudo cargar el consejo procesal.<br>${e.message}</div>
+        <div class="drawer-error-msg">Could not load legal advisory.<br>${e.message}</div>
       </div>`;
   }
 }
@@ -1371,12 +1371,12 @@ function renderConsejo(d) {
     document.getElementById('drawer-body').innerHTML = `
       <div class="drawer-error">
         <div class="drawer-error-icon">📋</div>
-        <div class="drawer-error-msg" style="color:var(--sub);">${d.motivo || d.mensaje || 'Sin información procesal disponible.'}</div>
+        <div class="drawer-error-msg" style="color:var(--sub);">${d.motivo || d.mensaje || 'No procedural information available.'}</div>
       </div>`;
     return;
   }
 
-  const caso = allCasos.find(c => c.id === _drawerCasoId);
+  const caso = allCases.find(c => c.id === _drawerCasoId);
 
   // Fecha urgency
   let fechaClass = 'ok', fechaIcon = '📅';
@@ -1396,7 +1396,7 @@ function renderConsejo(d) {
             <span>${doc}</span>
           </div>`).join('')}
        </div>`
-    : `<div style="font-size:13px;color:var(--muted);">No se identificaron documentos específicos para esta etapa.</div>`;
+    : `<div style="font-size:13px;color:var(--muted);">No specific documents identified for this stage.</div>`;
 
   // Advertencia
   const warnHTML = d.advertencia
@@ -1445,9 +1445,9 @@ function renderConsejo(d) {
           <div class="fecha-limit">
             <div>
               <div class="fecha-big ${fechaClass}">${formatDate(d.proxima_fecha_sugerida)}</div>
-              <div class="fecha-detail">Fecha límite estimada</div>
+              <div class="fecha-detail">Estimated deadline</div>
             </div>
-          </div>` : `<div style="font-size:13px;color:var(--muted);">No hay plazo fijo para esta etapa. Coordinar con el juzgado.</div>`}
+          </div>` : `<div style="font-size:13px;color:var(--muted);">No fixed deadline for this stage. Coordinate with the court.</div>`}
         ${d.plazo_descripcion
           ? `<div class="plazo-badge">⏱ ${d.plazo_descripcion}</div>` : ''}
       </div>
@@ -1478,17 +1478,17 @@ function renderConsejo(d) {
   `;
 }
 
-// ─── QUICK ESTADO ───
+// ─── QUICK STATUS ───
 let _pendingCambio = null;
 
-function iniciarCambioEstado(id, estadoActual, nuevoEstado, nombre) {
-  _pendingCambio = { id, nuevoEstado, nombre };
+function iniciarCambioStatus(id, estadoActual, nuevoStatus, nombre) {
+  _pendingCambio = { id, nuevoStatus, nombre };
 
-  document.getElementById('confirm-title').textContent = `Cambiar estado de ${nombre}`;
+  document.getElementById('confirm-title').textContent = `Change status de ${nombre}`;
   document.getElementById('confirm-sub').textContent =
-    'Confirma el cambio antes de continuar. Puedes notificar al cliente automáticamente.';
+    'Confirm the change before continuing. You can notify the client automatically.';
   document.getElementById('confirm-badge-from').innerHTML = badgeHTML(estadoActual);
-  document.getElementById('confirm-badge-to').innerHTML   = badgeHTML(nuevoEstado);
+  document.getElementById('confirm-badge-to').innerHTML   = badgeHTML(nuevoStatus);
   document.getElementById('confirm-notificar').checked = true;
   document.getElementById('confirm-modal').classList.add('open');
 }
@@ -1498,9 +1498,9 @@ function closeConfirm() {
   _pendingCambio = null;
 }
 
-async function ejecutarCambioEstado() {
+async function ejecutarCambioStatus() {
   if (!_pendingCambio) return;
-  const { id, nuevoEstado, nombre } = _pendingCambio;
+  const { id, nuevoStatus, nombre } = _pendingCambio;
   const notificar = document.getElementById('confirm-notificar').checked;
 
   const btn = document.getElementById('confirm-ok-btn');
@@ -1511,24 +1511,24 @@ async function ejecutarCambioEstado() {
     const r = await fetch(`${API}/api/casos/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ estado: nuevoEstado, notificar_cliente: notificar }),
+      body: JSON.stringify({ estado: nuevoStatus, notificar_cliente: notificar }),
     });
     if (!r.ok) throw new Error(await r.text());
     const result = await r.json();
     closeConfirm();
 
     if (result._notificacion_enviada) {
-      toast(`Estado actualizado y WhatsApp enviado a ${nombre}`, 'success', '📲');
+      toast(`Status updated y WhatsApp enviado a ${nombre}`, 'success', '📲');
     } else {
-      toast(`Estado de ${nombre} → ${ESTADO_SHORT[nuevoEstado]}`, 'success', '⚡');
+      toast(`Status de ${nombre} → ${STATUS_SHORT[nuevoStatus]}`, 'success', '⚡');
     }
 
-    await loadCasos();
+    await loadCases();
     await loadStats();
   } catch (e) {
-    toast('Error al cambiar estado: ' + e.message, 'error', '❌');
+    toast('Error changing status: ' + e.message, 'error', '❌');
   } finally {
-    btn.innerHTML = 'Confirmar cambio';
+    btn.innerHTML = 'Confirm change';
     btn.disabled = false;
   }
 }
@@ -1549,11 +1549,11 @@ const CAMPO_LABELS = {
   nombre_cliente:        'Nombre del cliente',
   telefono:              'Teléfono',
   expediente:            'Expediente',
-  tipo_caso:             'Tipo de caso',
-  abogado_asignado:      'Abogado asignado',
-  documentos_pendientes: 'Documentos pendientes',
-  proxima_fecha:         'Próxima fecha',
-  proxima_accion:        'Próxima acción',
+  tipo_caso:             'Case type',
+  abogado_asignado:      'Assigned attorney',
+  documentos_pendientes: 'Pending documents',
+  proxima_fecha:         'Next date',
+  proxima_accion:        'Next action',
 };
 
 function handleDrop(e) {
@@ -1581,7 +1581,7 @@ async function procesarArchivo(file) {
   status.innerHTML = `
     <div class="extract-loading">
       <span class="spinner" style="border-top-color:var(--accent-l);border-color:rgba(232,101,10,.2)"></span>
-      Claude está analizando el documento... esto toma unos segundos
+      Claude is analyzing the document... this takes a few seconds
     </div>`;
 
   // Limpiar clases previas
@@ -1661,7 +1661,7 @@ function mostrarExtractStatus(tipo, titulo, sub) {
 
 // ─── MODAL ───
 function openModal(caso = null) {
-  document.getElementById('modal-title').textContent = caso ? 'Editar caso' : 'Nuevo caso';
+  document.getElementById('modal-title').textContent = caso ? 'Edit case' : 'New case';
   document.getElementById('edit-id').value = caso?.id || '';
   document.getElementById('f-nombre').value = caso?.nombre_cliente || '';
   document.getElementById('f-telefono').value = caso?.telefono || '';
@@ -1697,7 +1697,7 @@ function closeModal() {
 }
 
 function editCaso(id) {
-  const c = allCasos.find(x => x.id === id);
+  const c = allCases.find(x => x.id === id);
   if (c) openModal(c);
 }
 
@@ -1709,7 +1709,7 @@ async function saveCaso() {
   const telefono = document.getElementById('f-telefono').value.trim();
 
   if (!nombre || !telefono) {
-    toast('Nombre y teléfono son obligatorios', 'error', '❌');
+    toast('Name and phone are required', 'error', '❌');
     return;
   }
 
@@ -1730,7 +1730,7 @@ async function saveCaso() {
     payload.notificar_cliente = document.getElementById('f-notificar').checked;
   }
 
-  btn.innerHTML = '<span class="spinner"></span> Guardando...';
+  btn.innerHTML = '<span class="spinner"></span> Saving...';
   btn.disabled = true;
 
   try {
@@ -1749,36 +1749,36 @@ async function saveCaso() {
 
     if (id) {
       if (result._notificacion_enviada) {
-        toast(`✅ Caso actualizado y WhatsApp enviado a ${nombre}`, 'success', '📲');
+        toast(`✅ Case updated, WhatsApp sent to ${nombre}`, 'success', '📲');
       } else {
-        toast(`Caso de ${nombre} actualizado`, 'success', '✅');
+        toast(`Case of ${nombre} updated`, 'success', '✅');
       }
     } else {
-      toast(`Caso de ${nombre} creado`, 'success', '📁');
+      toast(`Case of ${nombre} created`, 'success', '📁');
     }
 
-    await loadCasos();
+    await loadCases();
     await loadStats();
 
   } catch (e) {
-    toast('Error al guardar: ' + e.message, 'error', '❌');
+    toast('Error saving: ' + e.message, 'error', '❌');
   } finally {
-    btn.innerHTML = 'Guardar caso';
+    btn.innerHTML = 'Save case';
     btn.disabled = false;
   }
 }
 
 // ─── DELETE ───
 async function deleteCaso(id, nombre) {
-  if (!confirm(`¿Eliminar el caso de ${nombre}?`)) return;
+  if (!confirm(`Delete case for ${nombre}?`)) return;
   try {
     const r = await fetch(`${API}/api/casos/${id}`, { method: 'DELETE' });
     if (!r.ok) throw new Error();
-    toast(`Caso de ${nombre} eliminado`, 'info', '🗑');
-    await loadCasos();
+    toast(`Case of ${nombre} deleted`, 'info', '🗑');
+    await loadCases();
     await loadStats();
   } catch {
-    toast('Error al eliminar', 'error', '❌');
+    toast('Error deleting', 'error', '❌');
   }
 }
 
