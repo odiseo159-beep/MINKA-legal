@@ -1,6 +1,6 @@
 import os
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import Optional
@@ -11,6 +11,7 @@ from agent.cases_db import (
     actualizar_caso,
     eliminar_caso,
 )
+from agent.document_extractor import extraer_datos_documento
 
 router = APIRouter()
 
@@ -61,7 +62,6 @@ ESTADOS_LABELS = {
 }
 
 def _tel_whatsapp(telefono: str) -> str:
-    """Convierte teléfono normalizado (9 dígitos) a formato Whapi: 51XXXXXXXXX"""
     t = telefono.strip().replace(" ", "").replace("-", "").replace("+", "")
     if len(t) == 9:
         return f"51{t}"
@@ -70,7 +70,6 @@ def _tel_whatsapp(telefono: str) -> str:
     return t
 
 async def enviar_notificacion_whatsapp(caso: dict) -> bool:
-    """Envía mensaje proactivo al cliente cuando su caso es actualizado."""
     if not WHAPI_TOKEN:
         print("[Notificación] WHAPI_TOKEN no configurado, omitiendo.")
         return False
@@ -100,7 +99,6 @@ async def enviar_notificacion_whatsapp(caso: dict) -> bool:
     lineas += ["", "Si tiene consultas, puede escribirme aquí mismo. 🤖 _Minka_"]
 
     mensaje = "\n".join(l for l in lineas if l is not None)
-
     payload = {
         "to": f"{telefono_wa}@s.whatsapp.net",
         "body": mensaje,
@@ -125,7 +123,7 @@ async def enviar_notificacion_whatsapp(caso: dict) -> bool:
         return False
 
 # ─────────────────────────────────────────────
-# Endpoints API REST
+# Endpoints API REST — Casos
 # ─────────────────────────────────────────────
 
 @router.get("/api/casos")
@@ -192,7 +190,43 @@ def api_eliminar_caso(caso_id: int):
     return {"ok": True, "mensaje": "Caso eliminado"}
 
 # ─────────────────────────────────────────────
-# Dashboard (sirve index.html)
+# Endpoint — Extracción de documento con Claude
+# ─────────────────────────────────────────────
+
+@router.post("/api/casos/extraer-documento")
+async def api_extraer_documento(archivo: UploadFile = File(...)):
+    """
+    Recibe un PDF o DOCX, extrae los datos del caso usando Claude API.
+    Devuelve los campos encontrados y la lista de campos requeridos faltantes.
+    """
+    MAX_SIZE_MB = 10
+    contenido = await archivo.read()
+
+    if len(contenido) > MAX_SIZE_MB * 1024 * 1024:
+        raise HTTPException(status_code=413, detail=f"El archivo supera los {MAX_SIZE_MB}MB permitidos.")
+
+    ext = (archivo.filename or "").lower().rsplit(".", 1)[-1]
+    if ext not in ("pdf", "doc", "docx"):
+        raise HTTPException(
+            status_code=415,
+            detail="Formato no soportado. Solo se aceptan archivos PDF y DOCX."
+        )
+
+    try:
+        resultado = extraer_datos_documento(
+            contenido_bytes=contenido,
+            nombre_archivo=archivo.filename or "documento",
+            content_type=archivo.content_type or "",
+        )
+        return resultado
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        print(f"[Extracción] ❌ Error inesperado: {e}")
+        raise HTTPException(status_code=500, detail="Error al procesar el documento con IA.")
+
+# ─────────────────────────────────────────────
+# Dashboard (sirve dashboard.html)
 # ─────────────────────────────────────────────
 
 @router.get("/dashboard", response_class=HTMLResponse)

@@ -861,6 +861,134 @@ tbody tr:hover .quick-actions { opacity: 1; }
 
 .confirm-actions .btn { flex: 1; justify-content: center; }
 
+/* ── UPLOAD ZONE ── */
+.upload-drop {
+  border: 2px dashed var(--border);
+  border-radius: 14px;
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  background: rgba(255,255,255,.015);
+  margin-bottom: 4px;
+}
+
+.upload-drop:hover,
+.upload-drop.drag-over {
+  border-color: var(--purple);
+  background: rgba(124,58,237,.06);
+}
+
+.upload-icon { font-size: 28px; margin-bottom: 8px; }
+
+.upload-title {
+  font-family: var(--font-h);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.upload-sub  { font-size: 12.5px; color: var(--muted); margin-bottom: 4px; }
+.upload-hint { font-size: 11px;   color: #3f4260; }
+
+/* Extracción en curso */
+.extract-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(124,58,237,.08);
+  border: 1px solid rgba(124,58,237,.2);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 10px;
+  font-size: 13.5px;
+  color: var(--purple-l);
+}
+
+/* Resultado de extracción */
+.extract-result {
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.extract-result.success {
+  background: rgba(52,211,153,.06);
+  border: 1px solid rgba(52,211,153,.2);
+}
+
+.extract-result.partial {
+  background: rgba(251,191,36,.06);
+  border: 1px solid rgba(251,191,36,.2);
+}
+
+.extract-result.error {
+  background: rgba(244,63,94,.06);
+  border: 1px solid rgba(244,63,94,.2);
+}
+
+.extract-result-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.extract-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.chip {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.chip-ok      { background: rgba(52,211,153,.15);  color: #34d399; }
+.chip-missing { background: rgba(244,63,94,.15);   color: #f87171; }
+
+/* Input con resultado de extracción */
+input.extracted {
+  border-color: rgba(52,211,153,.5) !important;
+  background: rgba(52,211,153,.04) !important;
+}
+
+input.required-missing {
+  border-color: rgba(244,63,94,.6) !important;
+  background: rgba(244,63,94,.04) !important;
+  animation: shakeMissing .4s ease;
+}
+
+@keyframes shakeMissing {
+  0%,100% { transform: translateX(0); }
+  25%      { transform: translateX(-4px); }
+  75%      { transform: translateX(4px); }
+}
+
+/* Divisor entre upload y form */
+.form-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 12px;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+}
+
+.form-divider::before,
+.form-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 900px) {
   .shell { grid-template-columns: 1fr; }
@@ -1006,6 +1134,28 @@ tbody tr:hover .quick-actions { opacity: 1; }
     </div>
     <div class="modal-body">
       <input type="hidden" id="edit-id"/>
+
+      <!-- ── UPLOAD ZONE (solo al crear) ── -->
+      <div id="upload-zone">
+        <div class="upload-drop" id="upload-drop" onclick="document.getElementById('file-input').click()"
+             ondragover="event.preventDefault();this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="handleDrop(event)">
+          <div class="upload-icon">📎</div>
+          <div class="upload-title">Subir expediente o documento</div>
+          <div class="upload-sub">Arrastra un PDF o Word aquí, o haz clic para seleccionar</div>
+          <div class="upload-hint">.pdf · .docx · máx 10MB</div>
+        </div>
+        <input type="file" id="file-input" accept=".pdf,.docx" style="display:none"
+               onchange="procesarArchivo(this.files[0])"/>
+
+        <!-- Estado de extracción -->
+        <div id="extract-status" style="display:none;"></div>
+      </div>
+
+      <div class="form-divider" id="form-divider" style="display:none;">
+        <span>Datos del caso</span>
+      </div>
       <div class="form-grid">
         <div class="form-group">
           <label>Nombre del cliente *</label>
@@ -1354,6 +1504,128 @@ async function ejecutarCambioEstado() {
   }
 }
 
+// ─── DOCUMENT EXTRACTION ───
+const CAMPO_IDS = {
+  nombre_cliente:        'f-nombre',
+  telefono:              'f-telefono',
+  expediente:            'f-expediente',
+  tipo_caso:             'f-tipo',
+  abogado_asignado:      'f-abogado',
+  documentos_pendientes: 'f-docs',
+};
+
+const CAMPO_LABELS = {
+  nombre_cliente:        'Nombre del cliente',
+  telefono:              'Teléfono',
+  expediente:            'Expediente',
+  tipo_caso:             'Tipo de caso',
+  abogado_asignado:      'Abogado asignado',
+  documentos_pendientes: 'Documentos pendientes',
+};
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-drop').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) procesarArchivo(file);
+}
+
+async function procesarArchivo(file) {
+  if (!file) return;
+
+  const allowed = ['.pdf', '.docx'];
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
+  if (!allowed.includes(ext)) {
+    mostrarExtractStatus('error',
+      '❌ Formato no soportado',
+      'Solo se aceptan archivos PDF o Word (.docx)');
+    return;
+  }
+
+  // Mostrar loading
+  const status = document.getElementById('extract-status');
+  status.style.display = 'block';
+  status.innerHTML = `
+    <div class="extract-loading">
+      <span class="spinner" style="border-top-color:var(--purple-l);border-color:rgba(168,85,247,.2)"></span>
+      Claude está analizando el documento... esto toma unos segundos
+    </div>`;
+
+  // Limpiar clases previas
+  Object.values(CAMPO_IDS).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('extracted', 'required-missing'); }
+  });
+
+  const formData = new FormData();
+  formData.append('archivo', file);
+
+  try {
+    const r = await fetch(`${API}/api/casos/extraer-documento`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await r.json();
+
+    if (!r.ok) {
+      mostrarExtractStatus('error', '❌ Error al procesar', data.detail || 'Error desconocido');
+      return;
+    }
+
+    const { campos, faltantes } = data;
+    // campos extraídos = claves del objeto campos
+    const extraidos = Object.keys(campos);
+
+    // Pre-llenar campos extraídos
+    Object.entries(CAMPO_IDS).forEach(([campo, inputId]) => {
+      const el = document.getElementById(inputId);
+      if (!el) return;
+      if (campos[campo]) {
+        el.value = campos[campo];
+        el.classList.add('extracted');
+      } else if (faltantes.includes(campo)) {
+        el.classList.add('required-missing');
+      }
+    });
+
+    // Mostrar resultado
+    const tipo  = faltantes.length === 0 ? 'success' : 'partial';
+    const emoji = faltantes.length === 0 ? '✅' : '⚠️';
+    const titulo = faltantes.length === 0
+      ? `${emoji} Extracción completa — ${extraidos.length} campos detectados`
+      : `${emoji} Extracción parcial — completa los campos en rojo`;
+
+    const chipsOk = extraidos.map(c =>
+      `<span class="chip chip-ok">✓ ${CAMPO_LABELS[c] || c}</span>`).join('');
+    const chipsFaltantes = faltantes.map(c =>
+      `<span class="chip chip-missing">✗ ${CAMPO_LABELS[c] || c}</span>`).join('');
+
+    status.innerHTML = `
+      <div class="extract-result ${tipo}">
+        <div class="extract-result-title">${titulo}</div>
+        <div class="extract-chips">${chipsOk}${chipsFaltantes}</div>
+        ${faltantes.length ? '<div style="font-size:11.5px;color:var(--muted);margin-top:8px;">📝 Fecha próxima y próxima acción deben completarse manualmente</div>' : ''}
+      </div>`;
+
+    // Mostrar divider y form si estaban ocultos
+    document.getElementById('form-divider').style.display = 'flex';
+
+  } catch (e) {
+    mostrarExtractStatus('error', '❌ Error de conexión', e.message);
+  }
+}
+
+function mostrarExtractStatus(tipo, titulo, sub) {
+  const status = document.getElementById('extract-status');
+  status.style.display = 'block';
+  status.innerHTML = `
+    <div class="extract-result ${tipo}">
+      <div class="extract-result-title">${titulo}</div>
+      <div style="font-size:12.5px;color:var(--muted);margin-top:4px;">${sub}</div>
+    </div>`;
+}
+
 // ─── MODAL ───
 function openModal(caso = null) {
   document.getElementById('modal-title').textContent = caso ? 'Editar caso' : 'Nuevo caso';
@@ -1370,6 +1642,20 @@ function openModal(caso = null) {
   document.getElementById('f-notas').value = caso?.notas || '';
   document.getElementById('f-notificar').checked = true;
   document.getElementById('notify-row').style.display = caso ? 'flex' : 'none';
+
+  // Upload zone: solo al crear
+  document.getElementById('upload-zone').style.display   = caso ? 'none' : 'block';
+  document.getElementById('form-divider').style.display  = caso ? 'none' : 'flex';
+  document.getElementById('extract-status').style.display = 'none';
+  document.getElementById('extract-status').innerHTML    = '';
+  document.getElementById('file-input').value = '';
+
+  // Limpiar clases de extracción
+  Object.values(CAMPO_IDS).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('extracted', 'required-missing');
+  });
+
   document.getElementById('modal').classList.add('open');
 }
 
