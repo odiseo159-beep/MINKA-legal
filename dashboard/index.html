@@ -167,10 +167,10 @@ main { padding: 28px 32px; overflow-y: auto; }
 }
 
 .page-title {
-  font-family: var(--font-h);
+  font-family: var(--font-b);
   font-size: 24px;
-  font-weight: 800;
-  letter-spacing: -.5px;
+  font-weight: 700;
+  letter-spacing: -.3px;
   color: var(--text);
 }
 
@@ -220,6 +220,7 @@ main { padding: 28px 32px; overflow-y: auto; }
   letter-spacing: .8px;
   margin-bottom: 10px;
   font-weight: 600;
+  font-family: var(--font-b);
 }
 
 .stat-value {
@@ -747,8 +748,8 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
   flex-shrink: 0;
   background: #f8f9fb;
 }
-.drawer-title   { font-family: var(--font-h); font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.3; }
-.drawer-subtitle{ font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.drawer-title   { font-family: var(--font-b); font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.3; }
+.drawer-subtitle{ font-size: 11.5px; color: var(--muted); margin-top: 2px; font-family: var(--font-b); }
 .drawer-close {
   width: 26px; height: 26px; background: var(--bg);
   border: 1px solid var(--border); border-radius: 6px;
@@ -772,21 +773,21 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
   background: #f8f9fb;
 }
 .d-section-icon  { font-size: 14px; }
-.d-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); }
+.d-section-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); font-family: var(--font-b); }
 .d-section-body  { padding: 12px 14px; }
 
 .etapa-flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.etapa-pill { padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.etapa-pill { padding: 4px 11px; border-radius: 6px; font-size: 12px; font-weight: 600; font-family: var(--font-b); }
 .etapa-pill.actual   { background: #f1f5f9; color: var(--sub); border: 1px solid #e2e8f0; }
 .etapa-pill.siguiente{ background: rgba(192,57,43,.08); color: var(--accent); border: 1px solid rgba(192,57,43,.2); }
 .etapa-arrow { color: var(--muted); font-size: 14px; flex-shrink: 0; }
-.etapa-desc  { font-size: 12.5px; color: var(--sub); line-height: 1.5; margin-top: 9px; }
+.etapa-desc  { font-size: 12px; color: var(--sub); line-height: 1.6; margin-top: 9px; font-family: var(--font-b); }
 
-.fecha-big { font-family: var(--font-h); font-size: 21px; font-weight: 800; }
+.fecha-big { font-family: var(--font-b); font-size: 17px; font-weight: 700; }
 .fecha-big.urgent  { color: var(--accent); }
 .fecha-big.warning { color: var(--yellow); }
 .fecha-big.ok      { color: var(--green); }
-.fecha-detail { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.fecha-detail { font-size: 11.5px; color: var(--muted); margin-top: 3px; font-family: var(--font-b); }
 
 .plazo-badge {
   display: inline-flex; align-items: center; gap: 5px;
@@ -876,7 +877,7 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
     <!-- TOPBAR -->
     <div class="topbar">
       <div>
-        <div class="page-title">Gestión de <span>Cases</span></div>
+        <div class="page-title">Case <span>Management</span></div>
         <div style="font-size:13px;color:var(--muted);margin-top:4px;">Attorney panel</div>
       </div>
       <div class="topbar-actions">
@@ -889,25 +890,25 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
     <div class="stats-grid">
       <div class="stat-card purple">
         <div class="stat-icon">📁</div>
-        <div class="stat-label">Total casos</div>
+        <div class="stat-label">Total Cases</div>
         <div class="stat-value" id="stat-total">—</div>
         <div class="stat-sub">registered</div>
       </div>
       <div class="stat-card teal">
         <div class="stat-icon">⚙️</div>
-        <div class="stat-label">Activos</div>
+        <div class="stat-label">Active</div>
         <div class="stat-value" id="stat-activos">—</div>
         <div class="stat-sub">in progress</div>
       </div>
       <div class="stat-card green">
         <div class="stat-icon">✅</div>
-        <div class="stat-label">Resolveds</div>
+        <div class="stat-label">Resolved</div>
         <div class="stat-value" id="stat-resueltos">—</div>
         <div class="stat-sub">closed</div>
       </div>
       <div class="stat-card yellow">
         <div class="stat-icon">📄</div>
-        <div class="stat-label">Docs. pendientes</div>
+        <div class="stat-label">Pending Docs</div>
         <div class="stat-value" id="stat-docs">—</div>
         <div class="stat-sub">require action</div>
       </div>
@@ -924,7 +925,7 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
         <option value="nuevo">New</option>
         <option value="en_tramite">In Progress</option>
         <option value="en_audiencia">In Hearing</option>
-        <option value="pendiente_documento">Pend. document</option>
+        <option value="pendiente_documento">Pend. Doc</option>
         <option value="en_revision">In Review</option>
         <option value="en_apelacion">In Appeal</option>
         <option value="resuelto">Resolved</option>
@@ -937,12 +938,12 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
       <table>
         <thead>
           <tr>
-            <th>Cliente</th>
-            <th>Expediente</th>
-            <th>Tipo</th>
+            <th>Client</th>
+            <th>Case No.</th>
+            <th>Type</th>
             <th>Status</th>
             <th>Next date</th>
-            <th>Actualizado</th>
+            <th>Updated</th>
             <th></th>
           </tr>
         </thead>
@@ -1080,7 +1081,7 @@ input.required-missing { border-color: var(--accent) !important; background: #ff
   <div class="drawer-footer">
     <button class="btn btn-ghost" style="width:100%;justify-content:center;"
             id="drawer-edit-btn" onclick="editFromDrawer()">
-      ✏️ Edit case completo
+      ✏️ Edit full case
     </button>
   </div>
 </div>
@@ -1166,7 +1167,7 @@ function formatDate(d) {
   if (!d) return '—';
   const [y, m, day] = d.split('-');
   if (!y) return d;
-  const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return `${parseInt(day)} ${months[parseInt(m)-1]} ${y}`;
 }
 
@@ -1183,9 +1184,9 @@ function timeAgo(isoStr) {
   if (!isoStr) return '—';
   const d = new Date(isoStr.replace(' ', 'T'));
   const diff = Math.floor((Date.now() - d) / 1000);
-  if (diff < 60)   return 'ahora';
-  if (diff < 3600) return `hace ${Math.floor(diff/60)} min`;
-  if (diff < 86400)return `hace ${Math.floor(diff/3600)} h`;
+  if (diff < 60)   return 'just now';
+  if (diff < 3600) return `${Math.floor(diff/60)} min ago`;
+  if (diff < 86400)return `${Math.floor(diff/3600)}h ago`;
   const days = Math.floor(diff/86400);
   return days === 1 ? 'ayer' : `hace ${days} días`;
 }
@@ -1286,7 +1287,7 @@ function renderTable(casos) {
         <div class="quick-actions">
           ${quickBtns}
           ${nexts.length ? '<div class="quick-divider"></div>' : ''}
-          <button class="btn btn-teal btn-sm" title="Consejo procesal"
+          <button class="btn btn-teal btn-sm" title="Legal advisory"
             onclick="event.stopPropagation();openDrawer(${c.id})">⚖️</button>
           <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editCaso(${c.id})">✏️</button>
           <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteCaso(${c.id}, '${(c.nombre_cliente||'').replace(/'/g,"\\'")}')">🗑</button>
@@ -1407,7 +1408,7 @@ function renderConsejo(d) {
     ? `<div class="d-section">
         <div class="d-section-header">
           <span class="d-section-icon">💡</span>
-          <span class="d-section-title">Notas importantes</span>
+          <span class="d-section-title">Important notes</span>
         </div>
         <div class="d-section-body">
           <div style="font-size:12.5px;color:var(--sub);line-height:1.6;">${d.notas}</div>
@@ -1418,7 +1419,7 @@ function renderConsejo(d) {
 
     ${warnHTML}
 
-    <!-- Proceso y etapas -->
+    <!-- Process & stages -->
     <div class="d-section">
       <div class="d-section-header">
         <span class="d-section-icon">⚖️</span>
@@ -1434,11 +1435,11 @@ function renderConsejo(d) {
       </div>
     </div>
 
-    <!-- Fecha y plazo -->
+    <!-- Deadline -->
     <div class="d-section">
       <div class="d-section-header">
         <span class="d-section-icon">${fechaIcon}</span>
-        <span class="d-section-title">Plazo y fecha límite</span>
+        <span class="d-section-title">Deadline</span>
       </div>
       <div class="d-section-body">
         ${d.proxima_fecha_sugerida ? `
@@ -1453,11 +1454,11 @@ function renderConsejo(d) {
       </div>
     </div>
 
-    <!-- Documentos -->
+    <!-- Documents -->
     <div class="d-section">
       <div class="d-section-header">
         <span class="d-section-icon">📄</span>
-        <span class="d-section-title">Documentos a preparar (${(d.documentos_requeridos||[]).length})</span>
+        <span class="d-section-title">Documents to prepare (${(d.documentos_requeridos||[]).length})</span>
       </div>
       <div class="d-section-body">${docsHTML}</div>
     </div>
@@ -1467,7 +1468,7 @@ function renderConsejo(d) {
     <div class="d-section">
       <div class="d-section-header">
         <span class="d-section-icon">📚</span>
-        <span class="d-section-title">Fundamento legal</span>
+        <span class="d-section-title">Legal basis</span>
       </div>
       <div class="d-section-body">
         <div class="norma-text">${d.norma}</div>
@@ -1638,7 +1639,7 @@ async function procesarArchivo(file) {
       <div class="extract-result ${tipo}">
         <div class="extract-result-title">${titulo}</div>
         <div class="extract-chips">${chipsOk}${chipsFaltantes}</div>
-        ${faltantes.length ? '<div style="font-size:11.5px;color:var(--muted);margin-top:8px;">📝 Fecha próxima y próxima acción deben completarse manualmente</div>' : ''}
+        ${faltantes.length ? '<div style="font-size:11.5px;color:var(--muted);margin-top:8px;">📝 Next date and next action must be filled in manually</div>' : ''}
       </div>`;
 
     // Mostrar divider y form si estaban ocultos
