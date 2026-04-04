@@ -195,6 +195,17 @@ async def api_actualizar_caso(caso_id: int, data: CaseUpdate, request: Request, 
 
     return {**caso_actualizado, "_notificacion_enviada": notificacion_enviada}
 
+@router.post("/api/casos/{caso_id}/notificar")
+async def api_notificar_caso(caso_id: int, request: Request, user=Depends(require_auth)):
+    """Envía notificación WhatsApp al cliente con el estado actual del caso."""
+    caso = obtener_caso(caso_id)
+    if not caso:
+        raise HTTPException(status_code=404, detail="Caso no encontrado")
+    enviado = await enviar_notificacion_whatsapp(caso)
+    if not enviado:
+        raise HTTPException(status_code=500, detail="No se pudo enviar la notificación. Verifica WHAPI_TOKEN.")
+    return {"ok": True, "mensaje": f"Notificación enviada a {caso.get('nombre_cliente', 'cliente')}"}
+
 @router.delete("/api/casos/{caso_id}")
 def api_eliminar_caso(caso_id: int, request: Request, user=Depends(require_auth)):
     caso = obtener_caso(caso_id)
