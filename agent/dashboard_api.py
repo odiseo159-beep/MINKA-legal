@@ -1,6 +1,6 @@
 import os
 import httpx
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Request, Depends
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import Optional
@@ -13,10 +13,22 @@ from agent.cases_db import (
 )
 from agent.document_extractor import extraer_datos_documento
 from agent.legal_advisor import generar_consejo_procesal
+from agent.auth_api import get_current_user
 
 router = APIRouter()
 
 WHAPI_TOKEN = os.getenv("WHAPI_TOKEN")
+REQUIRE_AUTH = os.getenv("REQUIRE_AUTH", "true").lower() == "true"
+
+
+def require_auth(request: Request):
+    """Dependency que verifica autenticación en endpoints protegidos."""
+    if not REQUIRE_AUTH:
+        return None
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="No autorizado. Inicia sesión.")
+    return user
 WHAPI_API_URL = os.getenv("WHAPI_API_URL", "https://gate.whapi.cloud")
 
 # ─────────────────────────────────────────────
@@ -129,7 +141,7 @@ async def enviar_notificacion_whatsapp(caso: dict) -> bool:
 # ─────────────────────────────────────────────
 
 @router.get("/api/casos")
-def api_listar_casos(estado: Optional[str] = None, buscar: Optional[str] = None):
+def api_listar_casos(request: Request, estado: Optional[str] = None, buscar: Optional[str] = None, user=Depends(require_auth)):
     casos = listar_casos(filtro_estado=estado)
     if buscar:
         q = buscar.lower()
@@ -140,7 +152,7 @@ def api_listar_casos(estado: Optional[str] = None, buscar: Optional[str] = None)
     return casos
 
 @router.get("/api/casos/stats")
-def api_stats():
+def api_stats(request: Request, user=Depends(require_auth)):
     casos = listar_casos()
     total = len(casos)
     por_estado = {}
@@ -157,18 +169,18 @@ def api_stats():
     }
 
 @router.get("/api/casos/{caso_id}")
-def api_obtener_caso(caso_id: int):
+def api_obtener_caso(caso_id: int, request: Request, user=Depends(require_auth)):
     caso = obtener_caso(caso_id)
     if not caso:
         raise HTTPException(status_code=404, detail="Caso no encontrado")
     return caso
 
 @router.post("/api/casos", status_code=201)
-def api_crear_caso(data: CaseCreate):
+def api_crear_caso(data: CaseCreate, request: Request, user=Depends(require_auth)):
     return crear_caso(data.dict())
 
 @router.put("/api/casos/{caso_id}")
-async def api_actualizar_caso(caso_id: int, data: CaseUpdate):
+async def api_actualizar_caso(caso_id: int, data: CaseUpdate, request: Request, user=Depends(require_auth)):
     caso_existente = obtener_caso(caso_id)
     if not caso_existente:
         raise HTTPException(status_code=404, detail="Caso no encontrado")
@@ -184,7 +196,7 @@ async def api_actualizar_caso(caso_id: int, data: CaseUpdate):
     return {**caso_actualizado, "_notificacion_enviada": notificacion_enviada}
 
 @router.delete("/api/casos/{caso_id}")
-def api_eliminar_caso(caso_id: int):
+def api_eliminar_caso(caso_id: int, request: Request, user=Depends(require_auth)):
     caso = obtener_caso(caso_id)
     if not caso:
         raise HTTPException(status_code=404, detail="Caso no encontrado")
@@ -196,7 +208,7 @@ def api_eliminar_caso(caso_id: int):
 # ─────────────────────────────────────────────
 
 @router.post("/api/casos/extraer-documento")
-async def api_extraer_documento(archivo: UploadFile = File(...)):
+async def api_extraer_documento(archivo: UploadFile = File(...), request: Request = None, user=Depends(require_auth)):
     """
     Recibe un PDF o DOCX, extrae los datos del caso usando Claude API.
     Devuelve los campos encontrados y la lista de campos requeridos faltantes.
@@ -232,7 +244,7 @@ async def api_extraer_documento(archivo: UploadFile = File(...)):
 # ─────────────────────────────────────────────
 
 @router.get("/api/casos/{caso_id}/consejo")
-def api_consejo_procesal(caso_id: int):
+def api_consejo_procesal(caso_id: int, request: Request, user=Depends(require_auth)):
     """
     Dado un caso registrado, devuelve:
     - La siguiente etapa procesal

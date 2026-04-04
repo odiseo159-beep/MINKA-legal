@@ -21,6 +21,9 @@ from agent.memory import inicializar_db, guardar_mensaje, obtener_historial
 from agent.providers import obtener_proveedor
 from agent.cases_db import init_cases_db
 from agent.dashboard_api import router as dashboard_router
+from agent.users_db import init_users_db, usuario_existe, crear_usuario
+from agent.auth import hash_password
+from agent.auth_api import router as auth_router
 
 load_dotenv()
 
@@ -40,7 +43,19 @@ async def lifespan(app: FastAPI):
     """Inicializa las bases de datos al arrancar el servidor."""
     await inicializar_db()
     init_cases_db()
-    logger.info("Base de datos inicializada (conversaciones + casos)")
+    init_users_db()
+    # Crear usuario admin inicial si no existe
+    admin_email = os.getenv("ADMIN_EMAIL", "daniel@simplifai.pe")
+    admin_password = os.getenv("ADMIN_PASSWORD", "minka2026")
+    if not usuario_existe(admin_email):
+        crear_usuario(
+            email=admin_email,
+            password_hash=hash_password(admin_password),
+            nombre="Daniel",
+            rol="admin",
+        )
+        logger.info(f"Usuario admin creado: {admin_email}")
+    logger.info("Base de datos inicializada (conversaciones + casos + usuarios)")
     logger.info(f"Servidor Minka Legal AI corriendo en puerto {PORT}")
     logger.info(f"Proveedor de WhatsApp: {proveedor.__class__.__name__}")
     logger.info(f"Dashboard disponible en: http://localhost:{PORT}/dashboard")
@@ -61,7 +76,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Registrar rutas del dashboard (API REST + HTML)
+# Registrar rutas de auth y dashboard
+app.include_router(auth_router)
 app.include_router(dashboard_router)
 
 # Montar archivos estáticos del dashboard
