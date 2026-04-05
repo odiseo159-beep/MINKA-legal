@@ -3,13 +3,24 @@ import httpx
 from fastapi import APIRouter, HTTPException, UploadFile, File, Request, Depends
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from agent.cases_db import (
     listar_casos,
     obtener_caso,
     crear_caso,
     actualizar_caso,
     eliminar_caso,
+)
+from agent.lawyers_db import (
+    listar_abogados,
+    obtener_abogado,
+    crear_abogado,
+    actualizar_abogado,
+    eliminar_abogado,
+    listar_estudios,
+    obtener_estudio,
+    crear_estudio,
+    actualizar_estudio,
 )
 from agent.document_extractor import extraer_datos_documento
 from agent.legal_advisor import generar_consejo_procesal
@@ -270,6 +281,96 @@ def api_consejo_procesal(caso_id: int, request: Request, user=Depends(require_au
 
     consejo = generar_consejo_procesal(caso)
     return consejo
+
+# ─────────────────────────────────────────────
+# Endpoints API REST — Abogados
+# ─────────────────────────────────────────────
+
+class AbogadoCreate(BaseModel):
+    nombre: str
+    email: Optional[str] = None
+    telefono: Optional[str] = None
+    whatsapp_numero: Optional[str] = None
+    colegiatura: Optional[str] = None
+    especialidades: Optional[List[str]] = []
+    estudio_id: Optional[int] = None
+    activo: Optional[bool] = True
+
+class AbogadoUpdate(BaseModel):
+    nombre: Optional[str] = None
+    email: Optional[str] = None
+    telefono: Optional[str] = None
+    whatsapp_numero: Optional[str] = None
+    colegiatura: Optional[str] = None
+    especialidades: Optional[List[str]] = None
+    estudio_id: Optional[int] = None
+    activo: Optional[bool] = None
+
+@router.get("/api/abogados")
+def api_listar_abogados(request: Request, solo_activos: bool = False, user=Depends(require_auth)):
+    return listar_abogados(solo_activos=solo_activos)
+
+@router.post("/api/abogados", status_code=201)
+def api_crear_abogado(data: AbogadoCreate, request: Request, user=Depends(require_auth)):
+    return crear_abogado(data.dict())
+
+@router.get("/api/abogados/{abogado_id}")
+def api_obtener_abogado(abogado_id: int, request: Request, user=Depends(require_auth)):
+    abogado = obtener_abogado(abogado_id)
+    if not abogado:
+        raise HTTPException(status_code=404, detail="Abogado no encontrado")
+    return abogado
+
+@router.put("/api/abogados/{abogado_id}")
+def api_actualizar_abogado(abogado_id: int, data: AbogadoUpdate, request: Request, user=Depends(require_auth)):
+    abogado = obtener_abogado(abogado_id)
+    if not abogado:
+        raise HTTPException(status_code=404, detail="Abogado no encontrado")
+    return actualizar_abogado(abogado_id, data.dict(exclude_none=True))
+
+@router.delete("/api/abogados/{abogado_id}")
+def api_eliminar_abogado(abogado_id: int, request: Request, user=Depends(require_auth)):
+    if not obtener_abogado(abogado_id):
+        raise HTTPException(status_code=404, detail="Abogado no encontrado")
+    eliminar_abogado(abogado_id)
+    return {"ok": True, "mensaje": "Abogado desactivado"}
+
+# ─────────────────────────────────────────────
+# Endpoints API REST — Estudios Jurídicos
+# ─────────────────────────────────────────────
+
+class EstudioCreate(BaseModel):
+    nombre: str
+    ruc: Optional[str] = None
+    direccion: Optional[str] = None
+    plan: Optional[str] = "starter"
+
+class EstudioUpdate(BaseModel):
+    nombre: Optional[str] = None
+    ruc: Optional[str] = None
+    direccion: Optional[str] = None
+    plan: Optional[str] = None
+
+@router.get("/api/estudios")
+def api_listar_estudios(request: Request, user=Depends(require_auth)):
+    return listar_estudios()
+
+@router.post("/api/estudios", status_code=201)
+def api_crear_estudio(data: EstudioCreate, request: Request, user=Depends(require_auth)):
+    return crear_estudio(data.dict())
+
+@router.get("/api/estudios/{estudio_id}")
+def api_obtener_estudio(estudio_id: int, request: Request, user=Depends(require_auth)):
+    estudio = obtener_estudio(estudio_id)
+    if not estudio:
+        raise HTTPException(status_code=404, detail="Estudio no encontrado")
+    return estudio
+
+@router.put("/api/estudios/{estudio_id}")
+def api_actualizar_estudio(estudio_id: int, data: EstudioUpdate, request: Request, user=Depends(require_auth)):
+    if not obtener_estudio(estudio_id):
+        raise HTTPException(status_code=404, detail="Estudio no encontrado")
+    return actualizar_estudio(estudio_id, data.dict(exclude_none=True))
 
 # ─────────────────────────────────────────────
 # Dashboard (sirve dashboard.html)

@@ -24,6 +24,8 @@ from agent.dashboard_api import router as dashboard_router
 from agent.users_db import init_users_db, usuario_existe, crear_usuario
 from agent.auth import hash_password
 from agent.auth_api import router as auth_router
+from agent.lawyers_db import init_lawyers_db
+from agent.lawyer_commands import es_abogado, procesar_comando_abogado
 
 load_dotenv()
 
@@ -44,6 +46,7 @@ async def lifespan(app: FastAPI):
     await inicializar_db()
     init_cases_db()
     init_users_db()
+    init_lawyers_db()
     # Crear usuario admin inicial si no existe
     admin_email = os.getenv("ADMIN_EMAIL", "daniel@simplifai.pe")
     admin_password = os.getenv("ADMIN_PASSWORD", "minka2026")
@@ -123,8 +126,13 @@ async def webhook_handler(request: Request):
             # (brain.py agrega el mensaje actual, evitando duplicados)
             historial = await obtener_historial(msg.telefono)
 
-            # Generar respuesta con Claude (inyecta contexto del caso del cliente)
-            respuesta = await generar_respuesta(msg.texto, historial, msg.telefono)
+            # Si es el abogado, procesar como comando; si es cliente, usar Claude
+            if es_abogado(msg.telefono):
+                logger.info(f"[WEBHOOK] Mensaje de abogado detectado: {msg.telefono}")
+                respuesta = await procesar_comando_abogado(msg.texto, msg.telefono)
+            else:
+                # Generar respuesta con Claude (inyecta contexto del caso del cliente)
+                respuesta = await generar_respuesta(msg.texto, historial, msg.telefono)
 
             # Guardar mensaje del usuario Y respuesta del agente en memoria
             await guardar_mensaje(msg.telefono, "user", msg.texto)
