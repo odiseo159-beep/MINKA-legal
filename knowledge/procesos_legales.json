@@ -743,6 +743,1331 @@
           "notas": ""
         }
       ]
+    },
+    "penal_robo": {
+      "nombre": "Proceso Penal por Robo Agravado",
+      "norma_base": "Art. 189 Código Penal; D.Leg. 957 — Código Procesal Penal",
+      "normas_complementarias": [
+        "Art. 188 CP (Robo Simple)",
+        "D.Leg. 1194 (Proceso Inmediato)",
+        "D.Leg. 1298 (medidas coercitivas)"
+      ],
+      "etapas": [
+        {
+          "id": "denuncia_robo",
+          "etapa": "Denuncia policial o fiscal",
+          "descripcion": "La víctima o cualquier persona presenta denuncia ante la comisaría PNP o directamente ante la Fiscalía Penal. El policía o fiscal recibe la denuncia y verifica los hechos iniciales. Se puede acompañar de certificado médico si hubo violencia física. La PNP tiene obligación de recibirla inmediatamente sin excusas.",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "DNI de la víctima o denunciante",
+            "Denuncia escrita o verbal (se asienta en acta)",
+            "Certificado médico legal si hubo lesiones",
+            "Fotos o videos del incidente (si los hay)",
+            "Lista de bienes sustraídos con valores aproximados",
+            "Datos o descripción del imputado (si se conoce)"
+          ],
+          "norma": "Art. 326 CPP; Art. 67 CPP (función policial); Art. 189 CP",
+          "etapa_siguiente": "diligencias_preliminares_robo",
+          "notas": "Si el imputado es capturado en flagrancia, la PNP puede detenerlo hasta 24h (48h en casos de crimen organizado). Informar al fiscal inmediatamente de la detención."
+        },
+        {
+          "id": "diligencias_preliminares_robo",
+          "etapa": "Diligencias preliminares",
+          "descripcion": "El fiscal dirige las diligencias preliminares para reunir los elementos de convicción necesarios. La PNP actúa bajo conducción del fiscal. Se realizan: declaración de la víctima, declaración de testigos, inspección del lugar de los hechos, reconocimiento del imputado (rueda de personas o álbum fotográfico), peritajes (balístico, dactilar, valorización de bienes). El fiscal puede ampliar el plazo si la complejidad lo requiere.",
+          "plazo_dias": 60,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "Acta de declaración de la víctima",
+            "Actas de declaración de testigos",
+            "Acta de inspección ocular",
+            "Informe policial",
+            "Certificado médico legal (si hubo violencia)",
+            "Acta de reconocimiento del imputado",
+            "Peritaje de valorización de bienes"
+          ],
+          "norma": "Arts. 330-333 CPP; Art. 67-68 CPP",
+          "etapa_siguiente": "formalizacion_investigacion_robo",
+          "notas": "El plazo es de 60 días calendario, ampliable hasta 120 días por el fiscal si la investigación es compleja. Si hay detenido, el fiscal debe decidir en 24h si formaliza o libera."
+        },
+        {
+          "id": "formalizacion_investigacion_robo",
+          "etapa": "Formalización y continuación de la investigación preparatoria",
+          "descripcion": "El fiscal emite Disposición de Formalización y Continuación de la Investigación Preparatoria, comunicándola al juez de investigación preparatoria. A partir de este momento la investigación es formal. El juez puede dictar medidas coercitivas (detención preventiva, comparecencia con restricciones, impedimento de salida). El imputado adquiere todos sus derechos procesales.",
+          "plazo_dias": 120,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "Disposición de formalización del fiscal",
+            "Solicitud de prisión preventiva (si procede)",
+            "Requerimiento de medidas coercitivas",
+            "Actuados de diligencias preliminares"
+          ],
+          "norma": "Arts. 336-342 CPP; Arts. 268-271 CPP (prisión preventiva)",
+          "etapa_siguiente": "etapa_intermedia_robo",
+          "notas": "El robo agravado (Art. 189 CP) tiene pena de 12 a 20 años. Si concurren más agravantes (banda, noche, armas, menor de edad) puede llegar a cadena perpetua. Esto facilita requerir prisión preventiva dado el peligro de fuga."
+        },
+        {
+          "id": "etapa_intermedia_robo",
+          "etapa": "Etapa intermedia — acusación fiscal",
+          "descripcion": "Concluida la investigación preparatoria, el fiscal formula acusación escrita ante el juez de investigación preparatoria. La defensa puede deducir excepciones, cuestiones previas, o solicitar el sobreseimiento. Se realiza la audiencia preliminar donde el juez decide si eleva la causa a juicio oral o la sobresee. El juez de investigación preparatoria emite el auto de enjuiciamiento.",
+          "plazo_dias": 30,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Acusación escrita del fiscal",
+            "Ofrecimiento de medios probatorios para juicio",
+            "Deducción de excepciones (si corresponde)",
+            "Lista de testigos y peritos para juicio"
+          ],
+          "norma": "Arts. 344-355 CPP",
+          "etapa_siguiente": "juicio_oral_robo",
+          "notas": "El imputado puede acogerse a conclusión anticipada del juicio (Art. 372 CPP) aceptando los cargos para obtener reducción de pena de 1/7. Evaluar si conviene negociar con el fiscal antes del juicio oral."
+        },
+        {
+          "id": "juicio_oral_robo",
+          "etapa": "Juicio oral",
+          "descripcion": "El juicio oral se celebra ante el juzgado unipersonal (si la pena no supera 6 años) o colegiado (si supera 6 años — en robo agravado siempre es colegiado). Se desarrolla en audiencias públicas y orales. Se actúan los medios probatorios: declaraciones de testigos, víctima, peritos, oralización de documentos. Los abogados realizan los alegatos de apertura y clausura.",
+          "plazo_dias": 30,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Expediente judicial completo",
+            "Medios probatorios admitidos",
+            "Alegatos escritos (opcional, se exponen oralmente)"
+          ],
+          "norma": "Arts. 356-392 CPP; Art. 28.2 CPP (juzgado colegiado)",
+          "etapa_siguiente": "sentencia_robo",
+          "notas": "El juicio oral es público y oral. La víctima puede constituirse como actor civil para reclamar reparación civil. El Ministerio Público también solicita reparación civil en la acusación."
+        },
+        {
+          "id": "sentencia_robo",
+          "etapa": "Sentencia",
+          "descripcion": "El juzgado colegiado delibera y emite sentencia (condenatoria o absolutoria). En sentencia condenatoria se determina la pena privativa de libertad (12 a 20 años para robo agravado, pudiendo llegar a cadena perpetua), la reparación civil a favor de la víctima, y las consecuencias accesorias. La sentencia se lee en audiencia pública.",
+          "plazo_dias": 2,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 393-402 CPP; Art. 189 CP",
+          "etapa_siguiente": "apelacion_sentencia_robo",
+          "notas": "El plazo para apelar es de 5 días hábiles desde la lectura de sentencia. En caso de sentencia absolutoria, el fiscal también puede apelar. La reparación civil se puede ejecutar en vía civil aunque prescriba la acción penal."
+        },
+        {
+          "id": "apelacion_sentencia_robo",
+          "etapa": "Recurso de apelación",
+          "descripcion": "La parte agraviada (defensa o fiscal) puede interponer recurso de apelación ante la Sala Penal de Apelaciones. La Sala realiza audiencia de apelación, donde puede actuar nueva prueba si fue denegada o no existía antes. La Sala puede confirmar, revocar o modificar la sentencia de primera instancia.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de apelación fundamentado",
+            "Copias del expediente para la Sala"
+          ],
+          "norma": "Arts. 416-432 CPP",
+          "etapa_siguiente": "ejecucion_sentencia_robo",
+          "notas": "Contra la sentencia de la Sala Penal de Apelaciones cabe recurso de casación ante la Sala Penal de la Corte Suprema, solo si se alegan causales específicas (Art. 429 CPP)."
+        },
+        {
+          "id": "ejecucion_sentencia_robo",
+          "etapa": "Ejecución de sentencia",
+          "descripcion": "Consentida o ejecutoriada la sentencia condenatoria, el juez de investigación preparatoria (en su función de juez de ejecución) dispone su cumplimiento. Se comunica al INPE para el internamiento del sentenciado. Se fija la reparación civil y se ejecuta en vía civil si no es pagada voluntariamente. El sentenciado puede solicitar beneficios penitenciarios (semilibertad, liberación condicional) según los plazos del Código de Ejecución Penal.",
+          "plazo_dias": null,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Copia certificada de sentencia consentida",
+            "Oficio al INPE para internamiento",
+            "Mandato de comparendo o detención"
+          ],
+          "norma": "Arts. 488-499 CPP; D.Leg. 654 (Código de Ejecución Penal)",
+          "etapa_siguiente": null,
+          "notas": "Para robo agravado, los beneficios penitenciarios (semilibertad y liberación condicional) están excluidos salvo excepciones. Verificar si el delito está en el listado del Art. 50 del CEP que excluye beneficios."
+        }
+      ]
+    },
+    "penal_hurto": {
+      "nombre": "Proceso Penal por Hurto Simple o Agravado",
+      "norma_base": "Arts. 185-186 Código Penal; D.Leg. 957 — Código Procesal Penal",
+      "normas_complementarias": [
+        "D.Leg. 1194 (Proceso Inmediato)",
+        "Ley N° 30076 (agravantes)",
+        "RMV vigente (para determinar si es delito o falta)"
+      ],
+      "etapas": [
+        {
+          "id": "denuncia_hurto",
+          "etapa": "Denuncia y determinación de cuantía",
+          "descripcion": "La víctima denuncia el hurto ante la PNP o el fiscal. IMPORTANTE: Para que sea delito de hurto (y no falta), el valor del bien sustraído debe superar 1 Remuneración Mínima Vital (RMV). Si el valor es igual o inferior a 1 RMV, es falta contra el patrimonio (Art. 444 CP) y se tramita ante el Juzgado de Paz Letrado. Se debe acreditar el valor del bien con boletas, facturas, peritaje o declaración jurada.",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "DNI del denunciante",
+            "Denuncia escrita o verbal",
+            "Acreditación del valor del bien (boleta, factura, cotización)",
+            "Descripción detallada del bien sustraído",
+            "Lista de testigos o videos de seguridad",
+            "Datos del imputado (si se conoce)"
+          ],
+          "norma": "Art. 185 CP (hurto simple); Art. 186 CP (hurto agravado); Art. 444 CP (falta)",
+          "etapa_siguiente": "diligencias_preliminares_hurto",
+          "notas": "RMV vigente: verificar el valor actual. Si el bien vale más de 1 RMV es delito (pena 1-3 años hurto simple; 3-6 años hurto agravado). El hurto agravado concurre cuando hay: nocturnidad, destreza, escalamiento, banda, entre otros."
+        },
+        {
+          "id": "diligencias_preliminares_hurto",
+          "etapa": "Diligencias preliminares",
+          "descripcion": "El fiscal dirige las diligencias para reunir elementos de convicción. Se recaban declaraciones de la víctima y testigos, se solicitan videos de cámaras de seguridad, se realizan inspecciones y peritajes. Si hay imputado identificado y detenido en flagrancia, el fiscal evalúa si aplica proceso inmediato (D.Leg. 1194).",
+          "plazo_dias": 60,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "Acta de declaración de la víctima",
+            "Acta de declaración de testigos",
+            "Informe policial",
+            "Acta de visualización de videos",
+            "Peritaje de valorización del bien"
+          ],
+          "norma": "Arts. 330-333 CPP",
+          "etapa_siguiente": "formalizacion_investigacion_hurto",
+          "notas": "Si el imputado es capturado en flagrancia o confesó el delito, el fiscal puede incoar proceso inmediato (D.Leg. 1194), saltándose la investigación preparatoria formal e iniciando juicio inmediato. Esto acorta el proceso significativamente."
+        },
+        {
+          "id": "formalizacion_investigacion_hurto",
+          "etapa": "Formalización de la investigación preparatoria",
+          "descripcion": "El fiscal emite la Disposición de Formalización y Continuación de la Investigación Preparatoria y la comunica al juez de investigación preparatoria. Se puede solicitar medidas coercitivas (comparecencia simple o con restricciones, dado que para hurto simple la pena es baja y difícilmente procede prisión preventiva).",
+          "plazo_dias": 120,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "Disposición de formalización",
+            "Solicitud de comparecencia con restricciones (si corresponde)"
+          ],
+          "norma": "Arts. 336-342 CPP; Art. 287 CPP (comparecencia con restricciones)",
+          "etapa_siguiente": "etapa_intermedia_hurto",
+          "notas": "Para hurto simple (pena 1-3 años) es muy difícil obtener prisión preventiva pues no se cumple el presupuesto de pena superior a 4 años. Se solicita comparecencia con restricciones (impedimento de salida, presentación periódica, arraigo)."
+        },
+        {
+          "id": "etapa_intermedia_hurto",
+          "etapa": "Etapa intermedia",
+          "descripcion": "El fiscal formula acusación escrita. La defensa puede deducir excepciones (prescripción de la acción penal, si la pena mínima es baja y han pasado los plazos) o cuestiones previas. Se realiza audiencia preliminar. El juez dicta auto de enjuiciamiento si hay mérito.",
+          "plazo_dias": 20,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Acusación fiscal escrita",
+            "Ofrecimiento de medios probatorios",
+            "Excepciones o cuestiones previas (si aplica)"
+          ],
+          "norma": "Arts. 344-355 CPP",
+          "etapa_siguiente": "juicio_oral_hurto",
+          "notas": "La prescripción de la acción penal para hurto simple (pena máx. 3 años) es de 3 años ordinaria y 4.5 años extraordinaria. Verificar siempre si el delito prescribió antes de continuar."
+        },
+        {
+          "id": "juicio_oral_hurto",
+          "etapa": "Juicio oral (Juzgado Unipersonal)",
+          "descripcion": "El juicio oral se lleva ante el juzgado unipersonal pues la pena no supera los 6 años (salvo hurto agravado con pena máx. de 6 años, que podría ser colegiado). Se actúan los medios probatorios, se escuchan los alegatos y el juez sentencia. El imputado puede acogerse a conclusión anticipada.",
+          "plazo_dias": 15,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Medios probatorios admitidos",
+            "Alegatos de apertura y clausura"
+          ],
+          "norma": "Arts. 356-392 CPP; Art. 28.1 CPP (juzgado unipersonal)",
+          "etapa_siguiente": "sentencia_hurto",
+          "notas": "Para hurto simple, el juicio suele ser más breve. Evaluar si el imputado acepta conclusión anticipada para reducir pena. La reparación civil debe incluir el valor del bien más daños y perjuicios."
+        },
+        {
+          "id": "sentencia_hurto",
+          "etapa": "Sentencia y posible suspensión de la pena",
+          "descripcion": "El juez emite sentencia. Para hurto simple, si la pena no supera 4 años de privación de libertad, el juez puede suspender la ejecución de la pena (pena suspendida) con reglas de conducta. Esto es muy común en hurtos simples de primera vez. En hurto agravado la pena es más severa y puede ser efectiva.",
+          "plazo_dias": 2,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 393-402 CPP; Art. 57 CP (suspensión de la pena); Arts. 185-186 CP",
+          "etapa_siguiente": "apelacion_sentencia_hurto",
+          "notas": "La suspensión de la pena (Art. 57 CP) procede cuando: pena no supera 4 años, el agente no tiene condena anterior por delito doloso, y el juez considera que la suspensión es suficiente. El período de prueba es 1 a 3 años."
+        },
+        {
+          "id": "apelacion_sentencia_hurto",
+          "etapa": "Recurso de apelación (si se interpone)",
+          "descripcion": "Cualquiera de las partes puede apelar la sentencia dentro de los 5 días hábiles. La Sala Penal de Apelaciones revisa el caso y puede confirmar, revocar o modificar la sentencia. En casos de hurto simple donde se impuso pena suspendida, la apelación suele versar sobre el monto de la reparación civil.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de apelación fundamentado"
+          ],
+          "norma": "Arts. 416-432 CPP",
+          "etapa_siguiente": null,
+          "notas": "Si no se apela, la sentencia queda consentida y ejecutoriada a los 5 días hábiles. La reparación civil puede ejecutarse en vía civil aunque la pena sea suspendida."
+        }
+      ]
+    },
+    "penal_apropiacion": {
+      "nombre": "Proceso Penal por Apropiación Ilícita",
+      "norma_base": "Art. 190 Código Penal; D.Leg. 957 — Código Procesal Penal",
+      "normas_complementarias": [
+        "Arts. 191-192 CP (apropiaciones especiales)",
+        "Código Civil (contrato de depósito, comisión, administración)"
+      ],
+      "etapas": [
+        {
+          "id": "denuncia_apropiacion",
+          "etapa": "Denuncia por apropiación ilícita",
+          "descripcion": "La víctima denuncia que entregó un bien mueble al imputado en calidad de depósito, comisión, administración u otro título que genere obligación de devolución, y que el imputado se niega a devolverlo o lo usa en su beneficio. Es fundamental acreditar el título por el que se entregó el bien (que NO sea traslaticio de dominio — si hay compraventa no hay apropiación ilícita). Se puede denunciar ante la PNP o el fiscal.",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "DNI del denunciante",
+            "Contrato de depósito, comodato, comisión o poder de administración",
+            "Cartas o correos electrónicos solicitando la devolución",
+            "Carta notarial de requerimiento de devolución (muy recomendable)",
+            "Prueba del valor del bien (boleta, factura, tasación)",
+            "Cualquier comunicación con el imputado sobre el bien"
+          ],
+          "norma": "Art. 190 CP; Arts. 1814 y ss. CC (depósito); Arts. 237 y ss. Ley General de Sociedades",
+          "etapa_siguiente": "diligencias_preliminares_apropiacion",
+          "notas": "ELEMENTO CLAVE: El bien debe haberse entregado por título no traslativo de dominio (depósito, comodato, comisión, administración). Si hubo compraventa o préstamo de dinero (no de bien específico), no hay apropiación ilícita sino incumplimiento civil. La carta notarial de requerimiento previo es muy importante para demostrar la negativa a devolver."
+        },
+        {
+          "id": "diligencias_preliminares_apropiacion",
+          "etapa": "Diligencias preliminares",
+          "descripcion": "El fiscal dirige las diligencias para acreditar: (1) la entrega del bien por título no traslativo, (2) la negativa a devolver o el uso indebido del bien, (3) el elemento subjetivo (dolo). Se toman declaraciones, se solicitan documentos contractuales, estados de cuenta, y se practica un peritaje de valorización del bien. Si el bien fue vendido a terceros, se investiga la cadena de transferencia.",
+          "plazo_dias": 60,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "Acta de declaración de la víctima",
+            "Declaración del imputado (si acepta declarar)",
+            "Actas de declaración de testigos",
+            "Informe policial",
+            "Peritaje contable (si hay rendición de cuentas pendiente)"
+          ],
+          "norma": "Arts. 330-333 CPP",
+          "etapa_siguiente": "formalizacion_investigacion_apropiacion",
+          "notas": "Muchas veces el imputado alega que hubo un acuerdo de compraventa o que ya pagó. El fiscal debe analizar cuidadosamente el tipo de relación jurídica previa. Solicitar toda la documentación contractual y bancaria."
+        },
+        {
+          "id": "formalizacion_investigacion_apropiacion",
+          "etapa": "Formalización de la investigación preparatoria",
+          "descripcion": "El fiscal formaliza la investigación si estima que hay elementos suficientes para imputar el delito de apropiación ilícita. La pena es de 2 a 4 años (simple) o hasta 6 años si es en ejercicio de profesión o administración de bienes ajenos. Se evalúa si procede medida coercitiva.",
+          "plazo_dias": 120,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "Disposición de formalización",
+            "Solicitud de comparecencia con restricciones o embargos preventivos"
+          ],
+          "norma": "Arts. 336-342 CPP; Art. 190 CP",
+          "etapa_siguiente": "etapa_intermedia_apropiacion",
+          "notas": "Para la apropiación ilícita agravada (Art. 190 último párrafo), si el bien tiene valor superior o el imputado actuó en calidad de tutor, curador o administrador, la pena puede llegar a 6 años. Puede solicitarse embargo preventivo de bienes del imputado para garantizar la reparación civil."
+        },
+        {
+          "id": "etapa_intermedia_apropiacion",
+          "etapa": "Etapa intermedia",
+          "descripcion": "El fiscal acusa formalmente. La defensa puede argumentar atipicidad (ausencia del título no traslativo) o prescripción. El juez evalúa el auto de enjuiciamiento.",
+          "plazo_dias": 20,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Acusación fiscal",
+            "Medios probatorios para juicio",
+            "Excepciones o medios de defensa técnica"
+          ],
+          "norma": "Arts. 344-355 CPP",
+          "etapa_siguiente": "juicio_oral_apropiacion",
+          "notas": "La prescripción ordinaria para el delito base (pena máx. 4 años) es de 4 años; extraordinaria 6 años. Para la forma agravada (máx. 6 años): prescripción ordinaria 6 años."
+        },
+        {
+          "id": "juicio_oral_apropiacion",
+          "etapa": "Juicio oral",
+          "descripcion": "Juicio oral ante juzgado unipersonal. Se actúan los medios probatorios, especialmente los documentales (contratos, cartas, correos). Se interroga a la víctima, imputado y testigos. Los peritos exponen sus conclusiones. La controversia principal suele ser el tipo de relación jurídica que existió entre las partes.",
+          "plazo_dias": 15,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Medios probatorios admitidos",
+            "Contratos y documentos",
+            "Informe pericial"
+          ],
+          "norma": "Arts. 356-392 CPP",
+          "etapa_siguiente": "sentencia_apropiacion",
+          "notas": "El imputado puede ofrecer devolver el bien o su valor económico antes o durante el juicio. Esto puede ser tomado en cuenta como atenuante pero no extingue la responsabilidad penal (a diferencia de algunos delitos)."
+        },
+        {
+          "id": "sentencia_apropiacion",
+          "etapa": "Sentencia",
+          "descripcion": "El juez emite sentencia condenatoria o absolutoria. En condena, la pena es de 2 a 4 años (básica) o hasta 6 años (agravada). Es común la pena suspendida para casos de primera vez con valor moderado. La reparación civil incluye la devolución del bien o su valor más intereses y daños.",
+          "plazo_dias": 2,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 393-402 CPP; Art. 190 CP; Art. 57 CP",
+          "etapa_siguiente": null,
+          "notas": "Si el imputado devuelve el bien durante el proceso, puede solicitar atenuación de la pena por reparación del daño. La víctima puede solicitar ejecución de la reparación civil en vía civil si el condenado no cumple."
+        }
+      ]
+    },
+    "penal_omision_familiar": {
+      "nombre": "Proceso Penal por Omisión de Asistencia Familiar",
+      "norma_base": "Art. 149 Código Penal; D.Leg. 957 — Código Procesal Penal",
+      "normas_complementarias": [
+        "Ley N° 28970 (Registro de Deudores Alimentarios Morosos — REDAM)",
+        "D.Leg. 1194 (Proceso Inmediato)",
+        "Código Civil Arts. 472-487 (alimentos)",
+        "Código de los Niños y Adolescentes Arts. 92-97"
+      ],
+      "etapas": [
+        {
+          "id": "requisito_previo_sentencia_civil",
+          "etapa": "Requisito previo: sentencia civil firme de alimentos",
+          "descripcion": "Para iniciar el proceso penal por omisión de asistencia familiar, es INDISPENSABLE contar con una resolución judicial firme que establezca la obligación alimentaria (sentencia o auto de alimentos). También se requiere la liquidación de pensiones devengadas aprobada por el juzgado de familia o paz letrado, que certifica el monto exacto adeudado. Sin estos documentos, no procede la denuncia penal.",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Copia certificada de sentencia o auto de alimentos (firme)",
+            "Liquidación de pensiones devengadas aprobada judicialmente",
+            "Resolución que aprueba la liquidación",
+            "Constancia de notificación de la liquidación al obligado",
+            "Acta de requerimiento de pago al obligado"
+          ],
+          "norma": "Art. 149 CP; Arts. 472 y ss. CC; Arts. 560-572 CPC",
+          "etapa_siguiente": "denuncia_omision_familiar",
+          "notas": "La liquidación de devengados debe estar previamente aprobada por el juzgado civil/familia. El juez penal NO puede calcular ni aprobar montos de alimentos — eso es competencia del juzgado civil. Tener el requerimiento de pago es esencial para demostrar que el obligado conocía su deuda y se negó a pagar."
+        },
+        {
+          "id": "denuncia_omision_familiar",
+          "etapa": "Denuncia penal por omisión de asistencia familiar",
+          "descripcion": "Con la sentencia firme de alimentos y la liquidación aprobada, se presenta denuncia penal ante la fiscalía penal de turno. El delito se configura cuando el obligado, habiendo sido notificado de la liquidación y requerido de pago, no cumple con abonar las pensiones devengadas. El fiscal puede incoar proceso inmediato dado que el delito suele ser flagrante o evidente.",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Sentencia de alimentos (copia certificada)",
+            "Liquidación de devengados aprobada (copia certificada)",
+            "Resolución aprobatoria de la liquidación",
+            "Cédula de notificación al demandado de la liquidación",
+            "Acta de requerimiento de pago",
+            "DNI de la denunciante y del beneficiario"
+          ],
+          "norma": "Art. 149 CP; D.Leg. 1194 (proceso inmediato)",
+          "etapa_siguiente": "proceso_inmediato_omision",
+          "notas": "El proceso inmediato (D.Leg. 1194) aplica cuando el imputado ha sido identificado y el delito es evidente (hay sentencia de alimentos y liquidación aprobada). El fiscal DEBE incoar proceso inmediato si concurren los presupuestos. Esto agiliza enormemente el proceso."
+        },
+        {
+          "id": "proceso_inmediato_omision",
+          "etapa": "Incoación de proceso inmediato",
+          "descripcion": "El fiscal presenta requerimiento de proceso inmediato al juez de investigación preparatoria dentro de los 3 días de la detención (si hay detenido) o cuando corresponda. El juez realiza audiencia única de proceso inmediato para evaluar la procedencia. Si se declara procedente, el fiscal formula acusación directamente y el caso pasa al juzgado penal unipersonal para juicio.",
+          "plazo_dias": 3,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Requerimiento de proceso inmediato",
+            "Toda la documentación del proceso civil de alimentos",
+            "Acusación fiscal directa"
+          ],
+          "norma": "D.Leg. 1194; Art. 447 CPP",
+          "etapa_siguiente": "audiencia_unica_juicio_omision",
+          "notas": "En el proceso inmediato por OAF, el juez unipersonal realiza la audiencia única de juicio inmediato. El imputado puede: (1) pagar el íntegro de lo adeudado y se archiva, (2) celebrar acuerdo de pago (principio de oportunidad), (3) ir a juicio. El pago extingue la acción penal."
+        },
+        {
+          "id": "audiencia_unica_juicio_omision",
+          "etapa": "Audiencia única de juicio inmediato",
+          "descripcion": "El juzgado penal unipersonal recibe la acusación y dentro de las 72 horas realiza la audiencia única de juicio inmediato. Se puede aplicar principio de oportunidad si el imputado paga o acuerda pagar. Si no hay acuerdo, se actúan los medios de prueba (documentos del proceso civil) y se sentencia en la misma audiencia o dentro de las 48 horas.",
+          "plazo_dias": 3,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "Documentación del proceso civil de alimentos",
+            "Comprobantes de pago (si el obligado paga)",
+            "Acuerdo reparatorio (si hay)"
+          ],
+          "norma": "Art. 448 CPP; Art. 2 CPP (principio de oportunidad)",
+          "etapa_siguiente": "sentencia_omision_familiar",
+          "notas": "Si el obligado paga ANTES de la sentencia, se puede aplicar principio de oportunidad o acuerdo reparatorio y el proceso se archiva. Si paga durante la audiencia, el juez puede aplicar la reserva del fallo condenatorio (Art. 62 CP) o suspender la pena con regla de conducta de pago continuo."
+        },
+        {
+          "id": "sentencia_omision_familiar",
+          "etapa": "Sentencia condenatoria",
+          "descripcion": "Si el obligado no paga ni llega a acuerdo, el juez emite sentencia condenatoria. La pena es de 1 a 3 años (básica) o 3 a 6 años si la víctima es menor de 3 años, tiene discapacidad grave, o el agente simula indigencia. Es muy común la pena suspendida con regla de conducta de pago puntual de pensiones futuras y devengadas en cuotas.",
+          "plazo_dias": 2,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Art. 149 CP; Arts. 57-61 CP (suspensión de pena); Art. 62 CP (reserva del fallo)",
+          "etapa_siguiente": "ejecucion_pago_omision",
+          "notas": "En la sentencia suspendida, la regla de conducta principal es pagar las pensiones devengadas (las del proceso penal) y las futuras puntualmente. Si incumple, se revoca la suspensión y se cumple la pena efectiva. Esto es un poderoso incentivo para el obligado."
+        },
+        {
+          "id": "ejecucion_pago_omision",
+          "etapa": "Ejecución y seguimiento del pago",
+          "descripcion": "Durante el período de prueba (suspensión de pena), el juez penal controla el cumplimiento de las reglas de conducta. Si el obligado no paga, el beneficiario solicita la revocación de la suspensión. El juzgado requiere al condenado y si persiste el incumplimiento, revoca la suspensión y ordena el cumplimiento de la pena efectiva. Las pensiones futuras siguen tramitándose en el juzgado civil.",
+          "plazo_dias": null,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Informe de incumplimiento (si aplica)",
+            "Solicitud de revocación de pena suspendida",
+            "Comprobantes de pago (si cumple)"
+          ],
+          "norma": "Arts. 59-61 CP; Art. 149 CP; Ley 28970 (REDAM)",
+          "etapa_siguiente": null,
+          "notas": "El condenado puede ser inscrito en el REDAM (Registro de Deudores Alimentarios Morosos) lo que le impide obtener préstamos, trabajar en el Estado y realizar trámites. Solicitar la inscripción al REDAM como medida de presión adicional."
+        }
+      ]
+    },
+    "penal_lesiones": {
+      "nombre": "Proceso Penal por Lesiones Graves o Leves",
+      "norma_base": "Arts. 121-122 Código Penal; D.Leg. 957 — Código Procesal Penal",
+      "normas_complementarias": [
+        "Arts. 121-A, 121-B, 122-B CP (lesiones agravadas)",
+        "Ley 30364 (si la lesión es en contexto de violencia familiar)",
+        "Reglamento del CML del IML"
+      ],
+      "etapas": [
+        {
+          "id": "denuncia_lesiones",
+          "etapa": "Denuncia y certificado médico legal",
+          "descripcion": "La víctima denuncia ante la PNP o fiscalía. El paso CRUCIAL es obtener el Certificado Médico Legal (CML) del Instituto de Medicina Legal (IML) o del médico legista de guardia, que determina el número de días de incapacidad médico-legal e incapacidad laboral. Este certificado es el elemento probatorio central que define si las lesiones son GRAVES (más de 30 días de incapacidad o daño grave en órganos) o LEVES (10 a 30 días de incapacidad).",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "DNI de la víctima",
+            "Certificado Médico Legal del IML (OBLIGATORIO)",
+            "Historia clínica del hospital o clínica (si fue atendida)",
+            "Fotos de las lesiones",
+            "Denuncia escrita o verbal ante PNP",
+            "Datos del agresor"
+          ],
+          "norma": "Art. 121 CP (lesiones graves: más de 30 días incapacidad); Art. 122 CP (lesiones leves: 10-30 días); Art. 441 CP (lesiones culposas leves — falta si menos de 10 días)",
+          "etapa_siguiente": "diligencias_preliminares_lesiones",
+          "notas": "IMPORTANTE: El CML debe obtenerse LO ANTES POSIBLE, pues las lesiones externas (hematomas, equimosis) desaparecen con el tiempo. Si la víctima fue a un hospital, solicitar también la historia clínica. Si la incapacidad es menos de 10 días, es FALTA (no delito) y se tramita en Juzgado de Paz Letrado."
+        },
+        {
+          "id": "diligencias_preliminares_lesiones",
+          "etapa": "Diligencias preliminares",
+          "descripcion": "El fiscal dirige las diligencias. Se recaban declaraciones de la víctima, testigos, y del imputado si acepta declarar. Se solicita el CML definitivo al IML (el inicial puede ser provisional). Se recaban videos de cámaras de seguridad, se hace inspección ocular si corresponde. Si hay contexto de violencia familiar, se aplica Ley 30364 en paralelo.",
+          "plazo_dias": 60,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "CML definitivo del IML",
+            "Declaración de la víctima",
+            "Declaración de testigos",
+            "Informe policial",
+            "Videos o fotos del lugar",
+            "Historia clínica completa"
+          ],
+          "norma": "Arts. 330-333 CPP",
+          "etapa_siguiente": "formalizacion_investigacion_lesiones",
+          "notas": "Para lesiones graves (Art. 121 CP), la pena es de 3 a 8 años (hasta 10 años si son agravadas). Para lesiones leves (Art. 122 CP), la pena es de 2 a 3 años. Las lesiones agravadas en contexto de violencia familiar (Arts. 121-B, 122-B CP) tienen penas mayores."
+        },
+        {
+          "id": "formalizacion_investigacion_lesiones",
+          "etapa": "Formalización de la investigación preparatoria",
+          "descripcion": "El fiscal formaliza la investigación determinando si las lesiones son graves o leves según el CML. Dependiendo de la gravedad y el contexto, solicita medidas coercitivas. Para lesiones graves, puede solicitarse prisión preventiva. Para lesiones leves, se solicita comparecencia con restricciones.",
+          "plazo_dias": 120,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "Disposición de formalización",
+            "CML definitivo",
+            "Solicitud de medida coercitiva"
+          ],
+          "norma": "Arts. 336-342 CPP; Arts. 268-271 CPP (prisión preventiva)",
+          "etapa_siguiente": "etapa_intermedia_lesiones",
+          "notas": "Si el caso involucra violencia familiar (agresor es pareja, ex pareja, familiar), el proceso penal por lesiones se puede tramitar en paralelo con el proceso de medidas de protección de la Ley 30364."
+        },
+        {
+          "id": "etapa_intermedia_lesiones",
+          "etapa": "Etapa intermedia",
+          "descripcion": "El fiscal formula acusación. La defensa puede cuestionar la calificación (grave vs. leve) basándose en el CML, o la responsabilidad del imputado. El juez dicta auto de enjuiciamiento.",
+          "plazo_dias": 20,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Acusación fiscal",
+            "Medios probatorios ofrecidos",
+            "Cuestionamientos de la defensa"
+          ],
+          "norma": "Arts. 344-355 CPP",
+          "etapa_siguiente": "juicio_oral_lesiones",
+          "notas": "La calificación entre lesiones graves y leves es central. El médico legista puede ser convocado como perito al juicio oral para ratificar y explicar el CML. La defensa puede ofrecer un contrapericial médico."
+        },
+        {
+          "id": "juicio_oral_lesiones",
+          "etapa": "Juicio oral",
+          "descripcion": "Juicio oral ante juzgado unipersonal (lesiones leves) o colegiado (lesiones graves con pena mayor a 6 años). Se actúan los medios probatorios: CML, historia clínica, testimonios. El médico legista es un testigo clave. Se debaten la causalidad y la gravedad de las lesiones.",
+          "plazo_dias": 15,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Medios probatorios admitidos",
+            "Informe pericial médico-legal"
+          ],
+          "norma": "Arts. 356-392 CPP",
+          "etapa_siguiente": "sentencia_lesiones",
+          "notas": "El imputado puede acogerse a conclusión anticipada para reducir la pena. La víctima puede constituirse como actor civil para obtener reparación civil (gastos médicos, tratamiento psicológico, daño moral, lucro cesante por días de trabajo perdidos)."
+        },
+        {
+          "id": "sentencia_lesiones",
+          "etapa": "Sentencia",
+          "descripcion": "El juez emite sentencia determinando la pena y la reparación civil. Para lesiones leves (Art. 122 CP): pena de 2 a 3 años, frecuentemente suspendida. Para lesiones graves (Art. 121 CP): 3 a 8 años (puede ser efectiva). La reparación civil debe cubrir gastos médicos, tratamiento, daño moral y lucro cesante.",
+          "plazo_dias": 2,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 393-402 CPP; Arts. 121-122 CP; Art. 93 CP (reparación civil)",
+          "etapa_siguiente": null,
+          "notas": "La reparación civil puede incluir: gastos médicos documentados, tratamiento psicológico futuro, daño moral (prudencial), lucro cesante (días que no pudo trabajar). Presentar todas las facturas y boletas de gastos médicos."
+        }
+      ]
+    },
+    "penal_violencia_familiar": {
+      "nombre": "Proceso por Violencia Familiar (Ley 30364)",
+      "norma_base": "Ley N° 30364 — Ley para Prevenir, Sancionar y Erradicar la Violencia contra la Mujer e Integrantes del Grupo Familiar",
+      "normas_complementarias": [
+        "D.S. N° 009-2016-MIMP (Reglamento de la Ley 30364)",
+        "D.Leg. 1386 (modificaciones Ley 30364)",
+        "Arts. 121-B, 122-B, 149-A CP (tipos penales especiales)",
+        "Código Procesal Penal (proceso penal paralelo)"
+      ],
+      "etapas": [
+        {
+          "id": "denuncia_violencia_familiar",
+          "etapa": "Denuncia urgente y medidas de protección",
+          "descripcion": "La víctima o cualquier persona puede denunciar ante la PNP, Fiscalía o Juzgado de Familia. La denuncia activa inmediatamente el protocolo de protección. La PNP DEBE recibir la denuncia sin excusas, elaborar el Informe Policial de Riesgo (ficha de valoración de riesgo) y remitir al Juzgado de Familia en el plazo máximo de 24 horas para las medidas de protección. Las medidas se dictan en 72 horas (casos de riesgo leve o moderado) o 24 horas (riesgo severo).",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "DNI de la víctima (no es obligatorio para recibir denuncia)",
+            "Denuncia verbal o escrita",
+            "Certificado Médico Legal (si hay lesiones físicas)",
+            "Informe psicológico del CEM o IML (si hay violencia psicológica)",
+            "Ficha de valoración de riesgo (la elabora la PNP)",
+            "Fotos de lesiones o daños",
+            "Capturas de mensajes amenazantes"
+          ],
+          "norma": "Arts. 15, 16, 23, 24 Ley 30364",
+          "etapa_siguiente": "medidas_de_proteccion_vf",
+          "notas": "URGENTE: La víctima NO necesita abogado para denunciar. Los Centros de Emergencia Mujer (CEM) brindan asistencia legal, psicológica y social gratuita. Si hay riesgo severo (armas, amenaza de muerte), solicitar medidas urgentes en 24h. El agresor puede ser retirado del hogar por la PNP."
+        },
+        {
+          "id": "medidas_de_proteccion_vf",
+          "etapa": "Audiencia y medidas de protección",
+          "descripcion": "El Juzgado de Familia recibe el informe policial y, dentro de las 72 horas (48h si es riesgo severo), realiza audiencia para dictar medidas de protección. Las medidas pueden incluir: retiro del agresor del domicilio, prohibición de acercamiento a la víctima (con distancia en metros), prohibición de comunicación, impedimento de salida del país, incautación de armas, tratamiento obligatorio del agresor. Las medidas son inmediatamente ejecutables.",
+          "plazo_dias": 3,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "Expediente policial (el juzgado lo recibe de oficio)",
+            "Solicitud adicional de medidas por la víctima o su abogado (opcional)"
+          ],
+          "norma": "Arts. 22, 23, 24 Ley 30364",
+          "etapa_siguiente": "proceso_penal_paralelo_vf",
+          "notas": "Las medidas de protección NO requieren que el agresor haya sido sentenciado. Son cautelares. La PNP debe cumplirlas inmediatamente. Si el agresor viola las medidas de protección, incurre en delito de desobediencia (Art. 368 CP) y resistencia a la autoridad — puede ser detenido. Solicitar copia de la resolución de medidas para que la víctima la lleve siempre."
+        },
+        {
+          "id": "proceso_penal_paralelo_vf",
+          "etapa": "Proceso penal paralelo ante Fiscalía Penal",
+          "descripcion": "Paralelamente al proceso de protección en el Juzgado de Familia, la Fiscalía Penal inicia la investigación por los delitos cometidos: lesiones (Arts. 121-B o 122-B CP para violencia familiar), agresiones (Art. 122-B CP), faltas, etc. El fiscal dirige las diligencias preliminares. La PNP actúa bajo su conducción. Se recaban el CML, declaraciones, pericias psicológicas.",
+          "plazo_dias": 60,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "CML del IML",
+            "Pericia psicológica (si hay violencia psicológica)",
+            "Acta de declaración de la víctima",
+            "Informe policial",
+            "Evidencias: fotos, videos, mensajes"
+          ],
+          "norma": "Arts. 330-333 CPP; Arts. 122-B, 121-B CP",
+          "etapa_siguiente": "formalizacion_proceso_penal_vf",
+          "notas": "La víctima declara SOLO UNA VEZ en cámara Gesell o en sala especial para evitar revictimización. La declaración se graba y puede ser usada en juicio. El fiscal debe solicitar la declaración única con apoyo del psicólogo."
+        },
+        {
+          "id": "formalizacion_proceso_penal_vf",
+          "etapa": "Formalización de la investigación penal",
+          "descripcion": "El fiscal formaliza la investigación preparatoria por los delitos detectados. Puede solicitar prisión preventiva si el agresor representa un riesgo severo para la víctima (hay elementos de convicción, pena probable superior a 4 años, y peligro de fuga u obstaculización). En violencia familiar grave, el peligro procesal se presume con mayor facilidad.",
+          "plazo_dias": 120,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "Disposición de formalización",
+            "Solicitud de prisión preventiva (si aplica)",
+            "Medios probatorios del proceso"
+          ],
+          "norma": "Arts. 336-342 CPP; Arts. 268-271 CPP",
+          "etapa_siguiente": "juicio_oral_vf",
+          "notas": "Si el agresor viola las medidas de protección durante la investigación, esto es un nuevo delito (desobediencia) que agrava su situación y puede fundamentar la prisión preventiva por peligro de obstaculización."
+        },
+        {
+          "id": "juicio_oral_vf",
+          "etapa": "Juicio oral y sentencia",
+          "descripcion": "Se realiza el juicio oral ante el juzgado competente (unipersonal o colegiado según la pena). La víctima puede no estar presente si su declaración única fue en cámara Gesell y el juez lo autoriza (para evitar revictimización). Se actúan los medios probatorios. La pericia psicológica es fundamental. El juez dicta sentencia.",
+          "plazo_dias": 30,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Medios probatorios admitidos",
+            "Video de declaración única en cámara Gesell",
+            "Pericia psicológica",
+            "CML definitivo"
+          ],
+          "norma": "Arts. 356-402 CPP; Arts. 121-B, 122-B CP",
+          "etapa_siguiente": "seguimiento_medidas_vf",
+          "notas": "El juez puede mantener las medidas de protección incluso después de la sentencia. En la sentencia condenatoria, puede ordenar tratamiento psicológico del agresor como regla de conducta adicional."
+        },
+        {
+          "id": "seguimiento_medidas_vf",
+          "etapa": "Seguimiento post-sentencia y medidas de protección",
+          "descripcion": "Después de la sentencia, las medidas de protección del Juzgado de Familia continúan vigentes. La víctima puede solicitar su prórroga o ampliación. El juzgado de familia realiza audiencias de seguimiento. Si el sentenciado viola las medidas, se puede revocar la pena suspendida (si la tiene) o se inicia un nuevo proceso penal por desobediencia.",
+          "plazo_dias": null,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Solicitud de prórroga o ampliación de medidas",
+            "Informe de seguimiento"
+          ],
+          "norma": "Arts. 22-24 Ley 30364; Arts. 59-61 CP",
+          "etapa_siguiente": null,
+          "notas": "La víctima puede solicitar al juzgado de familia la revisión periódica de las medidas de protección. El MIMP y los CEM tienen programas de seguimiento de casos de violencia familiar. Recomendar a la víctima mantener contacto con el CEM de su zona."
+        }
+      ]
+    },
+    "penal_feminicidio": {
+      "nombre": "Proceso Penal por Feminicidio",
+      "norma_base": "Art. 108-B Código Penal; D.Leg. 957 — Código Procesal Penal",
+      "normas_complementarias": [
+        "Ley N° 30364 (protección a la mujer)",
+        "Ley N° 30819 (modifica Art. 108-B CP)",
+        "Plan Nacional contra la Violencia de Género 2016-2021",
+        "Protocolo Interinstitucional de Acción frente al Feminicidio"
+      ],
+      "etapas": [
+        {
+          "id": "flagrancia_medidas_urgentes_feminicidio",
+          "etapa": "Detención en flagrancia y medidas urgentes",
+          "descripcion": "El feminicidio consumado (muerte de la víctima) activa inmediatamente todos los mecanismos de respuesta del Estado. La PNP detiene al imputado en flagrancia si está presente. El fiscal de turno acude a la escena del crimen. En casos de tentativa de feminicidio (víctima sobrevive), se activan además las medidas de protección de la Ley 30364 con carácter de urgencia máxima. El fiscal puede solicitar 7 días de detención preliminar (prorrogable a 15 días en crimen organizado).",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Acta de detención del imputado",
+            "Acta de inspección de la escena del crimen",
+            "Acta de levantamiento del cadáver (fiscal y médico legista)",
+            "Informe médico de la víctima (si sobrevive — tentativa)",
+            "CML de lesiones (en tentativa)",
+            "Declaraciones de testigos presenciales"
+          ],
+          "norma": "Art. 108-B CP; Arts. 259-261 CPP (detención); Art. 23 Ley 30364 (medidas urgentes)",
+          "etapa_siguiente": "investigacion_preparatoria_feminicidio",
+          "notas": "El feminicidio tiene pena de 20 años a cadena perpetua. Las circunstancias agravantes (violencia sexual previa, presencia de hijos, ensañamiento, entre otras) elevan la pena. URGENTE: Preservar la escena del crimen y obtener todas las evidencias antes de que se contaminen."
+        },
+        {
+          "id": "investigacion_preparatoria_feminicidio",
+          "etapa": "Investigación preparatoria (diligencias y pericias)",
+          "descripcion": "El fiscal dirige una investigación intensiva. Se realizan: necropsia médico-legal (para determinar causa de muerte), peritaje toxicológico, peritaje balístico (si hubo arma de fuego), peritaje de manchas de sangre, peritaje de celulares (para obtener comunicaciones), peritaje psicológico del imputado. Se recopilan antecedentes de violencia previa (denuncias, medidas de protección anteriores).",
+          "plazo_dias": 120,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "Protocolo de necropsia médico-legal",
+            "Informe toxicológico",
+            "Peritaje balístico (si hay arma)",
+            "Peritaje de teléfonos (historial de mensajes, llamadas)",
+            "Antecedentes de violencia (denuncias previas, medidas de protección)",
+            "Declaraciones de familiares y testigos",
+            "Videos de cámaras de seguridad"
+          ],
+          "norma": "Arts. 330-342 CPP; Art. 108-B CP",
+          "etapa_siguiente": "prision_preventiva_feminicidio",
+          "notas": "Los antecedentes de violencia previa (historial de denuncias, medidas de protección anteriores, hospitalizaciones) son CRUCIALES para probar el contexto de violencia de género que configura el feminicidio. El fiscal debe recopilarlos exhaustivamente."
+        },
+        {
+          "id": "prision_preventiva_feminicidio",
+          "etapa": "Prisión preventiva",
+          "descripcion": "Dado el extremo de la pena del feminicidio (20 años a cadena perpetua), los presupuestos de la prisión preventiva (pena superior a 4 años, peligro de fuga) se cumplen casi automáticamente. El fiscal solicita prisión preventiva. El juez realiza audiencia en 48 horas y, si concurren los presupuestos, la dicta por el plazo que estime necesario (máx. 9 meses, prorrogables a 18 meses en casos complejos).",
+          "plazo_dias": 2,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Requerimiento de prisión preventiva",
+            "Elementos de convicción (actuados de investigación)",
+            "Argumentos sobre peligro de fuga"
+          ],
+          "norma": "Arts. 268-285 CPP; Art. 108-B CP",
+          "etapa_siguiente": "etapa_intermedia_feminicidio",
+          "notas": "La prisión preventiva es prácticamente inevitable en casos de feminicidio consumado. Para tentativa, también es muy probable si la víctima sobrevive y el agresor representa un peligro inminente."
+        },
+        {
+          "id": "etapa_intermedia_feminicidio",
+          "etapa": "Etapa intermedia — acusación",
+          "descripcion": "El fiscal formula acusación detallando los hechos, las pruebas, el tipo penal (Art. 108-B CP) y las circunstancias agravantes. La defensa puede cuestionar la calificación (p.ej., argumentar que es homicidio simple, no feminicidio, si no hay contexto de género). El juez de investigación preparatoria realiza la audiencia preliminar y emite el auto de enjuiciamiento.",
+          "plazo_dias": 30,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Acusación fiscal escrita y detallada",
+            "Lista de testigos y peritos para juicio",
+            "Excepciones o cuestionamientos de la defensa"
+          ],
+          "norma": "Arts. 344-355 CPP",
+          "etapa_siguiente": "juicio_oral_feminicidio",
+          "notas": "La diferencia entre homicidio (Art. 108 CP) y feminicidio (Art. 108-B CP) radica en el contexto de género: la víctima debe ser mujer y el hecho debe ocurrir en contexto de discriminación, violencia familiar, hostigamiento, relación de pareja o similar. El fiscal debe probar este contexto."
+        },
+        {
+          "id": "juicio_oral_feminicidio",
+          "etapa": "Juicio oral (Juzgado Penal Colegiado)",
+          "descripcion": "Por la gravedad de la pena, el juicio se lleva ante el Juzgado Penal Colegiado. Se actúan todos los medios probatorios: pericias (necropsia, toxicológico, psicológico), testimonios, oralización de documentos. La familia de la víctima puede constituirse como actor civil. El proceso puede durar varias audiencias. La pericia psicológica del agresor y los antecedentes de violencia son argumentos centrales.",
+          "plazo_dias": 60,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Todos los medios probatorios admitidos",
+            "Informe de necropsia",
+            "Pericias forenses",
+            "Historial de violencia previa"
+          ],
+          "norma": "Arts. 356-392 CPP; Art. 28.2 CPP",
+          "etapa_siguiente": "sentencia_feminicidio",
+          "notas": "La familia de la víctima (padres, hijos) puede constituirse como actor civil para reclamar reparación civil. También pueden solicitar que el condenado pierda la patria potestad sobre los hijos en comun (Art. 75 CNA)."
+        },
+        {
+          "id": "sentencia_feminicidio",
+          "etapa": "Sentencia y ejecución",
+          "descripcion": "El juzgado colegiado emite sentencia. La pena para feminicidio simple es de 20 años. Con agravantes (víctima menor de edad, embarazada, con discapacidad, presencia de hijos, múltiples víctimas) la pena es de 25 a 35 años o cadena perpetua. La reparación civil debe fijarse en monto significativo para los deudos. El condenado no tiene acceso a beneficios penitenciarios.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 393-402 CPP; Art. 108-B CP; Art. 50 D.Leg. 654 (sin beneficios penitenciarios)",
+          "etapa_siguiente": null,
+          "notas": "El feminicidio está expresamente excluido de los beneficios penitenciarios (semilibertad y liberación condicional). La reparación civil para los hijos huérfanos y padres de la víctima debe ser significativa. Considerar también demandar pensión alimentaria para los hijos en proceso civil."
+        }
+      ]
+    },
+    "penal_violacion": {
+      "nombre": "Proceso Penal por Violación Sexual",
+      "norma_base": "Art. 170 Código Penal; D.Leg. 957 — Código Procesal Penal",
+      "normas_complementarias": [
+        "Arts. 171-177 CP (violación en circunstancias agravadas)",
+        "Arts. 170-A, 173 CP (víctima menor de edad)",
+        "Protocolo de Actuación frente a Delitos Sexuales del MP",
+        "Protocolo de Cámara Gesell"
+      ],
+      "etapas": [
+        {
+          "id": "denuncia_violacion",
+          "etapa": "Denuncia y atención urgente a la víctima",
+          "descripcion": "La víctima o un familiar denuncia ante la PNP o Fiscalía. PRIORITARIO: La víctima debe ser atendida urgentemente en el hospital más cercano para: (1) atención médica de emergencia, (2) toma de muestra de evidencia biológica (esperma, ADN — debe hacerse dentro de las 72 horas del hecho), (3) píldora del día siguiente (si lo solicita). La denuncia debe hacerse lo antes posible para no perder evidencias. La PNP DEBE recibir la denuncia sin cuestionar a la víctima.",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "DNI de la víctima o representante (no es obligatorio para recibir denuncia)",
+            "Informe médico de emergencia del hospital",
+            "Toma de muestras biológicas (lo hace el médico de urgencias o IML)",
+            "Certificado Médico Legal del IML (examen ginecológico y anal)",
+            "Ropa que llevaba la víctima al momento del hecho (preservar sin lavar)",
+            "Datos del agresor (si se conoce)"
+          ],
+          "norma": "Art. 170 CP; Arts. 67-68 CPP; Protocolo de actuación del MP",
+          "etapa_siguiente": "diligencias_sin_revictimizacion",
+          "notas": "CRÍTICO: No bañarse, no lavarse, no cambiar de ropa antes del examen médico legal para preservar evidencias biológicas. El CML debe hacerse en el IML con médico legista especializado. Si la víctima es menor, el examen lo hace un médico con experiencia en pediatría forense."
+        },
+        {
+          "id": "diligencias_sin_revictimizacion",
+          "etapa": "Declaración única en Cámara Gesell (sin revictimización)",
+          "descripcion": "La víctima declara UNA SOLA VEZ ante el fiscal, en Cámara Gesell (sala especial con espejo unidireccional) con apoyo de psicólogo. La declaración se graba en video. Esta única declaración reemplaza todas las declaraciones posteriores (en investigación, juicio oral, etc.) para evitar la revictimización. La defensa puede hacer preguntas a través del fiscal o del psicólogo durante la sesión. La grabación es usada en el juicio oral.",
+          "plazo_dias": 3,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Solicitud de declaración única en cámara Gesell",
+            "CML del IML",
+            "Informe psicológico previo (si hay)"
+          ],
+          "norma": "Arts. 158, 171, 337 CPP; Protocolo de Cámara Gesell del MP",
+          "etapa_siguiente": "investigacion_preparatoria_violacion",
+          "notas": "PRINCIPIO DE NO REVICTIMIZACIÓN: La víctima no puede ser interrogada múltiples veces sobre los hechos. La declaración en Cámara Gesell es su única declaración. Si el juez en juicio oral quiere que la víctima declare nuevamente, debe justificarlo. Los abogados de defensa NO pueden interrogar directamente a la víctima."
+        },
+        {
+          "id": "investigacion_preparatoria_violacion",
+          "etapa": "Investigación preparatoria y pericias",
+          "descripcion": "El fiscal dirige la investigación. Se realizan: peritaje de ADN sobre las muestras biológicas, peritaje psicológico de la víctima (para determinar afectación psicológica y credibilidad del testimonio), peritaje médico-legal completo, análisis de la ropa y evidencias. Se recaban declaraciones de testigos, se solicitan videos de cámaras de seguridad, se investiga la relación víctima-agresor.",
+          "plazo_dias": 120,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "Resultado del peritaje de ADN",
+            "Peritaje psicológico de la víctima",
+            "CML definitivo del IML",
+            "Peritaje de vestimenta y evidencias",
+            "Declaración de testigos",
+            "Informe policial"
+          ],
+          "norma": "Arts. 330-342 CPP",
+          "etapa_siguiente": "formalizacion_investigacion_violacion",
+          "notas": "El peritaje de ADN es la prueba reina si hay contacto sexual con eyaculación. Sin ADN, la pericia psicológica de credibilidad del testimonio de la víctima y el CML son las pruebas centrales. El fiscal debe solicitar URGENTE el peritaje de ADN para evitar degradación de la muestra."
+        },
+        {
+          "id": "formalizacion_investigacion_violacion",
+          "etapa": "Formalización y prisión preventiva",
+          "descripcion": "El fiscal formaliza la investigación y solicita prisión preventiva. Para violación sexual (Art. 170 CP), la pena base es de 6 a 8 años, pero con agravantes (víctima menor de 14 años, con discapacidad, perpetrada por dos o más personas, con arma, en domicilio de la víctima) la pena puede llegar a 30 años o cadena perpetua. El presupuesto de pena superior a 4 años se cumple siempre, facilitando la prisión preventiva.",
+          "plazo_dias": 9,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "Disposición de formalización",
+            "Requerimiento de prisión preventiva con elementos de convicción"
+          ],
+          "norma": "Arts. 336-342 CPP; Arts. 268-271 CPP; Art. 170 CP",
+          "etapa_siguiente": "etapa_intermedia_violacion",
+          "notas": "Si la víctima es menor de 14 años (violación de menor), la pena mínima es de 25 años (Art. 173 CP). En estos casos la prisión preventiva es prácticamente automática. El fiscal debe actuar con máxima celeridad para proteger a la víctima y asegurar la evidencia."
+        },
+        {
+          "id": "etapa_intermedia_violacion",
+          "etapa": "Etapa intermedia",
+          "descripcion": "El fiscal acusa formalmente. La defensa puede cuestionar la calificación, la validez de las pericias o la credibilidad del testimonio. El juez evalúa el auto de enjuiciamiento. En casos con evidencia de ADN positiva, la defensa suele cuestionar el consentimiento (alegando relación consentida), no la existencia del acto sexual.",
+          "plazo_dias": 20,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Acusación fiscal",
+            "Medios probatorios admitidos",
+            "Cuestionamientos de la defensa"
+          ],
+          "norma": "Arts. 344-355 CPP",
+          "etapa_siguiente": "juicio_oral_violacion",
+          "notas": "Si la defensa alega consentimiento, el fiscal debe usar la pericia psicológica de la víctima, el CML (señales de violencia o forcejeo), la declaración de Cámara Gesell y el contexto (si había relación de poder — jefe, familiar, tutor — el consentimiento no es válido)."
+        },
+        {
+          "id": "juicio_oral_violacion",
+          "etapa": "Juicio oral",
+          "descripcion": "Juicio oral ante juzgado colegiado (por la gravedad de la pena). La víctima no necesita declarar nuevamente si hay grabación de Cámara Gesell. Se actúan los peritajes: el médico legista y el psicólogo exponen sus conclusiones. El peritaje de ADN es presentado por el perito del IML o laboratorio. La defensa puede presentar contraperitos.",
+          "plazo_dias": 30,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Video de declaración en Cámara Gesell",
+            "Pericias forenses admitidas",
+            "Informe de ADN"
+          ],
+          "norma": "Arts. 356-392 CPP; Art. 28.2 CPP",
+          "etapa_siguiente": "sentencia_violacion",
+          "notas": "El juicio es a PUERTAS CERRADAS cuando la víctima es menor de edad o cuando la publicidad pueda perjudicarla (Art. 357.3 CPP). La víctima puede declarar desde una sala aparte con videoconferencia para no ver al agresor."
+        },
+        {
+          "id": "sentencia_violacion",
+          "etapa": "Sentencia y tratamiento del condenado",
+          "descripcion": "El juzgado colegiado emite sentencia. La pena base para violación sexual de adulto es 6-8 años; con agravantes puede llegar a cadena perpetua. La reparación civil debe incluir tratamiento psicológico de la víctima, daño moral y daño psicológico. El condenado puede quedar registrado en el Registro de Agresores Sexuales del INPE.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 393-402 CPP; Art. 170 CP; Art. 178-A CP (tratamiento terapéutico obligatorio)",
+          "etapa_siguiente": null,
+          "notas": "El Art. 178-A CP establece el tratamiento terapéutico obligatorio para el condenado. El juez puede ordenarlo como medida de seguridad. Solicitar que la reparación civil incluya el costo estimado del tratamiento psicológico de la víctima a largo plazo."
+        }
+      ]
+    },
+    "penal_homicidio": {
+      "nombre": "Proceso Penal por Homicidio Simple o Calificado",
+      "norma_base": "Arts. 106-108 Código Penal; D.Leg. 957 — Código Procesal Penal",
+      "normas_complementarias": [
+        "Art. 108-A CP (sicariato)",
+        "Art. 108-B CP (feminicidio — proceso separado)",
+        "Art. 109 CP (homicidio emocional)",
+        "Art. 111 CP (homicidio culposo)"
+      ],
+      "etapas": [
+        {
+          "id": "escena_del_crimen_homicidio",
+          "etapa": "Preservación de la escena y actuación policial/fiscal",
+          "descripcion": "Ante la noticia de un homicidio, la PNP acude inmediatamente y preserva la escena del crimen. El fiscal de turno se constituye en la escena. El médico legista realiza el levantamiento del cadáver y determina el tiempo y causa probable de muerte in situ. Se fotografía y perimetra la escena, se recogen evidencias (casquillos, armas, huellas, muestras biológicas). Se identifica al cadáver.",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Acta de levantamiento del cadáver (fiscal + médico legista)",
+            "Acta de inspección ocular y registro de la escena",
+            "Fotografías y videos de la escena",
+            "Acta de recojo de evidencias",
+            "Ficha de identificación del cadáver",
+            "Declaraciones de testigos presenciales"
+          ],
+          "norma": "Art. 195 CPP (levantamiento de cadáver); Arts. 220-222 CPP (pericias); Art. 106 CP",
+          "etapa_siguiente": "necropsia_investigacion_homicidio",
+          "notas": "La preservación de la escena del crimen es CRÍTICA. La cadena de custodia de las evidencias debe mantenerse impecable o pueden ser cuestionadas en juicio. El fiscal debe ordenar la CADENA DE CUSTODIA desde el primer momento."
+        },
+        {
+          "id": "necropsia_investigacion_homicidio",
+          "etapa": "Necropsia médico-legal e investigación inicial",
+          "descripcion": "El médico legista realiza la necropsia en el IML para determinar: causa exacta de la muerte, mecanismo (arma blanca, arma de fuego, estrangulamiento, etc.), tiempo de muerte, presencia de alcohol/drogas, signos de lucha, evidencias biológicas del agresor. Simultáneamente, el fiscal dirige las diligencias de identificación del imputado: testigos, videos, peritaje de celulares del occiso.",
+          "plazo_dias": 15,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "Protocolo de necropsia médico-legal",
+            "Informe toxicológico",
+            "Informe de ADN de muestras halladas",
+            "Peritaje balístico (si hay arma de fuego)",
+            "Peritaje dactiloscópico",
+            "Informe de peritaje de celulares"
+          ],
+          "norma": "Arts. 195, 220-222 CPP; Art. 106 CP",
+          "etapa_siguiente": "detencion_formalizacion_homicidio",
+          "notas": "El homicidio simple (Art. 106 CP) tiene pena de 6 a 20 años. El homicidio calificado (asesinato, Art. 108 CP) tiene pena de 15 a 35 años (con alevosía, lucro, ferocidad, veneno, etc.). El sicariato (Art. 108-A CP) tiene pena de 25 años a cadena perpetua."
+        },
+        {
+          "id": "detencion_formalizacion_homicidio",
+          "etapa": "Detención del imputado y formalización",
+          "descripcion": "Una vez identificado el imputado, la PNP procede a su detención (en flagrancia o con mandato judicial). El fiscal solicita INMEDIATAMENTE prisión preventiva dado que el homicidio siempre supera el presupuesto de pena mínima de 4 años. El juez de investigación preparatoria realiza la audiencia de prisión preventiva en 48 horas y la dicta si concurren los presupuestos. El fiscal formaliza la investigación preparatoria.",
+          "plazo_dias": 2,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Acta de detención del imputado",
+            "Requerimiento de prisión preventiva",
+            "Elementos de convicción reunidos",
+            "Disposición de formalización"
+          ],
+          "norma": "Arts. 259-261 CPP (detención); Arts. 268-271 CPP (PP); Arts. 336-342 CPP",
+          "etapa_siguiente": "investigacion_compleja_homicidio",
+          "notas": "En homicidio calificado y sicariato, el proceso puede declararse complejo (Art. 342.3 CPP), lo que amplía los plazos de investigación a 36 meses y la prisión preventiva a 36 meses. Esto es importante cuando hay múltiples imputados o víctimas."
+        },
+        {
+          "id": "investigacion_compleja_homicidio",
+          "etapa": "Investigación preparatoria completa",
+          "descripcion": "El fiscal dirige una investigación exhaustiva: reconstrucción de los hechos, peritajes especializados (balístico, grafotécnico, contable si hay lucro), análisis de comunicaciones del imputado, investigación de móviles, análisis de antecedentes del imputado. Se recaban testimonios de testigos. Si hay crimen organizado o sicariato, se investiga la cadena de mando.",
+          "plazo_dias": 240,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "Todos los peritajes forenses",
+            "Declaraciones de testigos",
+            "Informe de inteligencia (si hay organización criminal)",
+            "Análisis de comunicaciones",
+            "Antecedentes del imputado"
+          ],
+          "norma": "Arts. 336-342 CPP",
+          "etapa_siguiente": "etapa_intermedia_homicidio",
+          "notas": "El plazo normal de investigación preparatoria para casos complejos es de 8 meses (prorrogable). El fiscal puede declarar el caso complejo y ampliar los plazos. La defensa puede solicitar audiencia de control de plazos si considera que el fiscal se excede."
+        },
+        {
+          "id": "etapa_intermedia_homicidio",
+          "etapa": "Etapa intermedia — acusación fiscal",
+          "descripcion": "El fiscal formula acusación escrita detallada, calificando el tipo penal (homicidio simple, calificado, sicariato) y señalando las agravantes. La defensa puede cuestionar la calificación y solicitar la recalificación o el sobreseimiento. El juez de investigación preparatoria realiza la audiencia preliminar y emite el auto de enjuiciamiento.",
+          "plazo_dias": 30,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Acusación fiscal completa",
+            "Ofrecimiento de todos los medios probatorios",
+            "Cuestionamientos de la defensa"
+          ],
+          "norma": "Arts. 344-355 CPP",
+          "etapa_siguiente": "juicio_oral_homicidio",
+          "notas": "La calificación entre homicidio simple y calificado (asesinato) es crucial pues determina el rango de pena (6-20 años vs. 15-35 años). La defensa buscará recalificar hacia homicidio simple o hacia homicidio emocional (Art. 109 CP, pena menor) si hay estado emocional violento."
+        },
+        {
+          "id": "juicio_oral_homicidio",
+          "etapa": "Juicio oral (Juzgado Penal Colegiado)",
+          "descripcion": "Por la gravedad de la pena, el juicio se realiza ante el juzgado penal colegiado. Se actúan todos los medios probatorios: necropsia, peritajes forenses, testimonios, análisis de comunicaciones. El juicio puede durar varias semanas. Los peritos del IML, los policías y los testigos son interrogados por el fiscal y la defensa.",
+          "plazo_dias": 60,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Todos los medios probatorios admitidos",
+            "Protocolo de necropsia",
+            "Peritajes especializados"
+          ],
+          "norma": "Arts. 356-392 CPP; Art. 28.2 CPP",
+          "etapa_siguiente": "sentencia_homicidio",
+          "notas": "La familia de la víctima puede constituirse como actor civil para reclamar reparación civil. Esta puede incluir: daño moral de los familiares, gastos de sepelio, lucro cesante (si el occiso era sostén del hogar), daño emergente. Presentar documentos de gastos y declaraciones juradas de dependencia económica."
+        },
+        {
+          "id": "sentencia_homicidio",
+          "etapa": "Sentencia y apelación",
+          "descripcion": "El juzgado colegiado emite sentencia (condenatoria o absolutoria). Para homicidio simple (Art. 106 CP): 6 a 20 años. Para homicidio calificado (Art. 108 CP): 15 a 35 años. Para sicariato (Art. 108-A CP): 25 años a cadena perpetua. La reparación civil se fija a favor de los herederos del occiso. Las partes tienen 5 días hábiles para apelar.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de apelación (si alguna parte apela)"
+          ],
+          "norma": "Arts. 393-416 CPP; Arts. 106-108-A CP",
+          "etapa_siguiente": null,
+          "notas": "El homicidio calificado y el sicariato están excluidos de beneficios penitenciarios. Para homicidio simple, el condenado puede acceder a semilibertad al cumplir 1/3 de la pena. La reparación civil puede ejecutarse en vía civil aunque prescriba la acción penal."
+        }
+      ]
+    },
+    "familia_divorcio": {
+      "nombre": "Proceso de Divorcio por Causal",
+      "norma_base": "Arts. 333-360 Código Civil; Arts. 480-485 Código Procesal Civil",
+      "normas_complementarias": [
+        "Art. 334 CC (cónyuge culpable pierde gananciales)",
+        "Ley N° 27495 (amplía causales — separación de hecho)",
+        "Ley N° 29227 (divorcio convencional notarial o municipal)",
+        "D.S. N° 009-2008-JUS (Reglamento Ley 29227)"
+      ],
+      "etapas": [
+        {
+          "id": "evaluacion_causal_divorcio",
+          "etapa": "Evaluación de causal y vía procesal",
+          "descripcion": "Antes de presentar la demanda, se evalúa qué causal de divorcio aplica (Art. 333 CC: adulterio, violencia física o psicológica, atentado contra la vida, injuria grave, abandono injustificado, conducta deshonrosa, uso habitual de drogas o alcohol, enfermedad grave, homosexualidad sobreviniente, condena por delito doloso, separación de hecho por 2 o 4 años). Se evalúa también si hay hijos menores (que complejizan el proceso) y régimen patrimonial (sociedad de gananciales o separación de patrimonios).",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Acta de matrimonio (certificado de matrimonio vigente del RENIEC)",
+            "DNI de ambos cónyuges",
+            "Partidas de nacimiento de hijos menores (si los hay)",
+            "Pruebas de la causal invocada",
+            "Inventario de bienes de la sociedad conyugal"
+          ],
+          "norma": "Art. 333 CC (causales); Art. 480 CPC (proceso de conocimiento)",
+          "etapa_siguiente": "demanda_divorcio",
+          "notas": "Si ambos cónyuges están de acuerdo, separados de hecho más de 2 años (sin hijos) o 4 años (con hijos), y acuerdan todos los puntos (alimentos, tenencia, régimen de visitas, liquidación de bienes), pueden optar por divorcio convencional NOTARIAL (Ley 29227) — más rápido y económico. Si hay conflicto, se va a proceso judicial."
+        },
+        {
+          "id": "demanda_divorcio",
+          "etapa": "Presentación de la demanda de divorcio",
+          "descripcion": "Se presenta demanda de divorcio por causal ante el Juzgado de Familia del último domicilio conyugal o del domicilio del demandado. La demanda debe especificar la causal, los hechos que la sustentan, y los petitorios accesorios (alimentos para el cónyuge e hijos, tenencia, régimen de visitas, liquidación de sociedad de gananciales). Es un proceso de conocimiento (el más complejo y largo del CPC).",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Escrito de demanda firmado por abogado y demandante",
+            "Acta de matrimonio",
+            "DNI del demandante",
+            "Partidas de nacimiento de hijos",
+            "Pruebas de la causal (fotos, capturas de mensajes, informes, CML, etc.)",
+            "Tasa judicial de proceso de conocimiento",
+            "Propuesta de régimen de alimentos y tenencia"
+          ],
+          "norma": "Arts. 480-485 CPC; Art. 333 CC; Arts. 424, 425 CPC",
+          "etapa_siguiente": "admision_traslado_divorcio",
+          "notas": "El Ministerio Público debe ser notificado cuando hay hijos menores (Art. 481 CPC). El juez puede dictar medidas cautelares (asignación anticipada de alimentos, salida del hogar conyugal) al admitir la demanda."
+        },
+        {
+          "id": "admision_traslado_divorcio",
+          "etapa": "Admisión y traslado al demandado",
+          "descripcion": "El juez califica la demanda y si cumple los requisitos la admite, dictando auto admisorio. Se corre traslado al demandado por 30 días calendario para contestar la demanda. El Ministerio Público (si hay hijos menores) también es notificado y puede pronunciarse. Si el demandado no contesta, se aplica rebeldía.",
+          "plazo_dias": 30,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "Auto admisorio (lo expide el juzgado)",
+            "Cédulas de notificación al demandado y al Ministerio Público"
+          ],
+          "norma": "Arts. 475, 478, 480 CPC",
+          "etapa_siguiente": "audiencia_conciliacion_divorcio",
+          "notas": "El plazo para contestar la demanda en proceso de conocimiento es de 30 días hábiles para el demandado (Art. 478 CPC). En casos de divorcio por causal, el demandado puede reconvenir (contrademandar por la misma o diferente causal)."
+        },
+        {
+          "id": "audiencia_conciliacion_divorcio",
+          "etapa": "Audiencia de conciliación",
+          "descripcion": "El juez convoca a audiencia de conciliación (Art. 468 CPC). En materia de divorcio, la conciliación sobre el vínculo matrimonial no es posible si hay causal objetiva. Sin embargo, las partes pueden llegar a acuerdos sobre los puntos accesorios (alimentos, tenencia, visitas, liquidación de bienes). Si hay acuerdo total, el juez aprueba la conciliación y pone fin al proceso.",
+          "plazo_dias": 30,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Propuesta de acuerdo (si las partes quieren conciliar en puntos accesorios)"
+          ],
+          "norma": "Arts. 468-472 CPC; Art. 480 CPC",
+          "etapa_siguiente": "audiencia_pruebas_divorcio",
+          "notas": "Aunque no se concilie el divorcio en sí, los acuerdos sobre alimentos, tenencia y bienes agilizan enormemente el proceso. Intentar llegar a acuerdos previos sobre estos puntos antes de la audiencia."
+        },
+        {
+          "id": "audiencia_pruebas_divorcio",
+          "etapa": "Audiencia de pruebas",
+          "descripcion": "El juez actúa los medios probatorios ofrecidos: documentos, testimoniales, declaración de parte, inspección judicial, pericias. En divorcio por causal de separación de hecho, se verifica el período de separación. En causal de violencia, se actúan los CML y pericias psicológicas. En adulterio, se presentan las pruebas documentales o testimoniales del hecho.",
+          "plazo_dias": 30,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Todos los medios probatorios ofrecidos y admitidos",
+            "Informe del perito (si se solicitó pericia)",
+            "Declaraciones testimoniales"
+          ],
+          "norma": "Arts. 202-232 CPC; Art. 480 CPC",
+          "etapa_siguiente": "sentencia_divorcio",
+          "notas": "En casos de divorcio por separación de hecho (la causal más común), el cónyuge perjudicado (el que no quiso la separación) puede solicitar indemnización (Art. 345-A CC). El juez evalúa quién es el cónyuge más perjudicado."
+        },
+        {
+          "id": "sentencia_divorcio",
+          "etapa": "Sentencia de divorcio",
+          "descripcion": "El juez emite sentencia que: (1) declara disuelto el vínculo matrimonial, (2) resuelve sobre alimentos para el cónyuge e hijos, (3) determina la tenencia y régimen de visitas, (4) ordena la liquidación de la sociedad de gananciales (o constata la separación de patrimonios), (5) puede ordenar indemnización al cónyuge perjudicado. La sentencia consentida se inscribe en el RENIEC para actualizar el estado civil.",
+          "plazo_dias": 50,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 480-485 CPC; Arts. 333-360 CC",
+          "etapa_siguiente": "liquidacion_sociedad_conyugal",
+          "notas": "El plazo para apelar es de 10 días hábiles. Consentida la sentencia, se debe inscribir en el RENIEC (dentro de 15 días del oficio judicial). La liquidación de la sociedad de gananciales puede hacerse en el mismo proceso o en proceso aparte."
+        },
+        {
+          "id": "liquidacion_sociedad_conyugal",
+          "etapa": "Liquidación de la sociedad de gananciales",
+          "descripcion": "Disuelto el matrimonio, se procede a la liquidación de la sociedad de gananciales (si ese era el régimen patrimonial). Los cónyuges presentan inventario de bienes comunes y deudas. Cada cónyuge recibe el 50% de los bienes gananciales. Los bienes propios (antes del matrimonio, herencias, donaciones) no se dividen. Si hay desacuerdo, el juez decide en el mismo proceso o en proceso separado.",
+          "plazo_dias": 30,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Inventario de bienes comunes (inmuebles, vehículos, cuentas, acciones)",
+            "Títulos de propiedad de bienes inmuebles",
+            "Tasación de bienes (si no hay acuerdo en valores)",
+            "Propuesta de distribución de bienes"
+          ],
+          "norma": "Arts. 318-328 CC (liquidación); Arts. 302-310 CC (bienes propios)",
+          "etapa_siguiente": null,
+          "notas": "Si el cónyuge culpable tenía bienes propios o recibió donaciones del otro cónyuge durante el matrimonio, puede perderlos por efecto de la causal (Art. 352 CC). La liquidación de la sociedad de gananciales puede ser muy compleja si hay empresas, inmuebles múltiples o deudas."
+        }
+      ]
+    },
+    "familia_tenencia": {
+      "nombre": "Proceso de Tenencia y Régimen de Visitas",
+      "norma_base": "Arts. 81-94 Código de los Niños y Adolescentes (CNA); Arts. 340-341 Código Civil",
+      "normas_complementarias": [
+        "Arts. 75-79 CNA (patria potestad)",
+        "Convención sobre los Derechos del Niño (art. 3 — interés superior)",
+        "Ley N° 29269 (tenencia compartida)",
+        "D.S. N° 004-2016-MIMP (Reglamento)"
+      ],
+      "etapas": [
+        {
+          "id": "demanda_tenencia",
+          "etapa": "Presentación de la demanda de tenencia",
+          "descripcion": "Uno de los progenitores (o ambos, si el conflicto es reciente) presenta demanda de tenencia ante el Juzgado de Familia. La demanda debe estar orientada al INTERÉS SUPERIOR DEL NIÑO (Art. 3 CDN, Art. 11 CNA), no a los intereses del progenitor. Se puede solicitar tenencia exclusiva o tenencia compartida (Art. 81 CNA). El juez puede dictar medidas cautelares de tenencia provisional.",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "DNI del demandante",
+            "Partida de nacimiento del menor",
+            "Acta de matrimonio o constancia de convivencia (si aplica)",
+            "Domicilios actuales de ambos progenitores",
+            "Pruebas de la idoneidad del demandante como cuidador",
+            "Pruebas de la incapacidad o riesgo del demandado (si las hay)",
+            "Informe escolar y médico del menor (si aplica)"
+          ],
+          "norma": "Art. 81 CNA; Arts. 424, 425 CPC; Art. 11 CNA (interés superior)",
+          "etapa_siguiente": "informe_social_psicologico_tenencia",
+          "notas": "IMPORTANTE: Los hijos menores de 3 años se atribuyen preferentemente a la madre (Art. 84 CNA), salvo causa grave. Para hijos mayores de 3 años, el juez evalúa objetivamente a ambos progenitores. El hijo mayor de 12 años tiene derecho a ser oído por el juez."
+        },
+        {
+          "id": "informe_social_psicologico_tenencia",
+          "etapa": "Informes sociales y psicológicos",
+          "descripcion": "El juez ordena la realización de: (1) Informe Social por el asistente social del juzgado (visita el domicilio, evalúa condiciones de vida, estabilidad económica, entorno familiar), (2) Evaluación psicológica de los progenitores y del menor por el psicólogo del equipo multidisciplinario del juzgado. El menor también es entrevistado por el juez o psicólogo según su edad. Estos informes son CRUCIALES para la decisión del juez.",
+          "plazo_dias": 30,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Informe social del asistente social del juzgado",
+            "Evaluación psicológica de ambos progenitores",
+            "Evaluación psicológica del menor",
+            "Informe del médico pediatra (si el menor tiene condición especial)"
+          ],
+          "norma": "Art. 87 CNA; Art. 85 CNA (opinión del niño)",
+          "etapa_siguiente": "audiencia_tenencia",
+          "notas": "Preparar al cliente para la evaluación psicológica: debe demostrar estabilidad emocional, disposición a facilitar la relación del menor con el otro progenitor, condiciones del hogar, disponibilidad de tiempo. La alienación parental (impedir la relación con el otro progenitor) es un factor negativo."
+        },
+        {
+          "id": "audiencia_tenencia",
+          "etapa": "Audiencia única de tenencia",
+          "descripcion": "El juzgado de familia realiza audiencia única (proceso de conocimiento abreviado o sumarísimo). Se escuchan ambas partes, se actúan los medios probatorios, se presenta el informe social y psicológico. El menor mayor de 12 años puede ser escuchado directamente por el juez. El Ministerio Público opina a favor del interés superior del niño.",
+          "plazo_dias": 30,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Medios probatorios admitidos",
+            "Informes social y psicológico",
+            "Prueba de solvencia económica del demandante",
+            "Constancias de apoyo familiar disponible"
+          ],
+          "norma": "Arts. 170-177 CNA (proceso); Art. 85 CNA",
+          "etapa_siguiente": "sentencia_tenencia",
+          "notas": "Presentar: (1) constancias laborales que muestren estabilidad económica, (2) certificados de no antecedentes penales, (3) informe del colegio del menor (rendimiento, asistencia), (4) testimonios de familiares que apoyan en el cuidado, (5) fotos del domicilio donde viviría el menor."
+        },
+        {
+          "id": "sentencia_tenencia",
+          "etapa": "Sentencia de tenencia y régimen de visitas",
+          "descripcion": "El juez emite sentencia determinando: (1) a quién se otorga la tenencia (exclusiva o compartida), (2) el régimen de visitas del progenitor sin tenencia (días, horarios, vacaciones, feriados), (3) el régimen de alimentos (si no se fijó antes). La sentencia busca siempre el interés superior del niño y mantener los vínculos con AMBOS progenitores.",
+          "plazo_dias": 15,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [],
+          "norma": "Arts. 81-94 CNA; Art. 340 CC",
+          "etapa_siguiente": "variacion_tenencia",
+          "notas": "El régimen de visitas mínimo incluye: fines de semana alternos, mitad de vacaciones escolares, días festivos alternos. La tenencia compartida (Art. 81 CNA) implica que ambos progenitores ejercen la tenencia por períodos, manteniéndose el hogar y rutinas del menor lo más estables posible."
+        },
+        {
+          "id": "variacion_tenencia",
+          "etapa": "Variación de tenencia (si las circunstancias cambian)",
+          "descripcion": "La sentencia de tenencia NO es definitiva. Cualquiera de los progenitores puede solicitar la variación de la tenencia si las circunstancias cambian significativamente (el progenitor con tenencia se muda a otra ciudad, hay nuevo episodio de violencia, el menor manifiesta su deseo de cambiar, el progenitor incumple el régimen de visitas reiteradamente). Se inicia un nuevo proceso de variación ante el mismo juzgado.",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Solicitud de variación de tenencia",
+            "Prueba de las nuevas circunstancias",
+            "Nuevo informe social y psicológico (el juzgado puede ordenarlo)"
+          ],
+          "norma": "Art. 82 CNA (variación de tenencia)",
+          "etapa_siguiente": null,
+          "notas": "La variación de tenencia también puede pedirse cuando el progenitor con tenencia aliena al menor contra el otro (alienación parental). Si el progenitor sin tenencia deja de pagar alimentos, no pierde por ello el régimen de visitas (son derechos independientes), pero se puede abrir proceso penal por OAF."
+        }
+      ]
+    },
+    "civil_sucesiones": {
+      "nombre": "Declaratoria de Herederos (Sucesión Intestada)",
+      "norma_base": "Arts. 660-870 Código Civil; Arts. 830-836 Código Procesal Civil",
+      "normas_complementarias": [
+        "Ley N° 26662 (competencia notarial en asuntos no contenciosos)",
+        "D.Leg. 1232 (modifica Ley 26662 — notarial más ágil)",
+        "Ley N° 27157 (regularización de edificaciones)",
+        "D.S. N° 010-2009-JUS (registro de sucesiones)"
+      ],
+      "etapas": [
+        {
+          "id": "evaluacion_via_sucesion",
+          "etapa": "Evaluación: vía notarial o judicial",
+          "descripcion": "Antes de iniciar el proceso, se evalúa si conviene la vía notarial (más rápida, 30-60 días, ante notario) o la vía judicial (necesaria si hay conflicto entre herederos, heredero cuestionado, o si algún heredero es menor de edad o incapaz). La vía notarial aplica solo cuando todos los herederos están de acuerdo y son mayores de edad. Se recopilan documentos del causante (fallecido) y se identifican todos los posibles herederos.",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Acta de defunción del causante (RENIEC)",
+            "DNI del causante (copia)",
+            "Partida de nacimiento del causante",
+            "Acta de matrimonio del causante (si era casado)",
+            "Partidas de nacimiento de todos los hijos (herederos forzosos)",
+            "DNI de todos los herederos",
+            "Partida de nacimiento de los herederos"
+          ],
+          "norma": "Art. 815 CC (sucesión intestada); Ley 26662 (vía notarial)",
+          "etapa_siguiente": "solicitud_sucesion_intestada",
+          "notas": "ORDEN DE HEREDEROS (Art. 816 CC): 1° hijos y cónyuge/conviviente (excluyen a todos los demás), 2° padres y cónyuge, 3° abuelos, 4° tíos, 5° primos. Si hay testamento, se sigue la sucesión testamentaria (diferente proceso). La declaratoria de herederos NO transfiere propiedad — ese es un paso posterior (inscripción en Registros Públicos)."
+        },
+        {
+          "id": "solicitud_sucesion_intestada",
+          "etapa": "Solicitud de sucesión intestada (notarial o judicial)",
+          "descripcion": "VÍA NOTARIAL: Se presenta solicitud ante notario con todos los documentos. El notario publica un aviso en el diario oficial El Peruano y otro diario de circulación local durante 3 días. Transcurridos 15 días hábiles sin oposición, el notario extiende el Acta de Sucesión Intestada y la remite a Registros Públicos. VÍA JUDICIAL: Se presenta petición ante el Juzgado Civil (proceso no contencioso). El juez ordena la publicación de edictos y la inscripción en el Registro de Testamentos.",
+          "plazo_dias": 0,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Solicitud escrita (notarial o judicial)",
+            "Todos los documentos del causante y herederos",
+            "Tasa notarial o judicial",
+            "Poder notarial si actúa un representante",
+            "Declaración jurada de no existencia de testamento conocido"
+          ],
+          "norma": "Arts. 830-836 CPC (vía judicial); Arts. 38-45 Ley 26662 (vía notarial)",
+          "etapa_siguiente": "publicacion_edictos_sucesion",
+          "notas": "La vía notarial es MUCHO más rápida (30-60 días vs. 3-6 meses en vía judicial). Preferir la vía notarial siempre que todos los herederos estén de acuerdo y sean capaces. Si hay un heredero menor de edad, la vía judicial es obligatoria (el juez protege los intereses del menor)."
+        },
+        {
+          "id": "publicacion_edictos_sucesion",
+          "etapa": "Publicación de edictos y búsqueda de testamento",
+          "descripcion": "El notario o juez ordena: (1) publicación de avisos en El Peruano y un diario local por 3 días consecutivos (vía notarial) o edictos judiciales (vía judicial), (2) solicitud al Archivo General de la Nación y al Colegio de Notarios sobre existencia de testamento del causante, (3) inscripción de la solicitud en el Registro Personal de la SUNARP. Este período permite que potenciales herederos o acreedores se apersonen.",
+          "plazo_dias": 15,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Comprobantes de pago de publicación en diarios",
+            "Respuesta del Archivo General de la Nación (búsqueda de testamento)",
+            "Respuesta del Colegio de Notarios (búsqueda de testamento notarial)"
+          ],
+          "norma": "Arts. 38-40 Ley 26662; Art. 833 CPC",
+          "etapa_siguiente": "declaracion_herederos",
+          "notas": "Si durante la publicación aparece un testamento, el proceso cambia: debe tramitarse como sucesión testamentaria (proceso diferente). Si aparece un heredero no considerado, se incorpora al proceso. Los acreedores del causante también pueden apersonarse en esta etapa."
+        },
+        {
+          "id": "declaracion_herederos",
+          "etapa": "Declaración de herederos y extensión del acta",
+          "descripcion": "Transcurrido el plazo sin oposición, el notario extiende el Acta de Sucesión Intestada declarando quiénes son los herederos y en qué proporción. El juez (vía judicial) dicta resolución declarando a los herederos. Todos los herederos declarados firman el acta notarial o se notifican de la resolución judicial. El documento es la base legal para inscribir los bienes a nombre de los herederos.",
+          "plazo_dias": 5,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Acta de Sucesión Intestada (notario) o Resolución Judicial",
+            "Partes notariales para inscripción en SUNARP",
+            "Firma de todos los herederos (en vía notarial)"
+          ],
+          "norma": "Art. 41 Ley 26662; Art. 836 CPC",
+          "etapa_siguiente": "inscripcion_sunarp_sucesion",
+          "notas": "El Acta de Sucesión Intestada notarial tiene el mismo valor que la resolución judicial. Es un documento público que acredita la calidad de heredero. Con este documento los herederos pueden: cobrar cuentas bancarias del causante, transferir bienes, iniciar procesos de partición."
+        },
+        {
+          "id": "inscripcion_sunarp_sucesion",
+          "etapa": "Inscripción en Registros Públicos (SUNARP)",
+          "descripcion": "El Acta de Sucesión Intestada o la resolución judicial se inscribe en el Registro Personal de la SUNARP (donde está inscrito el causante). Si hay bienes inmuebles, se tramita además la inscripción de la transferencia de propiedad en el Registro de Predios. Para vehículos, en el Registro Vehicular. Si hay acciones de empresa, en el Registro de Personas Jurídicas. Cada inscripción tiene su tasa registral.",
+          "plazo_dias": 30,
+          "tipo_plazo": "calendario",
+          "documentos_requeridos": [
+            "Parte notarial del Acta de Sucesión Intestada (con sello del notario)",
+            "Título archivado del bien a transferir (partida registral)",
+            "Declaración jurada de autoavalúo (Formulario PU — para predios)",
+            "Pago de tasas registrales de SUNARP",
+            "Certificado de pago de impuesto de alcabala (si es primera transferencia)"
+          ],
+          "norma": "Arts. 2008-2014 CC (inscripción registral); Reglamento General de los Registros Públicos",
+          "etapa_siguiente": "particion_bienes_sucesion",
+          "notas": "La inscripción registral de la sucesión NO requiere pagar Impuesto de Alcabala (solo las transferencias onerosas entre vivos lo pagan). Sin embargo, si posteriormente los herederos venden el bien, sí pagan Impuesto de Alcabala. Solicitar a SUNARP el Certificado de Gravámenes del bien para verificar si hay hipotecas o embargos antes de inscribir."
+        },
+        {
+          "id": "particion_bienes_sucesion",
+          "etapa": "Partición de los bienes hereditarios",
+          "descripcion": "Declarados los herederos e inscritos los bienes, se procede a la partición (división de los bienes entre los herederos). Si los herederos están de acuerdo, pueden hacer partición extrajudicial ante notario (escritura pública de partición). Si hay desacuerdo sobre qué bienes corresponden a cada quien o sobre los valores, se inicia proceso judicial de partición ante el juzgado civil. La partición puede incluir adjudicación de bienes específicos o liquidación y distribución del dinero.",
+          "plazo_dias": 30,
+          "tipo_plazo": "hábiles",
+          "documentos_requeridos": [
+            "Tasación de los bienes (si hay desacuerdo en valores)",
+            "Propuesta de partición acordada (si hay acuerdo)",
+            "Escritura pública de partición (notarial, si hay acuerdo)",
+            "Demanda de partición judicial (si hay desacuerdo)"
+          ],
+          "norma": "Arts. 983-991 CC (partición); Art. 487 CPC (proceso de partición)",
+          "etapa_siguiente": null,
+          "notas": "Si los herederos no se ponen de acuerdo en la partición, cualquiera de ellos puede demandar la partición judicial. El juez ordena la tasación de los bienes y, si no hay acuerdo, la venta en remate judicial distribuyendo el dinero en partes iguales. La partición extrajudicial (notarial) es mucho más rápida y económica si hay acuerdo."
+        }
+      ]
     }
   }
 }
