@@ -26,6 +26,9 @@ from agent.auth import hash_password
 from agent.auth_api import router as auth_router
 from agent.lawyers_db import init_lawyers_db
 from agent.lawyer_commands import es_abogado, procesar_comando_abogado
+from agent.events_db import init_events_db, eventos_proximos, marcar_notificado
+from agent.lawyers_db import listar_abogados
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 load_dotenv()
 
@@ -47,6 +50,7 @@ async def lifespan(app: FastAPI):
     init_cases_db()
     init_users_db()
     init_lawyers_db()
+    init_events_db()
     # Crear usuario admin inicial si no existe
     admin_email = os.getenv("ADMIN_EMAIL", "daniel@simplifai.pe")
     admin_password = os.getenv("ADMIN_PASSWORD", "minka2026")
@@ -70,6 +74,78 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# ─────────────────────────────────────────────
+# Scheduler — Alertas diarias de eventos
+# ─────────────────────────────────────────────
+
+scheduler = AsyncIOScheduler(timezone="America/Lima")
+
+
+async def enviar_alertas_eventos():
+    """Tarea diaria: envía WhatsApp al abogado para eventos próximos."""
+    logger.info("[Alertas] Revisando eventos próximos...")
+    eventos = eventos_proximos(dias=7)
+    for evento in eventos:
+        from datetime import datetime
+        fecha_evento = datetime.fromisoformat(evento["fecha_hora"])
+        dias_hasta = (fecha_evento.date() - datetime.today().date()).days
+        # Solo alertar exactamente 1, 3 o 7 días antes
+        recordatorio = evento.get("recordatorio_dias", 1)
+        if dias_hasta not in (1, 3, 7) or dias_hasta > recordatorio:
+            continue
+        # Buscar número WhatsApp del abogado
+        abogado_id = evento.get("abogado_id")
+        if not abogado_id:
+            continue
+        from agent.lawyers_db import obtener_abogado
+        abogado = obtener_abogado(abogado_id)
+        if not abogado or not abogado.get("whatsapp_numero"):
+            continue
+        # Construir mensaje
+        tipo = evento.get("tipo", "evento")
+        titulo = evento.get("titulo", "")
+        fecha_str = fecha_evento.strftime("%d/%m/%Y a las %H:%M")
+        mensaje = (
+            f"*Recordatorio Minka* ⏰\n\n"
+            f"Tienes un {tipo} en *{dias_hasta} día{'s' if dias_hasta != 1 else ''}*:\n"
+            f"📋 {titulo}\n"
+            f"📅 {fecha_str}\n"
+        )
+        if evento.get("notas"):
+            mensaje += f"📝 {evento['notas']}\n"
+        # Enviar via Whapi
+        from agent.dashboard_api import _tel_whatsapp, WHAPI_TOKEN, WHAPI_API_URL
+        import httpx
+        if WHAPI_TOKEN:
+            tel = _tel_whatsapp(abogado["whatsapp_numero"])
+            try:
+                async with httpx.AsyncClient(timeout=10) as client:
+                    await client.post(
+                        f"{WHAPI_API_URL}/messages/text",
+                        headers={
+                            "Authorization": f"Bearer {WHAPI_TOKEN}",
+                            "Content-Type": "application/json",
+                        },
+                        json={"to": f"{tel}@s.whatsapp.net", "body": mensaje},
+                    )
+                    marcar_notificado(evento["id"])
+                    logger.info(f"[Alertas] Enviado a abogado {abogado['nombre']} para evento '{titulo}'")
+            except Exception as e:
+                logger.error(f"[Alertas] Error enviando alerta: {e}")
+
+
+@app.on_event("startup")
+async def start_scheduler():
+    scheduler.add_job(enviar_alertas_eventos, "cron", hour=8, minute=0)
+    scheduler.start()
+    logger.info("[Alertas] Scheduler iniciado — alertas diarias a las 8:00 AM Lima")
+
+
+@app.on_event("shutdown")
+async def stop_scheduler():
+    scheduler.shutdown()
+
 
 app.add_middleware(
     CORSMiddleware,

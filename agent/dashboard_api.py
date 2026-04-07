@@ -25,6 +25,14 @@ from agent.lawyers_db import (
 from agent.document_extractor import extraer_datos_documento
 from agent.legal_advisor import generar_consejo_procesal
 from agent.auth_api import get_current_user
+from agent.events_db import (
+    listar_eventos,
+    obtener_evento,
+    crear_evento,
+    actualizar_evento,
+    eliminar_evento,
+)
+from agent.deadline_calculator import calcular_vencimiento, dias_restantes_habiles
 
 router = APIRouter()
 
@@ -371,6 +379,92 @@ def api_actualizar_estudio(estudio_id: int, data: EstudioUpdate, request: Reques
     if not obtener_estudio(estudio_id):
         raise HTTPException(status_code=404, detail="Estudio no encontrado")
     return actualizar_estudio(estudio_id, data.dict(exclude_none=True))
+
+# ─────────────────────────────────────────────
+# Modelos y Endpoints — Calendario de Eventos
+# ─────────────────────────────────────────────
+
+class EventoCreate(BaseModel):
+    titulo: str
+    fecha_hora: str
+    tipo: Optional[str] = "audiencia"
+    caso_id: Optional[int] = None
+    abogado_id: Optional[int] = None
+    recordatorio_dias: Optional[int] = 1
+    notas: Optional[str] = None
+
+class EventoUpdate(BaseModel):
+    titulo: Optional[str] = None
+    fecha_hora: Optional[str] = None
+    tipo: Optional[str] = None
+    caso_id: Optional[int] = None
+    abogado_id: Optional[int] = None
+    recordatorio_dias: Optional[int] = None
+    notas: Optional[str] = None
+
+@router.get("/api/eventos")
+def api_listar_eventos(
+    request: Request,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+    user=Depends(require_auth),
+):
+    return listar_eventos(fecha_desde=fecha_desde, fecha_hasta=fecha_hasta)
+
+@router.post("/api/eventos", status_code=201)
+def api_crear_evento(data: EventoCreate, request: Request, user=Depends(require_auth)):
+    return crear_evento(data.dict())
+
+@router.get("/api/eventos/{evento_id}")
+def api_obtener_evento(evento_id: int, request: Request, user=Depends(require_auth)):
+    evento = obtener_evento(evento_id)
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+    return evento
+
+@router.put("/api/eventos/{evento_id}")
+def api_actualizar_evento(evento_id: int, data: EventoUpdate, request: Request, user=Depends(require_auth)):
+    if not obtener_evento(evento_id):
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+    return actualizar_evento(evento_id, data.dict(exclude_none=True))
+
+@router.delete("/api/eventos/{evento_id}")
+def api_eliminar_evento(evento_id: int, request: Request, user=Depends(require_auth)):
+    if not obtener_evento(evento_id):
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+    eliminar_evento(evento_id)
+    return {"ok": True, "mensaje": "Evento eliminado"}
+
+# ─────────────────────────────────────────────
+# Endpoints — Calculadora de Plazos
+# ─────────────────────────────────────────────
+
+class CalcularPlazoRequest(BaseModel):
+    fecha_inicio: str   # YYYY-MM-DD
+    plazo_dias: int
+
+@router.post("/api/calcular-plazo")
+def api_calcular_plazo(data: CalcularPlazoRequest, request: Request, user=Depends(require_auth)):
+    fecha_vencimiento = calcular_vencimiento(data.fecha_inicio, data.plazo_dias)
+    restantes = dias_restantes_habiles(fecha_vencimiento)
+    return {
+        "fecha_inicio": data.fecha_inicio,
+        "plazo_dias": data.plazo_dias,
+        "fecha_vencimiento": fecha_vencimiento,
+        "dias_restantes": restantes,
+    }
+
+@router.get("/api/feriados")
+def api_feriados(
+    request: Request,
+    anio: Optional[int] = None,
+    user=Depends(require_auth),
+):
+    from agent.deadline_calculator import cargar_feriados
+    feriados = sorted(cargar_feriados())
+    if anio:
+        feriados = [f for f in feriados if f.startswith(str(anio))]
+    return {"feriados": feriados, "total": len(feriados)}
 
 # ─────────────────────────────────────────────
 # Dashboard (sirve dashboard.html)
