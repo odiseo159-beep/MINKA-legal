@@ -68,6 +68,12 @@ async def lifespan(app: FastAPI):
     logger.info(f"Servidor Minka Legal AI corriendo en puerto {PORT}")
     logger.info(f"Proveedor de WhatsApp: {proveedor.__class__.__name__}")
     logger.info(f"Dashboard disponible en: http://localhost:{PORT}/dashboard")
+    # Diagnóstico: verificar WHAPI_TOKEN en tiempo de ejecución
+    whapi_tok = os.getenv("WHAPI_TOKEN", "")
+    if whapi_tok:
+        logger.info(f"[DIAG] WHAPI_TOKEN: {whapi_tok[:4]}...{whapi_tok[-4:]} (len={len(whapi_tok)})")
+    else:
+        logger.warning("[DIAG] WHAPI_TOKEN no configurado o vacío")
     yield
 
 
@@ -272,6 +278,33 @@ if os.path.exists(static_dir):
 async def health_check():
     """Endpoint de salud para Railway/monitoreo."""
     return {"status": "ok", "service": "minka-legal"}
+
+
+@app.get("/test-whapi")
+async def test_whapi(telefono: str = ""):
+    """
+    Diagnóstico: intenta enviar un mensaje de prueba via Whapi.
+    Uso: GET /test-whapi?telefono=51940592068
+    Muestra el token activo y el resultado del envío.
+    """
+    import httpx
+    whapi_tok = os.getenv("WHAPI_TOKEN", "")
+    tok_display = f"{whapi_tok[:4]}...{whapi_tok[-4:]}" if len(whapi_tok) >= 8 else "(vacío)"
+    if not whapi_tok:
+        return {"error": "WHAPI_TOKEN no configurado", "token": tok_display}
+    if not telefono:
+        return {"token": tok_display, "info": "Agrega ?telefono=51XXXXXXXXX para enviar prueba"}
+    to = telefono if "@" in telefono else f"{telefono}@s.whatsapp.net"
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            r = await client.post(
+                "https://gate.whapi.cloud/messages/text",
+                headers={"Authorization": f"Bearer {whapi_tok}", "Content-Type": "application/json"},
+                json={"to": to, "body": "🔧 Test Minka desde Railway"},
+            )
+        return {"token": tok_display, "to": to, "status": r.status_code, "response": r.json()}
+    except Exception as e:
+        return {"token": tok_display, "to": to, "error": str(e)}
 
 
 @app.get("/webhook")
