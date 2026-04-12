@@ -45,19 +45,22 @@ class ProveedorWhapi(ProveedorWhatsApp):
         }
         # Whapi requiere formato "51999888777@s.whatsapp.net"
         to = telefono if "@" in telefono else f"{telefono}@s.whatsapp.net"
-        try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                r = await client.post(
-                    self.url_envio,
-                    json={"to": to, "body": mensaje},
-                    headers=headers,
-                )
-                if r.status_code != 200:
+        for intento in range(3):  # hasta 3 intentos
+            try:
+                async with httpx.AsyncClient(timeout=45.0) as client:
+                    r = await client.post(
+                        self.url_envio,
+                        json={"to": to, "body": mensaje},
+                        headers=headers,
+                    )
+                    if r.status_code == 200:
+                        return True
                     logger.error(f"Error Whapi: {r.status_code} — {r.text}")
-                return r.status_code == 200
-        except httpx.TimeoutException:
-            logger.error(f"Timeout enviando mensaje a {telefono} via Whapi")
-            return False
-        except Exception as e:
-            logger.error(f"Error enviando mensaje via Whapi: {e}")
-            return False
+                    return False
+            except httpx.TimeoutException:
+                logger.warning(f"Timeout Whapi intento {intento+1}/3 para {telefono}")
+            except Exception as e:
+                logger.error(f"Error enviando via Whapi: {e}")
+                return False
+        logger.error(f"Whapi: 3 intentos fallidos para {telefono}")
+        return False
