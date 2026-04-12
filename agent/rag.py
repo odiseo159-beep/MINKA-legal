@@ -1,61 +1,128 @@
-# agent/rag.py — Búsqueda semántica en normativa peruana (RAG)
+# agent/rag.py — Búsqueda de normativa peruana con BM25
 # Minka — Asistente Legal AI
-
-"""
-Módulo RAG que consulta ChromaDB para encontrar artículos legales relevantes.
-Se inyecta en el system prompt de generar_respuesta() para que Claude cite la ley exacta.
-
-Uso:
-    from agent.rag import buscar_normativa
-    articulos = buscar_normativa("plazo prescripción delito estafa", codigos=["CP"], top_k=5)
-"""
+#
+# Usa BM25 (rank-bm25) sobre los JSON ya scrapeados.
+# Sin PyTorch, sin modelos de 500MB — funciona en Railway gratis.
+#
+# Uso:
+#   from agent.rag import buscar_normativa, formatear_para_prompt
+#   arts = buscar_normativa("plazo prescripción estafa", codigos=["CP"], top_k=5)
 
 import os
+import re
+import json
 import logging
 from typing import Optional
 
 logger = logging.getLogger("minka")
 
-# Ruta a la base de datos ChromaDB (relativa al directorio de ejecución del servidor)
-CHROMA_DIR      = os.path.join(os.path.dirname(__file__), "..", "knowledge", "chromadb")
-COLLECTION_NAME = "normativa_peruana"
-EMBED_MODEL     = "paraphrase-multilingual-MiniLM-L12-v2"
+# ---------------------------------------------------------------------------
+# Configuración
+# ---------------------------------------------------------------------------
 
-# Singleton — cargamos una sola vez para no re-cargar el modelo en cada request
-_collection = None
+NORMATIVA_DIR = os.path.join(os.path.dirname(__file__), "..", "knowledge", "normativa")
+
+CODIGOS = {
+    "codigo_penal":               "CP",
+    "codigo_procesal_penal":      "CPP",
+    "codigo_procesal_civil":      "CPC",
+    "codigo_civil":               "CC",
+    "codigo_ejecucion_penal":     "CEP",
+    "codigo_ninos_adolescentes":  "CNA",
+    "constitucion":               "CONST",
+    "ley_29497_nlpt":             "NLPT",
+    "ley_30077_crimen_organizado":"L30077",
+    "ley_30364_violencia_mujer":  "L30364",
+}
+
+CODIGO_NOMBRE = {
+    "CP":    "Código Penal",
+    "CPP":   "Código Procesal Penal",
+    "CPC":   "Código Procesal Civil",
+    "CC":    "Código Civil",
+    "CEP":   "Código de Ejecución Penal",
+    "CNA":   "Código de los Niños y Adolescentes",
+    "CONST": "Constitución Política del Perú",
+    "NLPT":  "Ley 29497 - Nueva Ley Procesal del Trabajo",
+    "L30077":"Ley 30077 - Crimen Organizado",
+    "L30364":"Ley 30364 - Violencia contra la Mujer",
+}
+
+# ---------------------------------------------------------------------------
+# Singleton: índice BM25 (se construye una sola vez al primer request)
+# ---------------------------------------------------------------------------
+
+_bm25       = None   # instancia BM25Okapi
+_articulos  = []     # lista paralela de dicts con metadata
 
 
-def _get_collection():
-    """Inicializa y cachea la colección ChromaDB (carga el modelo una sola vez)."""
-    global _collection
-    if _collection is not None:
-        return _collection
+def _tokenizar(texto: str) -> list[str]:
+    """Tokenización simple para español legal."""
+    texto = texto.lower()
+    # Conservar números de artículos como tokens (196, 80, 446)
+    return re.findall(r"[a-záéíóúüñ]+|\d+", texto)
 
+
+def _construir_indice():
+    """Carga todos los artículos y construye el índice BM25. Se llama una sola vez."""
+    global _bm25, _articulos
     try:
-        import chromadb
-        from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+        from rank_bm25 import BM25Okapi
     except ImportError:
-        logger.error("RAG no disponible: instala 'chromadb' y 'sentence-transformers'")
-        return None
+        logger.error("rank-bm25 no instalado. Ejecuta: pip install rank-bm25")
+        return
 
-    chroma_path = os.path.abspath(CHROMA_DIR)
-    if not os.path.exists(chroma_path):
-        logger.warning(f"ChromaDB no encontrado en {chroma_path}. Corre: python scripts/index_normativa.py")
-        return None
+    corpus = []
+    _articulos = []
 
-    try:
-        embed_fn = SentenceTransformerEmbeddingFunction(model_name=EMBED_MODEL)
-        client = chromadb.PersistentClient(path=chroma_path)
-        _collection = client.get_collection(
-            name=COLLECTION_NAME,
-            embedding_function=embed_fn,
-        )
-        logger.info(f"RAG listo: {_collection.count()} artículos indexados")
-        return _collection
-    except Exception as e:
-        logger.error(f"Error inicializando ChromaDB: {e}")
-        return None
+    for carpeta, codigo in CODIGOS.items():
+        ruta = os.path.join(NORMATIVA_DIR, carpeta, "articulos.json")
+        if not os.path.exists(ruta):
+            continue
+        with open(ruta, encoding="utf-8") as f:
+            arts = json.load(f)
 
+        nombre = CODIGO_NOMBRE.get(codigo, codigo)
+        cargados = 0
+        for art in arts:
+            numero = art.get("numero", "")
+            titulo = art.get("titulo", "")
+            texto  = art.get("texto", "")
+            if not texto and not titulo:
+                continue
+
+            # Texto que se indexa: nombre del código + número + título + texto
+            texto_idx = f"{nombre} artículo {numero} {titulo} {texto}"
+            corpus.append(_tokenizar(texto_idx))
+
+            _articulos.append({
+                "codigo":   codigo,
+                "numero":   numero,
+                "titulo":   titulo,
+                "texto":    texto,
+                "citacion": f"Art. {numero} del {nombre}",
+            })
+            cargados += 1
+
+    if not corpus:
+        logger.warning("RAG: no se encontraron artículos en knowledge/normativa/")
+        return
+
+    _bm25 = BM25Okapi(corpus)
+    logger.info(f"RAG BM25 listo: {len(_articulos)} artículos indexados")
+
+
+def _get_indice():
+    """Retorna el índice BM25, construyéndolo si es la primera llamada."""
+    global _bm25
+    if _bm25 is None:
+        _construir_indice()
+    return _bm25
+
+
+# ---------------------------------------------------------------------------
+# API pública
+# ---------------------------------------------------------------------------
 
 def buscar_normativa(
     query: str,
@@ -63,64 +130,53 @@ def buscar_normativa(
     top_k: int = 5,
 ) -> list[dict]:
     """
-    Busca artículos legales relevantes para la consulta.
+    Busca artículos legales relevantes usando BM25.
 
     Args:
         query:   Texto de búsqueda (pregunta del usuario o resumen del caso)
-        codigos: Lista de códigos a filtrar, p.ej. ["CP", "CPP"]. None = todos.
-                 Valores válidos: CP, CPP, CPC, CC, CEP, CNA, CONST, NLPT, L30077, L30364
-        top_k:   Número máximo de artículos a retornar
+        codigos: Filtro por código, p.ej. ["CP", "CPP"]. None = todos los códigos.
+        top_k:   Número máximo de resultados.
 
     Returns:
         Lista de dicts con: citacion, texto, numero, titulo, codigo
-        Lista vacía si RAG no está disponible o no hay resultados.
     """
-    collection = _get_collection()
-    if collection is None:
+    bm25 = _get_indice()
+    if bm25 is None or not _articulos:
         return []
-
     if not query or not query.strip():
         return []
 
-    try:
-        # Construir filtro por código(s) si se especifica
-        where = None
-        if codigos and len(codigos) == 1:
-            where = {"codigo": {"$eq": codigos[0]}}
-        elif codigos and len(codigos) > 1:
-            where = {"codigo": {"$in": codigos}}
+    tokens = _tokenizar(query.strip())
+    scores = bm25.get_scores(tokens)
 
-        results = collection.query(
-            query_texts=[query.strip()],
-            n_results=min(top_k, 10),
-            where=where,
-        )
+    # Aplicar filtro por código (poner score=0 a los que no coinciden)
+    if codigos:
+        codigos_set = set(codigos)
+        for i, art in enumerate(_articulos):
+            if art["codigo"] not in codigos_set:
+                scores[i] = 0.0
 
-        articulos = []
-        metas = results.get("metadatas", [[]])[0]
-        for m in metas:
-            articulos.append({
-                "citacion": m.get("citacion", ""),
-                "texto":    m.get("texto", ""),
-                "numero":   m.get("numero", ""),
-                "titulo":   m.get("titulo", ""),
-                "codigo":   m.get("codigo", ""),
-            })
+    # Ordenar por score descendente y tomar top_k con score > 0
+    indices_ordenados = sorted(
+        range(len(scores)),
+        key=lambda i: scores[i],
+        reverse=True,
+    )
 
-        return articulos
+    resultados = []
+    for i in indices_ordenados[:top_k * 2]:  # traer más y filtrar
+        if scores[i] <= 0:
+            break
+        resultados.append(_articulos[i])
+        if len(resultados) >= top_k:
+            break
 
-    except Exception as e:
-        logger.error(f"Error en búsqueda RAG: {e}")
-        return []
+    return resultados
 
 
 def formatear_para_prompt(articulos: list[dict], max_chars_por_art: int = 400) -> str:
     """
     Convierte los artículos encontrados en texto listo para inyectar en el system prompt.
-
-    Args:
-        articulos:          Lista retornada por buscar_normativa()
-        max_chars_por_art:  Límite de caracteres del texto de cada artículo
 
     Returns:
         Bloque de texto formateado, o cadena vacía si no hay artículos.

@@ -1,0 +1,9 @@
+{
+  "codigo": "Nuevo Código Procesal Penal (Arts. 446-566)",
+  "decreto": "Decreto Legislativo 957",
+  "fuente_url": "https://lpderecho.pe/nuevo-codigo-procesal-penal/",
+  "titulo_pagina": "Nuevo Código Procesal Penal (del artículo 446 al final)",
+  "fecha_scraping": "2026-04-12T05:42:30.278491+00:00",
+  "fecha_actualizacion_fuente": "2026",
+  "nota": "Parte 2 de 2: Arts. 446-566 (Libros V-VI: Procesos Especiales, Ejecucion). Ejecutar --merge-cpp al finalizar para unir con cpp."
+}

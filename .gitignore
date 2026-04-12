@@ -15,9 +15,12 @@ __pycache__/
 .venv/
 venv/
 
-# Knowledge (archivos privados del negocio)
-knowledge/*
-!knowledge/.gitkeep
+# Knowledge — solo excluir archivos binarios/grandes y ChromaDB
+knowledge/chromadb/
+knowledge/*.pdf
+!knowledge/normativa/
+!knowledge/procesos_legales.json
+!knowledge/asistente_legal_knowledge.txt
 
 # Session state
 config/session.yaml
