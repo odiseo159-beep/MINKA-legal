@@ -1,0 +1,24 @@
+# Secretos — nunca al contenedor
+.env
+.env.*
+
+# Base de datos local
+*.db
+*.sqlite
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Git
+.git/
+.gitignore
+
+# ChromaDB local (se regenera o no se usa en producción)
+knowledge/chromadb/
+
+# OS
+.DS_Store
+Thumbs.db
