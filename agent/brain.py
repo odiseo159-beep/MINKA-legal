@@ -12,6 +12,7 @@ import logging
 from anthropic import AsyncAnthropic
 from dotenv import load_dotenv
 from agent.case_tools import generar_contexto_para_bot
+from agent.rag import buscar_normativa, formatear_para_prompt
 
 load_dotenv()
 logger = logging.getLogger("agentkit")
@@ -72,6 +73,12 @@ async def generar_respuesta(mensaje: str, historial: list[dict], telefono: str =
         system_prompt = system_prompt_base + "\n\n" + contexto_caso
     else:
         system_prompt = system_prompt_base
+
+    # Inyectar artículos legales relevantes (RAG)
+    articulos_rag = buscar_normativa(mensaje, top_k=5)
+    bloque_rag = formatear_para_prompt(articulos_rag)
+    if bloque_rag:
+        system_prompt = system_prompt + "\n\n" + bloque_rag
 
     # Construir mensajes para la API
     mensajes = []

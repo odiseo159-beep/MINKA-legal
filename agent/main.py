@@ -28,6 +28,8 @@ from agent.lawyers_db import init_lawyers_db
 from agent.lawyer_commands import es_abogado, procesar_comando_abogado
 from agent.events_db import init_events_db, eventos_proximos, marcar_notificado
 from agent.lawyers_db import listar_abogados
+from agent.cases_db import listar_casos
+from agent.deadline_calculator import dias_restantes_habiles
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 load_dotenv()
@@ -135,9 +137,110 @@ async def enviar_alertas_eventos():
                 logger.error(f"[Alertas] Error enviando alerta: {e}")
 
 
+async def enviar_alertas_plazos():
+    """
+    Tarea diaria: revisa proxima_fecha de todos los casos activos y notifica
+    al abogado cuando restan exactamente 1, 3 o 7 días hábiles.
+    """
+    from datetime import datetime
+    from agent.lawyers_db import obtener_abogado
+    from agent.dashboard_api import _tel_whatsapp, WHAPI_TOKEN, WHAPI_API_URL
+    import httpx
+
+    logger.info("[Plazos] Revisando plazos de casos activos...")
+
+    estados_activos = {"nuevo", "en_tramite", "en_audiencia", "pendiente_documento",
+                       "en_revision", "en_apelacion"}
+    casos = listar_casos()
+    alertas_enviadas = 0
+
+    for caso in casos:
+        # Solo casos activos con proxima_fecha definida
+        if caso.get("estado") not in estados_activos:
+            continue
+        proxima_fecha = caso.get("proxima_fecha", "")
+        if not proxima_fecha:
+            continue
+
+        try:
+            dias = dias_restantes_habiles(proxima_fecha[:10])  # solo YYYY-MM-DD
+        except Exception:
+            continue
+
+        # Alertar exactamente 1, 3 o 7 días hábiles antes
+        if dias not in (1, 3, 7):
+            continue
+
+        # Buscar abogado: primero por abogado_id, luego por abogado_asignado (texto)
+        abogado = None
+        abogado_id = caso.get("abogado_id")
+        if abogado_id:
+            abogado = obtener_abogado(abogado_id)
+        if not abogado:
+            # Fallback: buscar abogados registrados y ver si alguno coincide con abogado_asignado
+            nombre_asignado = caso.get("abogado_asignado", "").strip()
+            if nombre_asignado:
+                for ab in listar_abogados(solo_activos=True):
+                    if ab.get("nombre", "").lower() == nombre_asignado.lower():
+                        abogado = ab
+                        break
+
+        if not abogado or not abogado.get("whatsapp_numero"):
+            logger.debug(f"[Plazos] Caso {caso['id']} sin abogado con WhatsApp — omitido")
+            continue
+
+        # Construir mensaje
+        cliente  = caso.get("nombre_cliente", "el cliente")
+        exp      = caso.get("expediente", "")
+        accion   = caso.get("proxima_accion", "")
+        fecha_str = proxima_fecha[:10]
+        try:
+            fecha_fmt = datetime.strptime(fecha_str, "%Y-%m-%d").strftime("%d/%m/%Y")
+        except Exception:
+            fecha_fmt = fecha_str
+
+        dia_label = "día hábil" if dias == 1 else "días hábiles"
+        mensaje = (
+            f"*Alerta de Plazo — Minka* ⚖️\n\n"
+            f"El caso de *{cliente}*"
+            + (f" (Exp. {exp})" if exp else "")
+            + f" vence en *{dias} {dia_label}*.\n\n"
+            f"📅 Fecha: {fecha_fmt}\n"
+        )
+        if accion:
+            mensaje += f"📋 Acción: {accion}\n"
+        mensaje += "\nRevisa el caso en el dashboard de Minka."
+
+        if not WHAPI_TOKEN:
+            logger.info(f"[Plazos] WHAPI_TOKEN no configurado — alerta para {abogado['nombre']} no enviada")
+            continue
+
+        tel = _tel_whatsapp(abogado["whatsapp_numero"])
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                r = await client.post(
+                    f"{WHAPI_API_URL}/messages/text",
+                    headers={
+                        "Authorization": f"Bearer {WHAPI_TOKEN}",
+                        "Content-Type": "application/json",
+                    },
+                    json={"to": f"{tel}@s.whatsapp.net", "body": mensaje},
+                )
+            if r.status_code == 200:
+                alertas_enviadas += 1
+                logger.info(f"[Plazos] Alerta enviada a {abogado['nombre']} — caso {caso['id']} ({dias}d)")
+            else:
+                logger.error(f"[Plazos] Error Whapi {r.status_code} para caso {caso['id']}")
+        except Exception as e:
+            logger.error(f"[Plazos] Error enviando alerta para caso {caso['id']}: {e}")
+
+    logger.info(f"[Plazos] Revision completa — {alertas_enviadas} alertas enviadas")
+
+
 @app.on_event("startup")
 async def start_scheduler():
     scheduler.add_job(enviar_alertas_eventos, "cron", hour=8, minute=0)
+    scheduler.add_job(enviar_alertas_plazos,  "cron", hour=8, minute=5)
     scheduler.start()
     logger.info("[Alertas] Scheduler iniciado — alertas diarias a las 8:00 AM Lima")
 
@@ -215,9 +318,11 @@ async def webhook_handler(request: Request):
             await guardar_mensaje(msg.telefono, "assistant", respuesta)
 
             # Enviar respuesta por WhatsApp via el proveedor
-            await proveedor.enviar_mensaje(msg.telefono, respuesta)
+            enviado = await proveedor.enviar_mensaje(msg.telefono, respuesta)
+            if not enviado:
+                logger.warning(f"[WEBHOOK] Mensaje generado pero no enviado a {msg.telefono} (WhatsApp no disponible en local)")
 
-            logger.info(f"Respuesta a {msg.telefono}: {respuesta}")
+            logger.info(f"Respuesta a {msg.telefono}: {respuesta.encode('ascii', errors='replace').decode()}")
 
         return {"status": "ok"}
 
