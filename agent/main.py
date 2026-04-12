@@ -280,6 +280,25 @@ async def health_check():
     return {"status": "ok", "service": "minka-legal"}
 
 
+@app.get("/debug-lookup")
+async def debug_lookup(telefono: str = ""):
+    """
+    Diagnóstico: simula exactamente lo que hace el webhook para buscar el caso de un teléfono.
+    Uso: GET /debug-lookup?telefono=51940592068
+    """
+    from agent.cases_db import buscar_por_telefono, normalizar_telefono
+    if not telefono:
+        return {"info": "Agrega ?telefono=51940592068"}
+    normalizado = normalizar_telefono(telefono)
+    casos = buscar_por_telefono(telefono)
+    return {
+        "telefono_recibido": telefono,
+        "telefono_normalizado": normalizado,
+        "casos_encontrados": len(casos),
+        "casos": [{"id": c["id"], "telefono_db": c["telefono"], "nombre": c["nombre_cliente"]} for c in casos],
+    }
+
+
 @app.get("/test-whapi")
 async def test_whapi(telefono: str = ""):
     """
