@@ -43,11 +43,13 @@ class ProveedorWhapi(ProveedorWhatsApp):
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json",
         }
+        # Whapi requiere formato "51999888777@s.whatsapp.net"
+        to = telefono if "@" in telefono else f"{telefono}@s.whatsapp.net"
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
                 r = await client.post(
                     self.url_envio,
-                    json={"to": telefono, "body": mensaje},
+                    json={"to": to, "body": mensaje},
                     headers=headers,
                 )
                 if r.status_code != 200:
