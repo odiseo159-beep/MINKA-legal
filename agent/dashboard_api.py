@@ -24,7 +24,7 @@ from agent.lawyers_db import (
 )
 from agent.document_extractor import extraer_datos_documento
 from agent.legal_advisor import generar_consejo_procesal
-from agent.rag import buscar_normativa
+from agent.rag import buscar_normativa, formatear_para_prompt
 from agent.auth_api import get_current_user
 from agent.events_db import (
     listar_eventos,
