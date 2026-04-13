@@ -24,6 +24,7 @@ from agent.lawyers_db import (
 )
 from agent.document_extractor import extraer_datos_documento
 from agent.legal_advisor import generar_consejo_procesal
+from agent.rag import buscar_normativa
 from agent.auth_api import get_current_user
 from agent.events_db import (
     listar_eventos,
@@ -465,6 +466,35 @@ def api_feriados(
     if anio:
         feriados = [f for f in feriados if f.startswith(str(anio))]
     return {"feriados": feriados, "total": len(feriados)}
+
+# ─────────────────────────────────────────────
+# Búsqueda de normativa (RAG)
+# ─────────────────────────────────────────────
+
+class NormativaRequest(BaseModel):
+    query: str
+    codigos: Optional[List[str]] = None
+    top_k: int = 5
+
+
+@router.post("/api/normativa/buscar")
+def api_buscar_normativa(data: NormativaRequest, request: Request, user=Depends(require_auth)):
+    """Busca artículos legales relevantes usando BM25 sobre la base de normativa."""
+    if not data.query or not data.query.strip():
+        raise HTTPException(status_code=422, detail="El campo 'query' es obligatorio")
+
+    resultados = buscar_normativa(
+        query=data.query.strip(),
+        codigos=data.codigos,
+        top_k=min(data.top_k, 10),
+    )
+
+    return {
+        "articulos": resultados,
+        "total": len(resultados),
+        "query": data.query.strip(),
+    }
+
 
 # ─────────────────────────────────────────────
 # Dashboard (sirve dashboard.html)

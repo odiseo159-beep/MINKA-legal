@@ -11,6 +11,20 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from agent.cases_db import init_cases_db, crear_caso, listar_casos, eliminar_caso
 
 DEMO_CASES = [
+    # ── Caso de prueba — número real para testing WhatsApp ──────────
+    {
+        "telefono": "940592068",
+        "nombre_cliente": "Daniel Quispe Salinas",
+        "expediente": "EXP-2026-0301",
+        "tipo_caso": "Penal - Estafa",
+        "estado": "en_tramite",
+        "proxima_fecha": "2026-04-25",
+        "proxima_accion": "Declaración ante la fiscalía — preparar declaración jurada y pruebas bancarias",
+        "documentos_pendientes": "Contratos firmados, vouchers de transferencia, correos del acusado",
+        "notas": "Cliente víctima de estafa por S/ 35,000 en inversión falsa. Acusado identificado. Denuncia presentada ante la Fiscalía Penal de Lima Norte. Investigación en curso.",
+        "abogado_asignado": "Daniel",
+    },
+    # ────────────────────────────────────────────────────────────────
     {
         "telefono": "912345678",
         "nombre_cliente": "María García López",
