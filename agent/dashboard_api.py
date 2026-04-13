@@ -376,13 +376,15 @@ ESTADO PROCESAL ACTUAL:
 {bloque_doc}
 {bloque_normativa}
 
-Instrucciones:
-- Responde de forma clara y estructurada en español
-- Cita artículos legales cuando sea relevante (ya los tienes arriba)
-- Sugiere pasos concretos y prácticos
-- Si hay una advertencia de plazo vencido, mencionarla primero
-- No inventes información que no esté en el contexto
-- Si el abogado pregunta sobre plazos, usa los datos del estado procesal de arriba"""
+Instrucciones de formato (MUY IMPORTANTE):
+- Responde en texto plano, sin markdown de ningún tipo
+- Prohibido usar #, ##, **, *, --, ---, |, >, emojis ni símbolos decorativos
+- Usa párrafos separados por línea en blanco para organizar la respuesta
+- Si necesitas enumerar, usa números simples: 1. 2. 3.
+- Sé conciso y directo, sin introducciones largas ni resúmenes al final
+- Cita artículos legales en texto plano: "Art. 196 del CP" o "Art. 334 del CPP"
+- Si hay advertencia de plazo vencido, mencionarla al inicio
+- No inventes información que no esté en el contexto"""
 
     # 7. Llamar a Claude
     anthropic_client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
