@@ -66,6 +66,7 @@ class CaseCreate(BaseModel):
     documentos_pendientes: Optional[str] = None
     notas: Optional[str] = None
     abogado_asignado: Optional[str] = None
+    documento_texto: Optional[str] = None
 
 class CaseUpdate(BaseModel):
     telefono: Optional[str] = None
@@ -78,7 +79,11 @@ class CaseUpdate(BaseModel):
     documentos_pendientes: Optional[str] = None
     notas: Optional[str] = None
     abogado_asignado: Optional[str] = None
+    documento_texto: Optional[str] = None
     notificar_cliente: Optional[bool] = True
+
+class ChatRequest(BaseModel):
+    pregunta: str
 
 # ─────────────────────────────────────────────
 # Notificación proactiva vía Whapi
@@ -290,6 +295,109 @@ def api_consejo_procesal(caso_id: int, request: Request, user=Depends(require_au
 
     consejo = generar_consejo_procesal(caso)
     return consejo
+
+# ─────────────────────────────────────────────
+# Endpoint — Chat con el caso (IA para el abogado)
+# ─────────────────────────────────────────────
+
+@router.post("/api/casos/{caso_id}/chat")
+async def api_chat_caso(caso_id: int, data: ChatRequest, request: Request, user=Depends(require_auth)):
+    """
+    El abogado hace una pregunta sobre el caso y Claude responde con contexto completo:
+    - Datos del caso
+    - Texto del documento subido (si existe)
+    - Consejo procesal (siguiente etapa, plazos, documentos)
+    - Normativa relevante (BM25)
+    """
+    import os
+    from anthropic import AsyncAnthropic
+
+    caso = obtener_caso(caso_id)
+    if not caso:
+        raise HTTPException(status_code=404, detail="Caso no encontrado")
+
+    pregunta = data.pregunta.strip()
+    if not pregunta:
+        raise HTTPException(status_code=422, detail="La pregunta no puede estar vacía")
+
+    # 1. Consejo procesal estructurado
+    consejo = generar_consejo_procesal(caso)
+
+    # 2. Normativa relevante (BM25 sobre la pregunta + tipo de caso)
+    query_rag = f"{pregunta} {caso.get('tipo_caso', '')} {caso.get('notas', '')}"
+    articulos = buscar_normativa(query_rag, top_k=5)
+    bloque_normativa = formatear_para_prompt(articulos)
+
+    # 3. Construir contexto del caso
+    def val(campo: str) -> str:
+        v = caso.get(campo) or ""
+        return v.strip() if isinstance(v, str) else str(v)
+
+    ctx_caso = f"""DATOS DEL CASO:
+- Cliente: {val('nombre_cliente')}
+- Expediente: {val('expediente') or 'No registrado'}
+- Tipo: {val('tipo_caso')}
+- Estado: {val('estado')}
+- Próxima fecha: {val('proxima_fecha') or 'No definida'}
+- Próxima acción: {val('proxima_accion') or 'No definida'}
+- Documentos pendientes: {val('documentos_pendientes') or 'Ninguno'}
+- Notas internas: {val('notas') or 'Sin notas'}"""
+
+    # 4. Texto del documento (truncado a 6000 chars para no saturar el contexto)
+    doc_texto = val("documento_texto")
+    bloque_doc = ""
+    if doc_texto:
+        truncado = doc_texto[:6000]
+        if len(doc_texto) > 6000:
+            truncado += "\n[... documento truncado ...]"
+        bloque_doc = f"\nDOCUMENTO DEL CASO (texto extraído):\n{truncado}"
+
+    # 5. Bloque de consejo procesal
+    bloque_consejo = ""
+    if consejo.get("tiene_consejo"):
+        bloque_consejo = f"""
+ESTADO PROCESAL ACTUAL:
+- Proceso: {consejo.get('tipo_proceso', '')}
+- Etapa actual: {consejo.get('etapa_actual', '')}
+- Siguiente etapa: {consejo.get('siguiente_etapa', '')}
+- Descripción: {consejo.get('siguiente_descripcion', '')}
+- Plazo legal: {consejo.get('plazo_descripcion', '')}
+- Fecha límite sugerida: {consejo.get('proxima_fecha_sugerida', 'No calculada')}
+- Documentos a preparar: {', '.join(consejo.get('documentos_requeridos', [])) or 'No especificados'}
+- Norma aplicable: {consejo.get('norma', '')}"""
+        if consejo.get("advertencia"):
+            bloque_consejo += f"\n- ⚠️ {consejo['advertencia']}"
+
+    # 6. System prompt final
+    system_prompt = f"""Eres Minka, asistente de IA para abogados peruanos. Tu función es responder preguntas del abogado sobre su caso de forma precisa, práctica y fundamentada en el derecho peruano.
+
+{ctx_caso}
+{bloque_consejo}
+{bloque_doc}
+{bloque_normativa}
+
+Instrucciones:
+- Responde de forma clara y estructurada en español
+- Cita artículos legales cuando sea relevante (ya los tienes arriba)
+- Sugiere pasos concretos y prácticos
+- Si hay una advertencia de plazo vencido, mencionarla primero
+- No inventes información que no esté en el contexto
+- Si el abogado pregunta sobre plazos, usa los datos del estado procesal de arriba"""
+
+    # 7. Llamar a Claude
+    anthropic_client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    try:
+        response = await anthropic_client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1024,
+            system=system_prompt,
+            messages=[{"role": "user", "content": pregunta}],
+        )
+        respuesta = response.content[0].text
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al consultar IA: {str(e)}")
+
+    return {"respuesta": respuesta}
 
 # ─────────────────────────────────────────────
 # Endpoints API REST — Abogados

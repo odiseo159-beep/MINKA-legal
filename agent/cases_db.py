@@ -12,7 +12,7 @@ os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
 
 
 def init_cases_db():
-    """Crea la tabla de casos si no existe."""
+    """Crea la tabla de casos si no existe y aplica migraciones."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
@@ -28,10 +28,16 @@ def init_cases_db():
             documentos_pendientes TEXT,
             notas TEXT,
             abogado_asignado TEXT,
+            documento_texto TEXT,
             fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP,
             fecha_actualizacion TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    # Migración: agregar columna si no existe en DBs anteriores
+    try:
+        cursor.execute("ALTER TABLE casos ADD COLUMN documento_texto TEXT")
+    except Exception:
+        pass  # La columna ya existe
     conn.commit()
     conn.close()
 
@@ -57,8 +63,9 @@ def crear_caso(data: dict) -> dict:
     telefono = normalizar_telefono(data.get("telefono", ""))
     cursor.execute("""
         INSERT INTO casos (telefono, nombre_cliente, expediente, tipo_caso, estado,
-                          proxima_fecha, proxima_accion, documentos_pendientes, notas, abogado_asignado)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                          proxima_fecha, proxima_accion, documentos_pendientes, notas,
+                          abogado_asignado, documento_texto)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         telefono,
         data.get("nombre_cliente", ""),
@@ -70,6 +77,7 @@ def crear_caso(data: dict) -> dict:
         data.get("documentos_pendientes", ""),
         data.get("notas", ""),
         data.get("abogado_asignado", ""),
+        data.get("documento_texto", ""),
     ))
     conn.commit()
     caso_id = cursor.lastrowid
@@ -129,7 +137,7 @@ def actualizar_caso(caso_id: int, data: dict) -> dict:
     campos_permitidos = [
         "nombre_cliente", "expediente", "tipo_caso", "estado",
         "proxima_fecha", "proxima_accion", "documentos_pendientes",
-        "notas", "abogado_asignado", "telefono"
+        "notas", "abogado_asignado", "telefono", "documento_texto"
     ]
     
     updates = []
