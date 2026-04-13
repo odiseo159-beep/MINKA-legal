@@ -29,15 +29,24 @@ def init_cases_db():
             notas TEXT,
             abogado_asignado TEXT,
             documento_texto TEXT,
+            documento_url TEXT,
+            documento_nombre TEXT,
+            documento_tipo TEXT,
             fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP,
             fecha_actualizacion TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
-    # Migración: agregar columna si no existe en DBs anteriores
-    try:
-        cursor.execute("ALTER TABLE casos ADD COLUMN documento_texto TEXT")
-    except Exception:
-        pass  # La columna ya existe
+    # Migraciones: agregar columnas si no existen en DBs anteriores
+    for columna, definicion in [
+        ("documento_texto", "TEXT"),
+        ("documento_url", "TEXT"),
+        ("documento_nombre", "TEXT"),
+        ("documento_tipo", "TEXT"),
+    ]:
+        try:
+            cursor.execute(f"ALTER TABLE casos ADD COLUMN {columna} {definicion}")
+        except Exception:
+            pass  # La columna ya existe
     conn.commit()
     conn.close()
 
@@ -137,7 +146,8 @@ def actualizar_caso(caso_id: int, data: dict) -> dict:
     campos_permitidos = [
         "nombre_cliente", "expediente", "tipo_caso", "estado",
         "proxima_fecha", "proxima_accion", "documentos_pendientes",
-        "notas", "abogado_asignado", "telefono", "documento_texto"
+        "notas", "abogado_asignado", "telefono", "documento_texto",
+        "documento_url", "documento_nombre", "documento_tipo",
     ]
     
     updates = []

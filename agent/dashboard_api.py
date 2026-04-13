@@ -2,6 +2,7 @@ import os
 import httpx
 from fastapi import APIRouter, HTTPException, UploadFile, File, Request, Depends
 from fastapi.responses import HTMLResponse
+from agent.storage import r2_configured, upload_document, generate_presigned_url, delete_document
 from pydantic import BaseModel
 from typing import Optional, List
 from agent.cases_db import (
@@ -238,6 +239,102 @@ def api_eliminar_caso(caso_id: int, request: Request, user=Depends(require_auth)
         raise HTTPException(status_code=404, detail="Caso no encontrado")
     eliminar_caso(caso_id)
     return {"ok": True, "mensaje": "Caso eliminado"}
+
+# ─────────────────────────────────────────────
+# Endpoints — Almacenamiento de documentos (R2)
+# ─────────────────────────────────────────────
+
+@router.post("/api/casos/{caso_id}/documento")
+async def api_subir_documento(caso_id: int, archivo: UploadFile = File(...), request: Request = None, user=Depends(require_auth)):
+    """
+    Sube el archivo original del caso a Cloudflare R2 y guarda la referencia en BD.
+    Requiere variables de entorno: R2_ACCOUNT_ID, R2_ACCESS_KEY, R2_SECRET_KEY, R2_BUCKET.
+    """
+    if not r2_configured():
+        raise HTTPException(status_code=503, detail="El almacenamiento de documentos no está configurado. Contacta al administrador.")
+
+    caso = obtener_caso(caso_id)
+    if not caso:
+        raise HTTPException(status_code=404, detail="Caso no encontrado")
+
+    MAX_SIZE_MB = 10
+    contenido = await archivo.read()
+    if len(contenido) > MAX_SIZE_MB * 1024 * 1024:
+        raise HTTPException(status_code=413, detail=f"El archivo supera los {MAX_SIZE_MB}MB permitidos.")
+
+    ext = (archivo.filename or "").lower().rsplit(".", 1)[-1]
+    if ext not in ("pdf", "doc", "docx"):
+        raise HTTPException(status_code=415, detail="Solo se aceptan archivos PDF y DOCX.")
+
+    content_type = archivo.content_type or "application/octet-stream"
+    nombre = archivo.filename or f"documento.{ext}"
+
+    try:
+        key = upload_document(contenido, nombre, content_type, caso_id)
+    except Exception as e:
+        print(f"[Storage] ❌ Error al subir a R2: {e}")
+        raise HTTPException(status_code=500, detail="No se pudo subir el documento. Intenta de nuevo.")
+
+    caso_actualizado = actualizar_caso(caso_id, {
+        "documento_url": key,
+        "documento_nombre": nombre,
+        "documento_tipo": content_type,
+    })
+    return caso_actualizado
+
+
+@router.get("/api/casos/{caso_id}/documento")
+def api_obtener_url_documento(caso_id: int, request: Request, user=Depends(require_auth)):
+    """
+    Genera una URL firmada temporal (1 hora) para descargar el documento del caso.
+    """
+    if not r2_configured():
+        raise HTTPException(status_code=503, detail="El almacenamiento de documentos no está configurado.")
+
+    caso = obtener_caso(caso_id)
+    if not caso:
+        raise HTTPException(status_code=404, detail="Caso no encontrado")
+
+    key = caso.get("documento_url")
+    if not key:
+        raise HTTPException(status_code=404, detail="Este caso no tiene documento almacenado.")
+
+    try:
+        url = generate_presigned_url(key, expires_seconds=3600)
+    except Exception as e:
+        print(f"[Storage] ❌ Error al generar URL: {e}")
+        raise HTTPException(status_code=500, detail="No se pudo generar el enlace de descarga.")
+
+    return {
+        "url": url,
+        "nombre": caso.get("documento_nombre", "documento"),
+        "tipo": caso.get("documento_tipo", ""),
+    }
+
+
+@router.delete("/api/casos/{caso_id}/documento")
+def api_eliminar_documento(caso_id: int, request: Request, user=Depends(require_auth)):
+    """
+    Elimina el documento almacenado del caso (de R2 y de la BD).
+    """
+    if not r2_configured():
+        raise HTTPException(status_code=503, detail="El almacenamiento de documentos no está configurado.")
+
+    caso = obtener_caso(caso_id)
+    if not caso:
+        raise HTTPException(status_code=404, detail="Caso no encontrado")
+
+    key = caso.get("documento_url")
+    if not key:
+        raise HTTPException(status_code=404, detail="Este caso no tiene documento almacenado.")
+
+    delete_document(key)
+    caso_actualizado = actualizar_caso(caso_id, {
+        "documento_url": None,
+        "documento_nombre": None,
+        "documento_tipo": None,
+    })
+    return caso_actualizado
 
 # ─────────────────────────────────────────────
 # Endpoint — Extracción de documento con Claude
