@@ -9,7 +9,16 @@ import json
 import base64
 
 # Secret key para JWT — en producción usar variable de entorno
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "minka-legal-secret-key-change-in-production")
+_jwt_secret = os.getenv("JWT_SECRET_KEY", "")
+if not _jwt_secret:
+    import logging as _logging
+    _logging.getLogger("agentkit").critical(
+        "[SECURITY] JWT_SECRET_KEY no está configurada. "
+        "Usando clave insegura por defecto. "
+        "Configura JWT_SECRET_KEY en las variables de entorno de Railway."
+    )
+    _jwt_secret = "minka-legal-secret-key-change-in-production"
+SECRET_KEY = _jwt_secret
 TOKEN_EXPIRY = 24 * 60 * 60  # 24 horas en segundos
 
 

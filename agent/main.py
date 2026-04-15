@@ -8,6 +8,7 @@ Incluye el dashboard web para que el abogado gestione casos.
 """
 
 import os
+import hmac
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
@@ -54,9 +55,15 @@ async def lifespan(app: FastAPI):
     init_lawyers_db()
     init_events_db()
     # Crear usuario admin inicial si no existe
-    admin_email = os.getenv("ADMIN_EMAIL", "daniel@simplifai.pe")
-    admin_password = os.getenv("ADMIN_PASSWORD", "minka2026")
-    if not usuario_existe(admin_email):
+    admin_email = os.getenv("ADMIN_EMAIL", "")
+    admin_password = os.getenv("ADMIN_PASSWORD", "")
+    if not admin_email or not admin_password:
+        logger.critical(
+            "[SECURITY] ADMIN_EMAIL o ADMIN_PASSWORD no configuradas. "
+            "No se creará el usuario admin automáticamente. "
+            "Configura estas variables en Railway."
+        )
+    elif not usuario_existe(admin_email):
         crear_usuario(
             email=admin_email,
             password_hash=hash_password(admin_password),
@@ -258,10 +265,14 @@ async def stop_scheduler():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://minka-front.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:3001",
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # Registrar rutas de auth y dashboard
@@ -280,12 +291,23 @@ async def health_check():
     return {"status": "ok", "service": "minka-legal"}
 
 
+def _check_debug_token(request: Request) -> None:
+    """Verifica el token de debug. Lanza 403 si no coincide o si DEBUG_TOKEN no está configurado."""
+    debug_token = os.getenv("DEBUG_TOKEN", "")
+    if not debug_token:
+        raise HTTPException(status_code=404, detail="Not found")
+    provided = request.headers.get("X-Debug-Token", "")
+    if not provided or not hmac.compare_digest(debug_token, provided):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+
 @app.get("/debug-lookup")
-async def debug_lookup(telefono: str = ""):
+async def debug_lookup(request: Request, telefono: str = ""):
     """
     Diagnóstico: simula exactamente lo que hace el webhook para buscar el caso de un teléfono.
     Uso: GET /debug-lookup?telefono=51940592068
     """
+    _check_debug_token(request)
     from agent.cases_db import buscar_por_telefono, normalizar_telefono
     if not telefono:
         return {"info": "Agrega ?telefono=51940592068"}
@@ -300,12 +322,13 @@ async def debug_lookup(telefono: str = ""):
 
 
 @app.get("/test-whapi")
-async def test_whapi(telefono: str = ""):
+async def test_whapi(request: Request, telefono: str = ""):
     """
     Diagnóstico: intenta enviar un mensaje de prueba via Whapi.
     Uso: GET /test-whapi?telefono=51940592068
     Muestra el token activo y el resultado del envío.
     """
+    _check_debug_token(request)
     import httpx
     whapi_tok = os.getenv("WHAPI_TOKEN", "")
     tok_display = f"{whapi_tok[:4]}...{whapi_tok[-4:]}" if len(whapi_tok) >= 8 else "(vacío)"

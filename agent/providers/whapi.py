@@ -18,7 +18,17 @@ class ProveedorWhapi(ProveedorWhatsApp):
         self.url_envio = "https://gate.whapi.cloud/messages/text"
 
     async def parsear_webhook(self, request: Request) -> list[MensajeEntrante]:
-        """Parsea el payload de Whapi.cloud."""
+        """Parsea el payload de Whapi.cloud, validando el token de webhook si está configurado."""
+        webhook_token = os.getenv("WHAPI_WEBHOOK_TOKEN", "")
+        if webhook_token:
+            import hmac as _hmac
+            provided = request.headers.get("X-Whapi-Token", "")
+            if not provided or not _hmac.compare_digest(webhook_token, provided):
+                from fastapi import HTTPException
+                raise HTTPException(status_code=403, detail="Invalid webhook token")
+        else:
+            logger.warning("[WHAPI] WHAPI_WEBHOOK_TOKEN no configurado — webhook sin validación de firma")
+
         body = await request.json()
         mensajes = []
         for msg in body.get("messages", []):
