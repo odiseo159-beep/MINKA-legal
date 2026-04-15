@@ -62,6 +62,18 @@ def init_cases_db():
             FOREIGN KEY (caso_id) REFERENCES casos(id) ON DELETE CASCADE
         )
     """)
+
+    # Tabla de mensajes de chat por caso
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chat_mensajes (
+            id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            caso_id  INTEGER NOT NULL,
+            role     TEXT NOT NULL,
+            content  TEXT NOT NULL,
+            timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (caso_id) REFERENCES casos(id) ON DELETE CASCADE
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -275,3 +287,45 @@ def eliminar_documento_caso(doc_id: int) -> bool:
     conn.commit()
     conn.close()
     return eliminado
+
+
+# ─────────────────────────────────────────────
+# CRUD — Chat por caso
+# ─────────────────────────────────────────────
+
+def guardar_mensaje_chat(caso_id: int, role: str, content: str) -> None:
+    """Guarda un mensaje del chat en la base de datos."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO chat_mensajes (caso_id, role, content) VALUES (?, ?, ?)",
+        (caso_id, role, content)
+    )
+    conn.commit()
+    conn.close()
+
+
+def listar_mensajes_chat(caso_id: int, limit: int = 100) -> list:
+    """Retorna los últimos `limit` mensajes del chat de un caso, en orden cronológico."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        """SELECT role, content, timestamp FROM chat_mensajes
+           WHERE caso_id = ?
+           ORDER BY id DESC LIMIT ?""",
+        (caso_id, limit)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    # Invertir para orden cronológico (más antiguo primero)
+    return [dict(r) for r in reversed(rows)]
+
+
+def limpiar_chat_caso(caso_id: int) -> None:
+    """Elimina todos los mensajes del chat de un caso."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM chat_mensajes WHERE caso_id = ?", (caso_id,))
+    conn.commit()
+    conn.close()

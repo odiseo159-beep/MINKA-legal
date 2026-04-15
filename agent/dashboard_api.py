@@ -16,6 +16,9 @@ from agent.cases_db import (
     listar_documentos_caso,
     obtener_documento_caso,
     eliminar_documento_caso,
+    guardar_mensaje_chat,
+    listar_mensajes_chat,
+    limpiar_chat_caso,
 )
 from agent.crypto import compress_encrypt, decrypt_decompress
 from agent.lawyers_db import (
@@ -742,7 +745,31 @@ Instrucciones de formato (MUY IMPORTANTE):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al consultar IA: {str(e)}")
 
+    # Guardar historial
+    guardar_mensaje_chat(caso_id, "user", data.pregunta)
+    guardar_mensaje_chat(caso_id, "assistant", respuesta)
+
     return {"respuesta": respuesta}
+
+@router.get("/api/casos/{caso_id}/chat/historial")
+async def api_chat_historial(caso_id: int, request: Request, user=Depends(require_auth)):
+    """Retorna el historial de mensajes del chat de un caso."""
+    caso = obtener_caso(caso_id)
+    if not caso:
+        raise HTTPException(status_code=404, detail="Caso no encontrado")
+    mensajes = listar_mensajes_chat(caso_id)
+    return {"mensajes": mensajes}
+
+
+@router.delete("/api/casos/{caso_id}/chat/historial")
+async def api_chat_limpiar(caso_id: int, request: Request, user=Depends(require_auth)):
+    """Elimina el historial de chat de un caso."""
+    caso = obtener_caso(caso_id)
+    if not caso:
+        raise HTTPException(status_code=404, detail="Caso no encontrado")
+    limpiar_chat_caso(caso_id)
+    return {"ok": True}
+
 
 # ─────────────────────────────────────────────
 # Endpoints API REST — Abogados
