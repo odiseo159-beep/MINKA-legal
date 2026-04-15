@@ -29,7 +29,7 @@ from agent.lawyers_db import (
     crear_estudio,
     actualizar_estudio,
 )
-from agent.document_extractor import extraer_datos_documento
+from agent.document_extractor import extraer_datos_documento, extraer_resumen_estructurado
 from agent.legal_advisor import generar_consejo_procesal
 from agent.rag import buscar_normativa, formatear_para_prompt
 from agent.auth_api import get_current_user
@@ -406,7 +406,6 @@ async def api_subir_documento_caso(
         raise HTTPException(status_code=500, detail="No se pudo subir el archivo.")
 
     # 2. Extracción inteligente con Claude Haiku
-    from agent.document_extractor import extraer_resumen_estructurado
     try:
         resumen_dict, texto_relevante_str = extraer_resumen_estructurado(
             contenido, nombre, content_type
@@ -639,7 +638,6 @@ async def api_chat_caso(caso_id: int, data: ChatRequest, request: Request, user=
     - Consejo procesal (siguiente etapa, plazos, documentos)
     - Normativa relevante (BM25)
     """
-    import os
     from anthropic import AsyncAnthropic
 
     caso = obtener_caso(caso_id)
