@@ -47,6 +47,21 @@ def init_cases_db():
             cursor.execute(f"ALTER TABLE casos ADD COLUMN {columna} {definicion}")
         except Exception:
             pass  # La columna ya existe
+
+    # Tabla de documentos por caso
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS caso_documentos (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            caso_id     INTEGER NOT NULL,
+            nombre      TEXT NOT NULL,
+            tipo_archivo TEXT NOT NULL,
+            key_r2      TEXT NOT NULL,
+            resumen_json     TEXT,
+            texto_relevante  TEXT,
+            fecha_subida TEXT NOT NULL,
+            FOREIGN KEY (caso_id) REFERENCES casos(id) ON DELETE CASCADE
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -180,6 +195,82 @@ def eliminar_caso(caso_id: int) -> bool:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM casos WHERE id = ?", (caso_id,))
+    eliminado = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return eliminado
+
+
+# ─────────────────────────────────────────────
+# CRUD — Documentos por caso
+# ─────────────────────────────────────────────
+
+def crear_documento_caso(
+    caso_id: int,
+    nombre: str,
+    tipo_archivo: str,
+    key_r2: str,
+    resumen_json: str = "",
+    texto_relevante: str = "",
+) -> dict:
+    """Inserta un documento en caso_documentos y retorna el registro creado."""
+    from datetime import timezone
+    fecha = datetime.now(timezone.utc).isoformat()
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        """INSERT INTO caso_documentos
+           (caso_id, nombre, tipo_archivo, key_r2, resumen_json, texto_relevante, fecha_subida)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (caso_id, nombre, tipo_archivo, key_r2, resumen_json, texto_relevante, fecha),
+    )
+    conn.commit()
+    doc_id = cursor.lastrowid
+    conn.close()
+    return obtener_documento_caso(doc_id)
+
+
+def listar_documentos_caso(caso_id: int) -> list:
+    """Lista todos los documentos de un caso, ordenados por fecha_subida desc."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        """SELECT id, caso_id, nombre, tipo_archivo, key_r2,
+                  resumen_json, texto_relevante, fecha_subida
+           FROM caso_documentos
+           WHERE caso_id = ?
+           ORDER BY fecha_subida DESC""",
+        (caso_id,),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+
+def obtener_documento_caso(doc_id: int) -> dict:
+    """Obtiene un documento por su ID."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        """SELECT id, caso_id, nombre, tipo_archivo, key_r2,
+                  resumen_json, texto_relevante, fecha_subida
+           FROM caso_documentos WHERE id = ?""",
+        (doc_id,),
+    )
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return dict(row)
+    return None
+
+
+def eliminar_documento_caso(doc_id: int) -> bool:
+    """Elimina un documento por su ID. Retorna True si existía."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM caso_documentos WHERE id = ?", (doc_id,))
     eliminado = cursor.rowcount > 0
     conn.commit()
     conn.close()
