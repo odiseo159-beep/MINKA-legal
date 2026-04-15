@@ -43,6 +43,36 @@ Formato exacto (incluye solo los campos que encontraste):
 Si no encuentras ningún campo, devuelve: {}
 """
 
+PROMPT_RESUMEN_ESTRUCTURADO = """Eres un asistente legal especializado en derecho peruano.
+Analiza el documento adjunto y extrae ÚNICAMENTE información que aparezca de forma EXPLÍCITA.
+NO inventes, NO asumas, NO infieras lo que no está escrito.
+
+Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura exacta (omite campos null):
+{
+  "tipo_documento": "denuncia_penal|demanda_civil|resolucion|oficio|contrato|audiencia|otro",
+  "partes": {
+    "demandante_denunciante": "nombre completo o null",
+    "demandado_denunciado": "nombre completo o null",
+    "fiscal": "nombre o null",
+    "juez": "nombre o null"
+  },
+  "hechos_clave": "resumen de los hechos principales en 2 a 3 párrafos concisos",
+  "pretension": "qué se reclama o solicita (1 oración)",
+  "fundamentos_juridicos": ["art. X del CP", "..."],
+  "pruebas_evidencia": ["prueba 1", "prueba 2"],
+  "fechas_importantes": [{"fecha": "YYYY-MM-DD o texto si no hay formato claro", "descripcion": "..."}],
+  "montos": [{"monto": "S/ X", "concepto": "..."}],
+  "resolucion_fallo": "resolución o fallo si existe, o null",
+  "expediente": "número exacto si existe, o null"
+}
+
+Reglas:
+1. Solo extrae lo explícitamente escrito. Si un campo no está, omítelo del JSON.
+2. hechos_clave: incluye quién, qué, cuándo, dónde, cómo. Máximo 300 palabras.
+3. Si el documento es muy corto o ilegible, devuelve {"tipo_documento": "otro", "hechos_clave": "Documento sin contenido procesable"}.
+4. Sin texto adicional, sin markdown, sin bloques de código. Solo el JSON.
+"""
+
 
 def _leer_docx_como_texto(contenido_bytes: bytes) -> str:
     try:
@@ -140,3 +170,88 @@ def extraer_datos_documento(contenido_bytes: bytes, nombre_archivo: str, content
         "archivo": nombre_archivo,
         "campos_encontrados": len(campos),
     }
+
+
+def extraer_resumen_estructurado(
+    contenido_bytes: bytes,
+    nombre_archivo: str,
+    content_type: str,
+) -> tuple[dict, str]:
+    """
+    Extrae un resumen estructurado del documento usando Claude Haiku.
+    Retorna (resumen_dict, texto_relevante_str).
+
+    - resumen_dict: JSON con partes, hechos, pruebas, fechas, etc.
+    - texto_relevante_str: concatenación de campos textuales para búsqueda BM25.
+    """
+    import json as _json
+
+    ext = nombre_archivo.lower().rsplit(".", 1)[-1] if "." in nombre_archivo else ""
+
+    # Preparar contenido según tipo de archivo
+    if ext == "docx":
+        texto = _leer_docx_como_texto(contenido_bytes)
+        content_for_claude = [
+            {
+                "type": "text",
+                "text": f"Documento legal (DOCX convertido a texto):\n\n{texto[:12000]}",
+            }
+        ]
+    elif content_type.startswith("image/") or ext in ("jpg", "jpeg", "png"):
+        b64 = base64.standard_b64encode(contenido_bytes).decode("utf-8")
+        content_for_claude = [
+            {
+                "type": "image",
+                "source": {"type": "base64", "media_type": content_type, "data": b64},
+            },
+            {"type": "text", "text": "Analiza este documento legal."},
+        ]
+    else:
+        # PDF: enviar como base64 document
+        b64 = base64.standard_b64encode(contenido_bytes).decode("utf-8")
+        content_for_claude = [
+            {
+                "type": "document",
+                "source": {"type": "base64", "media_type": "application/pdf", "data": b64},
+            },
+            {"type": "text", "text": "Analiza este documento legal."},
+        ]
+
+    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    try:
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1500,
+            system=PROMPT_RESUMEN_ESTRUCTURADO,
+            messages=[{"role": "user", "content": content_for_claude}],
+        )
+        raw = response.content[0].text.strip()
+        # Limpiar posible markdown
+        if raw.startswith("```"):
+            raw = re.sub(r"^```[a-z]*\n?", "", raw)
+            raw = re.sub(r"\n?```$", "", raw)
+        resumen = _json.loads(raw)
+    except Exception as e:
+        print(f"[Extracción estructurada] ⚠️ Error: {e}")
+        resumen = {"tipo_documento": "otro", "hechos_clave": "No se pudo procesar el documento."}
+
+    # Construir texto_relevante para BM25 (solo campos textuales importantes)
+    partes = resumen.get("partes", {})
+    partes_str = " ".join(v for v in partes.values() if v)
+    pruebas = " ".join(resumen.get("pruebas_evidencia", []))
+    fundamentos = " ".join(resumen.get("fundamentos_juridicos", []))
+    fechas = " ".join(
+        f"{f.get('fecha', '')} {f.get('descripcion', '')}"
+        for f in resumen.get("fechas_importantes", [])
+    )
+    texto_relevante = "\n".join(filter(None, [
+        resumen.get("hechos_clave", ""),
+        resumen.get("pretension", ""),
+        partes_str,
+        pruebas,
+        fundamentos,
+        fechas,
+        resumen.get("resolucion_fallo") or "",
+    ]))
+
+    return resumen, texto_relevante
