@@ -1,4 +1,5 @@
 import os
+import json
 import httpx
 from fastapi import APIRouter, HTTPException, UploadFile, File, Request, Depends
 from fastapi.responses import HTMLResponse
@@ -11,7 +12,12 @@ from agent.cases_db import (
     crear_caso,
     actualizar_caso,
     eliminar_caso,
+    crear_documento_caso,
+    listar_documentos_caso,
+    obtener_documento_caso,
+    eliminar_documento_caso,
 )
+from agent.crypto import compress_encrypt, decrypt_decompress
 from agent.lawyers_db import (
     listar_abogados,
     obtener_abogado,
@@ -337,6 +343,133 @@ def api_eliminar_documento(caso_id: int, request: Request, user=Depends(require_
     return caso_actualizado
 
 # ─────────────────────────────────────────────
+# Endpoints — Multi-documentos por caso
+# ─────────────────────────────────────────────
+
+@router.get("/api/casos/{caso_id}/documentos")
+def api_listar_documentos(caso_id: int, request: Request, user=Depends(require_auth)):
+    """Lista todos los documentos subidos para un caso (solo metadata, sin texto)."""
+    caso = obtener_caso(caso_id)
+    if not caso:
+        raise HTTPException(status_code=404, detail="Caso no encontrado")
+    docs = listar_documentos_caso(caso_id)
+    return [
+        {
+            "id": d["id"],
+            "caso_id": d["caso_id"],
+            "nombre": d["nombre"],
+            "tipo_archivo": d["tipo_archivo"],
+            "fecha_subida": d["fecha_subida"],
+        }
+        for d in docs
+    ]
+
+
+@router.post("/api/casos/{caso_id}/documentos")
+async def api_subir_documento_caso(
+    caso_id: int,
+    archivo: UploadFile = File(...),
+    request: Request = None,
+    user=Depends(require_auth),
+):
+    """
+    Sube un documento al caso:
+    1. Sube el archivo original a R2
+    2. Extrae resumen estructurado con Claude Haiku
+    3. Comprime + cifra el resumen y texto relevante
+    4. Guarda metadata en caso_documentos
+    """
+    if not r2_configured():
+        raise HTTPException(status_code=503, detail="El almacenamiento de documentos no está configurado.")
+
+    caso = obtener_caso(caso_id)
+    if not caso:
+        raise HTTPException(status_code=404, detail="Caso no encontrado")
+
+    MAX_MB = 10
+    contenido = await archivo.read()
+    if len(contenido) > MAX_MB * 1024 * 1024:
+        raise HTTPException(status_code=413, detail=f"El archivo supera los {MAX_MB}MB permitidos.")
+
+    ext = (archivo.filename or "").lower().rsplit(".", 1)[-1]
+    if ext not in ("pdf", "doc", "docx"):
+        raise HTTPException(status_code=415, detail="Solo se aceptan archivos PDF y DOCX.")
+
+    content_type = archivo.content_type or "application/octet-stream"
+    nombre = archivo.filename or f"documento.{ext}"
+
+    # 1. Subir a R2
+    try:
+        key = upload_document(contenido, nombre, content_type, caso_id)
+    except Exception as e:
+        print(f"[Multi-doc] ❌ Error R2: {e}")
+        raise HTTPException(status_code=500, detail="No se pudo subir el archivo.")
+
+    # 2. Extracción inteligente con Claude Haiku
+    from agent.document_extractor import extraer_resumen_estructurado
+    try:
+        resumen_dict, texto_relevante_str = extraer_resumen_estructurado(
+            contenido, nombre, content_type
+        )
+        resumen_json_enc = compress_encrypt(json.dumps(resumen_dict, ensure_ascii=False))
+        texto_enc = compress_encrypt(texto_relevante_str) if texto_relevante_str else ""
+    except Exception as e:
+        print(f"[Multi-doc] ⚠️ Error extracción: {e}")
+        resumen_json_enc = ""
+        texto_enc = ""
+
+    # 3. Guardar en BD
+    doc = crear_documento_caso(
+        caso_id=caso_id,
+        nombre=nombre,
+        tipo_archivo=content_type,
+        key_r2=key,
+        resumen_json=resumen_json_enc,
+        texto_relevante=texto_enc,
+    )
+
+    return {
+        "id": doc["id"],
+        "caso_id": doc["caso_id"],
+        "nombre": doc["nombre"],
+        "tipo_archivo": doc["tipo_archivo"],
+        "fecha_subida": doc["fecha_subida"],
+    }
+
+
+@router.get("/api/casos/{caso_id}/documentos/{doc_id}")
+def api_obtener_url_doc(
+    caso_id: int, doc_id: int, request: Request, user=Depends(require_auth)
+):
+    """Genera una URL firmada temporal (1 hora) para descargar un documento específico."""
+    if not r2_configured():
+        raise HTTPException(status_code=503, detail="El almacenamiento no está configurado.")
+    doc = obtener_documento_caso(doc_id)
+    if not doc or doc["caso_id"] != caso_id:
+        raise HTTPException(status_code=404, detail="Documento no encontrado.")
+    try:
+        url = generate_presigned_url(doc["key_r2"], expires_seconds=3600)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="No se pudo generar el enlace.")
+    return {"url": url, "nombre": doc["nombre"], "tipo": doc["tipo_archivo"]}
+
+
+@router.delete("/api/casos/{caso_id}/documentos/{doc_id}")
+def api_eliminar_doc(
+    caso_id: int, doc_id: int, request: Request, user=Depends(require_auth)
+):
+    """Elimina un documento de R2 y de la BD."""
+    if not r2_configured():
+        raise HTTPException(status_code=503, detail="El almacenamiento no está configurado.")
+    doc = obtener_documento_caso(doc_id)
+    if not doc or doc["caso_id"] != caso_id:
+        raise HTTPException(status_code=404, detail="Documento no encontrado.")
+    delete_document(doc["key_r2"])
+    eliminar_documento_caso(doc_id)
+    return {"ok": True, "id": doc_id}
+
+
+# ─────────────────────────────────────────────
 # Endpoint — Extracción de documento con Claude
 # ─────────────────────────────────────────────
 
@@ -394,6 +527,106 @@ def api_consejo_procesal(caso_id: int, request: Request, user=Depends(require_au
     return consejo
 
 # ─────────────────────────────────────────────
+# Helpers — Contexto multi-documentos para chat
+# ─────────────────────────────────────────────
+
+def _chunk_text(text: str, chunk_size: int = 300, overlap: int = 30) -> list[str]:
+    """Divide texto en chunks de chunk_size palabras con overlap."""
+    words = text.split()
+    if len(words) <= chunk_size:
+        return [text]
+    chunks = []
+    step = chunk_size - overlap
+    for i in range(0, len(words), step):
+        chunk = " ".join(words[i:i + chunk_size])
+        chunks.append(chunk)
+        if i + chunk_size >= len(words):
+            break
+    return chunks
+
+
+def _bm25_search(corpus: list[str], query: str, top_k: int = 3) -> list[str]:
+    """BM25 sobre una lista de textos. Retorna los top_k más relevantes."""
+    from rank_bm25 import BM25Okapi
+    if not corpus or not query:
+        return corpus[:top_k]
+    tokenized = [doc.lower().split() for doc in corpus]
+    bm25 = BM25Okapi(tokenized)
+    scores = bm25.get_scores(query.lower().split())
+    ranked = sorted(range(len(corpus)), key=lambda i: scores[i], reverse=True)
+    return [corpus[i] for i in ranked[:top_k] if scores[i] > 0]
+
+
+def _obtener_contexto_documentos(caso_id: int, pregunta: str) -> str:
+    """
+    Construye el contexto de documentos para el chat:
+    - Resúmenes estructurados de todos los docs (siempre incluidos, compactos)
+    - Fragmentos BM25-relevantes del texto de los docs (según la pregunta)
+    """
+    documentos = listar_documentos_caso(caso_id)
+    if not documentos:
+        return ""
+
+    summaries = []
+    all_chunks = []
+
+    for doc in documentos:
+        nombre = doc.get("nombre", "documento")
+
+        # Resumen estructurado
+        if doc.get("resumen_json"):
+            try:
+                resumen = json.loads(decrypt_decompress(doc["resumen_json"]))
+                tipo = resumen.get("tipo_documento", "")
+                hechos = resumen.get("hechos_clave", "")
+                pretension = resumen.get("pretension", "")
+                partes = resumen.get("partes", {})
+                partes_str = ", ".join(f"{k}: {v}" for k, v in partes.items() if v)
+                pruebas = "; ".join(resumen.get("pruebas_evidencia", [])[:5])
+                fechas = "; ".join(
+                    f"{f.get('fecha')} ({f.get('descripcion')})"
+                    for f in resumen.get("fechas_importantes", [])[:3]
+                )
+                resolucion = resumen.get("resolucion_fallo") or ""
+                summary_lines = [f"[{nombre}] Tipo: {tipo}"]
+                if partes_str:
+                    summary_lines.append(f"Partes: {partes_str}")
+                if hechos:
+                    summary_lines.append(f"Hechos: {hechos[:500]}")
+                if pretension:
+                    summary_lines.append(f"Pretensión: {pretension}")
+                if pruebas:
+                    summary_lines.append(f"Pruebas: {pruebas}")
+                if fechas:
+                    summary_lines.append(f"Fechas: {fechas}")
+                if resolucion:
+                    summary_lines.append(f"Resolución: {resolucion[:300]}")
+                summaries.append("\n".join(summary_lines))
+            except Exception:
+                summaries.append(f"[{nombre}]: documento adjunto")
+
+        # Texto para BM25
+        if doc.get("texto_relevante"):
+            try:
+                texto = decrypt_decompress(doc["texto_relevante"])
+                chunks = _chunk_text(texto, chunk_size=250, overlap=25)
+                all_chunks.extend(chunks)
+            except Exception:
+                pass
+
+    # BM25 sobre chunks
+    relevant_chunks = _bm25_search(all_chunks, pregunta, top_k=4) if all_chunks else []
+
+    parts = []
+    if summaries:
+        parts.append("DOCUMENTOS DEL CASO:\n" + "\n\n".join(summaries))
+    if relevant_chunks:
+        parts.append("FRAGMENTOS RELEVANTES DE DOCUMENTOS:\n" + "\n---\n".join(relevant_chunks))
+
+    return "\n\n".join(parts)
+
+
+# ─────────────────────────────────────────────
 # Endpoint — Chat con el caso (IA para el abogado)
 # ─────────────────────────────────────────────
 
@@ -440,14 +673,17 @@ async def api_chat_caso(caso_id: int, data: ChatRequest, request: Request, user=
 - Documentos pendientes: {val('documentos_pendientes') or 'Ninguno'}
 - Notas internas: {val('notas') or 'Sin notas'}"""
 
-    # 4. Texto del documento (truncado a 6000 chars para no saturar el contexto)
-    doc_texto = val("documento_texto")
-    bloque_doc = ""
-    if doc_texto:
-        truncado = doc_texto[:6000]
-        if len(doc_texto) > 6000:
-            truncado += "\n[... documento truncado ...]"
-        bloque_doc = f"\nDOCUMENTO DEL CASO (texto extraído):\n{truncado}"
+    # 4. Contexto de documentos (multi-doc con BM25)
+    bloque_doc = _obtener_contexto_documentos(caso_id, pregunta)
+
+    # Backward compat: si no hay docs nuevos pero hay documento_texto legacy
+    if not bloque_doc:
+        doc_texto = (caso.get("documento_texto") or "").strip()
+        if doc_texto:
+            truncado = doc_texto[:6000]
+            if len(doc_texto) > 6000:
+                truncado += "\n[... documento truncado ...]"
+            bloque_doc = f"DOCUMENTO DEL CASO (texto extraído):\n{truncado}"
 
     # 5. Bloque de consejo procesal
     bloque_consejo = ""
@@ -465,13 +701,8 @@ ESTADO PROCESAL ACTUAL:
         if consejo.get("advertencia"):
             bloque_consejo += f"\n- ⚠️ {consejo['advertencia']}"
 
-    # 6. System prompt final
-    system_prompt = f"""Eres Minka, asistente de IA para abogados peruanos. Tu función es responder preguntas del abogado sobre su caso de forma precisa, práctica y fundamentada en el derecho peruano.
-
-{ctx_caso}
-{bloque_consejo}
-{bloque_doc}
-{bloque_normativa}
+    # 6. System prompt en dos partes para prompt caching
+    static_system = """Eres Minka, asistente de IA para abogados peruanos. Tu función es responder preguntas del abogado sobre su caso de forma precisa, práctica y fundamentada en el derecho peruano.
 
 Instrucciones de formato (MUY IMPORTANTE):
 - Responde en texto plano, sin markdown de ningún tipo
@@ -483,13 +714,25 @@ Instrucciones de formato (MUY IMPORTANTE):
 - Si hay advertencia de plazo vencido, mencionarla al inicio
 - No inventes información que no esté en el contexto"""
 
-    # 7. Llamar a Claude
+    dynamic_context = f"""{ctx_caso}
+{bloque_consejo}
+{bloque_doc}
+{bloque_normativa}"""
+
+    # 7. Llamar a Claude con prompt caching en el contexto del caso
     anthropic_client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     try:
         response = await anthropic_client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=1024,
-            system=system_prompt,
+            system=[
+                {"type": "text", "text": static_system},
+                {
+                    "type": "text",
+                    "text": dynamic_context,
+                    "cache_control": {"type": "ephemeral"},
+                },
+            ],
             messages=[{"role": "user", "content": pregunta}],
         )
         respuesta = response.content[0].text
