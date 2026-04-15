@@ -489,6 +489,71 @@ def api_eliminar_doc(
     return {"ok": True, "id": doc_id}
 
 
+@router.post("/api/casos/{caso_id}/documentos/migrar-legacy")
+def api_migrar_legacy(caso_id: int, request: Request, user=Depends(require_auth)):
+    """
+    Migra el documento legacy (campos documento_url/nombre/tipo/texto en casos)
+    al nuevo sistema de multi-documentos (tabla caso_documentos).
+    El archivo en R2 NO se mueve — solo se crea la referencia en BD.
+    """
+    caso = obtener_caso(caso_id)
+    if not caso:
+        raise HTTPException(status_code=404, detail="Caso no encontrado")
+
+    key = caso.get("documento_url")
+    if not key:
+        raise HTTPException(status_code=404, detail="El caso no tiene documento legacy para migrar")
+
+    # Evitar duplicados: no migrar si ya hay docs en el nuevo sistema
+    docs_existentes = listar_documentos_caso(caso_id)
+    if docs_existentes:
+        raise HTTPException(
+            status_code=409,
+            detail="El caso ya tiene documentos en el nuevo sistema. Elimínalos primero si quieres re-migrar."
+        )
+
+    nombre = caso.get("documento_nombre") or "documento"
+    tipo_archivo = caso.get("documento_tipo") or "application/octet-stream"
+
+    # Cifrar el texto legacy si existe
+    texto_relevante_enc = ""
+    doc_texto = (caso.get("documento_texto") or "").strip()
+    if doc_texto:
+        try:
+            texto_relevante_enc = compress_encrypt(doc_texto)
+        except Exception:
+            pass  # Si falla el cifrado, continuar sin texto
+
+    # Crear registro en caso_documentos
+    doc = crear_documento_caso(
+        caso_id=caso_id,
+        nombre=nombre,
+        tipo_archivo=tipo_archivo,
+        key_r2=key,
+        resumen_json="",
+        texto_relevante=texto_relevante_enc,
+    )
+
+    # Limpiar campos legacy del caso
+    actualizar_caso(caso_id, {
+        "documento_url": None,
+        "documento_nombre": None,
+        "documento_tipo": None,
+        "documento_texto": None,
+    })
+
+    # Invalidar cache BM25
+    _doc_chunks_cache.pop(caso_id, None)
+
+    return {
+        "id": doc["id"],
+        "caso_id": doc["caso_id"],
+        "nombre": doc["nombre"],
+        "tipo_archivo": doc["tipo_archivo"],
+        "fecha_subida": doc["fecha_subida"],
+    }
+
+
 # ─────────────────────────────────────────────
 # Endpoint — Extracción de documento con Claude
 # ─────────────────────────────────────────────
