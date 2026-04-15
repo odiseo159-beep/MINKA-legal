@@ -420,15 +420,23 @@ async def api_subir_documento_caso(
         resumen_json_enc = ""
         texto_enc = ""
 
-    # 3. Guardar en BD
-    doc = crear_documento_caso(
-        caso_id=caso_id,
-        nombre=nombre,
-        tipo_archivo=content_type,
-        key_r2=key,
-        resumen_json=resumen_json_enc,
-        texto_relevante=texto_enc,
-    )
+    # 3. Guardar en BD — si falla, limpiar R2
+    try:
+        doc = crear_documento_caso(
+            caso_id=caso_id,
+            nombre=nombre,
+            tipo_archivo=content_type,
+            key_r2=key,
+            resumen_json=resumen_json_enc,
+            texto_relevante=texto_enc,
+        )
+    except Exception as e:
+        # BD falló — eliminar archivo huérfano de R2
+        try:
+            delete_document(key)
+        except Exception:
+            pass
+        raise HTTPException(status_code=500, detail="Error al guardar el documento. Intenta de nuevo.")
 
     return {
         "id": doc["id"],
@@ -727,25 +735,40 @@ Instrucciones de formato (MUY IMPORTANTE):
 
     # 7. Llamar a Claude con prompt caching en el contexto del caso
     anthropic_client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-    try:
-        response = await anthropic_client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=1024,
-            system=[
-                {"type": "text", "text": static_system},
-                {
-                    "type": "text",
-                    "text": dynamic_context,
-                    "cache_control": {"type": "ephemeral"},
-                },
-            ],
-            messages=[{"role": "user", "content": pregunta}],
-        )
-        if not response.content:
-            raise HTTPException(status_code=500, detail="La IA no devolvió respuesta")
-        respuesta = response.content[0].text
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al consultar IA: {str(e)}")
+    import asyncio as _asyncio
+    response = None
+    ultimo_error = None
+    for intento in range(3):
+        try:
+            response = await anthropic_client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=1024,
+                system=[
+                    {"type": "text", "text": static_system},
+                    {
+                        "type": "text",
+                        "text": dynamic_context,
+                        "cache_control": {"type": "ephemeral"},
+                    },
+                ],
+                messages=[{"role": "user", "content": pregunta}],
+            )
+            break  # Éxito — salir del loop
+        except HTTPException:
+            raise  # No reintentar errores de validación
+        except Exception as e:
+            ultimo_error = e
+            if intento < 2:
+                await _asyncio.sleep(2 ** intento)  # 1s, 2s backoff
+                continue
+            raise HTTPException(
+                status_code=500,
+                detail="La IA no está disponible en este momento. Intenta en unos segundos."
+            )
+
+    if not response or not response.content:
+        raise HTTPException(status_code=500, detail="La IA no devolvió respuesta")
+    respuesta = response.content[0].text
 
     # Guardar historial
     guardar_mensaje_chat(caso_id, "user", data.pregunta)

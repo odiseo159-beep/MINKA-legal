@@ -42,6 +42,7 @@ def init_cases_db():
         ("documento_url", "TEXT"),
         ("documento_nombre", "TEXT"),
         ("documento_tipo", "TEXT"),
+        ("version", "INTEGER DEFAULT 0"),  # NUEVO
     ]:
         try:
             cursor.execute(f"ALTER TABLE casos ADD COLUMN {columna} {definicion}")
@@ -74,6 +75,13 @@ def init_cases_db():
             FOREIGN KEY (caso_id) REFERENCES casos(id) ON DELETE CASCADE
         )
     """)
+    # Índices para búsquedas frecuentes
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_casos_telefono ON casos(telefono)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_casos_estado ON casos(estado)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_casos_expediente ON casos(expediente)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_casos_fecha_act ON casos(fecha_actualizacion DESC)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_chat_caso_id ON chat_mensajes(caso_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_docs_caso_id ON caso_documentos(caso_id)")
     conn.commit()
     conn.close()
 
@@ -193,6 +201,7 @@ def actualizar_caso(caso_id: int, data: dict) -> dict:
     
     updates.append("fecha_actualizacion = ?")
     values.append(datetime.now().isoformat())
+    updates.append("version = COALESCE(version, 0) + 1")
     values.append(caso_id)
     
     query = f"UPDATE casos SET {', '.join(updates)} WHERE id = ?"
