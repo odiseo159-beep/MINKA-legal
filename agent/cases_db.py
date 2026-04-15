@@ -43,6 +43,7 @@ def init_cases_db():
         ("documento_nombre", "TEXT"),
         ("documento_tipo", "TEXT"),
         ("version", "INTEGER DEFAULT 0"),  # NUEVO
+        ("eliminado", "INTEGER DEFAULT 0"),
     ]:
         try:
             cursor.execute(f"ALTER TABLE casos ADD COLUMN {columna} {definicion}")
@@ -160,14 +161,19 @@ def buscar_por_telefono(telefono: str) -> list:
 
 
 def listar_casos(filtro_estado: str = None) -> list:
-    """Lista todos los casos, opcionalmente filtrados por estado."""
+    """Lista todos los casos activos (no eliminados), opcionalmente filtrados por estado."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     if filtro_estado:
-        cursor.execute("SELECT * FROM casos WHERE estado = ? ORDER BY fecha_actualizacion DESC", (filtro_estado,))
+        cursor.execute(
+            "SELECT * FROM casos WHERE estado = ? AND (eliminado IS NULL OR eliminado = 0) ORDER BY fecha_actualizacion DESC",
+            (filtro_estado,)
+        )
     else:
-        cursor.execute("SELECT * FROM casos ORDER BY fecha_actualizacion DESC")
+        cursor.execute(
+            "SELECT * FROM casos WHERE (eliminado IS NULL OR eliminado = 0) ORDER BY fecha_actualizacion DESC"
+        )
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
@@ -212,10 +218,13 @@ def actualizar_caso(caso_id: int, data: dict) -> dict:
 
 
 def eliminar_caso(caso_id: int) -> bool:
-    """Elimina un caso por su ID."""
+    """Marca un caso como eliminado (soft delete). Preserva historial."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM casos WHERE id = ?", (caso_id,))
+    cursor.execute(
+        "UPDATE casos SET eliminado = 1, fecha_actualizacion = ? WHERE id = ?",
+        (datetime.now().isoformat(), caso_id)
+    )
     eliminado = cursor.rowcount > 0
     conn.commit()
     conn.close()

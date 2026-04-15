@@ -44,8 +44,12 @@ from agent.events_db import (
     eliminar_evento,
 )
 from agent.deadline_calculator import calcular_vencimiento, dias_restantes_habiles
+from agent.prompts import CHAT_CASO_SYSTEM
 
 router = APIRouter()
+
+# Cache module-level: caso_id → (doc_count, chunks_list)
+_doc_chunks_cache: dict[int, tuple[int, list[str]]] = {}
 
 WHAPI_TOKEN = os.getenv("WHAPI_TOKEN")
 REQUIRE_AUTH = os.getenv("REQUIRE_AUTH", "true").lower() == "true"
@@ -246,6 +250,7 @@ def api_eliminar_caso(caso_id: int, request: Request, user=Depends(require_auth)
     caso = obtener_caso(caso_id)
     if not caso:
         raise HTTPException(status_code=404, detail="Caso no encontrado")
+    _doc_chunks_cache.pop(caso_id, None)
     eliminar_caso(caso_id)
     return {"ok": True, "mensaje": "Caso eliminado"}
 
@@ -438,6 +443,9 @@ async def api_subir_documento_caso(
             pass
         raise HTTPException(status_code=500, detail="Error al guardar el documento. Intenta de nuevo.")
 
+    # Invalidar cache BM25 para este caso
+    _doc_chunks_cache.pop(caso_id, None)
+
     return {
         "id": doc["id"],
         "caso_id": doc["caso_id"],
@@ -476,6 +484,8 @@ def api_eliminar_doc(
         raise HTTPException(status_code=404, detail="Documento no encontrado.")
     delete_document(doc["key_r2"])
     eliminar_documento_caso(doc_id)
+    # Invalidar cache BM25 para este caso
+    _doc_chunks_cache.pop(caso_id, None)
     return {"ok": True, "id": doc_id}
 
 
@@ -572,59 +582,104 @@ def _obtener_contexto_documentos(caso_id: int, pregunta: str) -> str:
     Construye el contexto de documentos para el chat:
     - Resúmenes estructurados de todos los docs (siempre incluidos, compactos)
     - Fragmentos BM25-relevantes del texto de los docs (según la pregunta)
+    Usa cache module-level para evitar descifrado/descompresión repetida.
     """
     documentos = listar_documentos_caso(caso_id)
     if not documentos:
         return ""
 
+    doc_count = len(documentos)
+    cached = _doc_chunks_cache.get(caso_id)
+
     summaries = []
-    all_chunks = []
 
-    for doc in documentos:
-        nombre = doc.get("nombre", "documento")
+    # Reutilizar chunks cacheados si el número de documentos no cambió
+    if cached is not None and cached[0] == doc_count:
+        all_chunks = cached[1]
+        # Aún necesitamos construir los summaries (son baratos: solo leen resumen_json)
+        for doc in documentos:
+            nombre = doc.get("nombre", "documento")
+            if doc.get("resumen_json"):
+                try:
+                    resumen = json.loads(decrypt_decompress(doc["resumen_json"]))
+                    tipo = resumen.get("tipo_documento", "")
+                    hechos = resumen.get("hechos_clave", "")
+                    pretension = resumen.get("pretension", "")
+                    partes = resumen.get("partes", {})
+                    partes_str = ", ".join(f"{k}: {v}" for k, v in partes.items() if v)
+                    pruebas = "; ".join(resumen.get("pruebas_evidencia", [])[:5])
+                    fechas = "; ".join(
+                        f"{f.get('fecha')} ({f.get('descripcion')})"
+                        for f in resumen.get("fechas_importantes", [])[:3]
+                    )
+                    resolucion = resumen.get("resolucion_fallo") or ""
+                    summary_lines = [f"[{nombre}] Tipo: {tipo}"]
+                    if partes_str:
+                        summary_lines.append(f"Partes: {partes_str}")
+                    if hechos:
+                        summary_lines.append(f"Hechos: {hechos[:500]}")
+                    if pretension:
+                        summary_lines.append(f"Pretensión: {pretension}")
+                    if pruebas:
+                        summary_lines.append(f"Pruebas: {pruebas}")
+                    if fechas:
+                        summary_lines.append(f"Fechas: {fechas}")
+                    if resolucion:
+                        summary_lines.append(f"Resolución: {resolucion[:300]}")
+                    summaries.append("\n".join(summary_lines))
+                except Exception:
+                    summaries.append(f"[{nombre}]: documento adjunto")
+    else:
+        # Cache miss: descifrar/descomprimir todo y guardar chunks en cache
+        all_chunks = []
+        for doc in documentos:
+            nombre = doc.get("nombre", "documento")
 
-        # Resumen estructurado
-        if doc.get("resumen_json"):
-            try:
-                resumen = json.loads(decrypt_decompress(doc["resumen_json"]))
-                tipo = resumen.get("tipo_documento", "")
-                hechos = resumen.get("hechos_clave", "")
-                pretension = resumen.get("pretension", "")
-                partes = resumen.get("partes", {})
-                partes_str = ", ".join(f"{k}: {v}" for k, v in partes.items() if v)
-                pruebas = "; ".join(resumen.get("pruebas_evidencia", [])[:5])
-                fechas = "; ".join(
-                    f"{f.get('fecha')} ({f.get('descripcion')})"
-                    for f in resumen.get("fechas_importantes", [])[:3]
-                )
-                resolucion = resumen.get("resolucion_fallo") or ""
-                summary_lines = [f"[{nombre}] Tipo: {tipo}"]
-                if partes_str:
-                    summary_lines.append(f"Partes: {partes_str}")
-                if hechos:
-                    summary_lines.append(f"Hechos: {hechos[:500]}")
-                if pretension:
-                    summary_lines.append(f"Pretensión: {pretension}")
-                if pruebas:
-                    summary_lines.append(f"Pruebas: {pruebas}")
-                if fechas:
-                    summary_lines.append(f"Fechas: {fechas}")
-                if resolucion:
-                    summary_lines.append(f"Resolución: {resolucion[:300]}")
-                summaries.append("\n".join(summary_lines))
-            except Exception:
-                summaries.append(f"[{nombre}]: documento adjunto")
+            # Resumen estructurado
+            if doc.get("resumen_json"):
+                try:
+                    resumen = json.loads(decrypt_decompress(doc["resumen_json"]))
+                    tipo = resumen.get("tipo_documento", "")
+                    hechos = resumen.get("hechos_clave", "")
+                    pretension = resumen.get("pretension", "")
+                    partes = resumen.get("partes", {})
+                    partes_str = ", ".join(f"{k}: {v}" for k, v in partes.items() if v)
+                    pruebas = "; ".join(resumen.get("pruebas_evidencia", [])[:5])
+                    fechas = "; ".join(
+                        f"{f.get('fecha')} ({f.get('descripcion')})"
+                        for f in resumen.get("fechas_importantes", [])[:3]
+                    )
+                    resolucion = resumen.get("resolucion_fallo") or ""
+                    summary_lines = [f"[{nombre}] Tipo: {tipo}"]
+                    if partes_str:
+                        summary_lines.append(f"Partes: {partes_str}")
+                    if hechos:
+                        summary_lines.append(f"Hechos: {hechos[:500]}")
+                    if pretension:
+                        summary_lines.append(f"Pretensión: {pretension}")
+                    if pruebas:
+                        summary_lines.append(f"Pruebas: {pruebas}")
+                    if fechas:
+                        summary_lines.append(f"Fechas: {fechas}")
+                    if resolucion:
+                        summary_lines.append(f"Resolución: {resolucion[:300]}")
+                    summaries.append("\n".join(summary_lines))
+                except Exception:
+                    summaries.append(f"[{nombre}]: documento adjunto")
 
-        # Texto para BM25
-        if doc.get("texto_relevante"):
-            try:
-                texto = decrypt_decompress(doc["texto_relevante"])
-                chunks = _chunk_text(texto, chunk_size=250, overlap=25)
-                all_chunks.extend(chunks)
-            except Exception:
-                pass
+            # Texto para BM25
+            if doc.get("texto_relevante"):
+                try:
+                    texto = decrypt_decompress(doc["texto_relevante"])
+                    chunks = _chunk_text(texto, chunk_size=250, overlap=25)
+                    all_chunks.extend(chunks)
+                except Exception:
+                    pass
 
-    # BM25 sobre chunks
+        # Guardar chunks en cache
+        _doc_chunks_cache[caso_id] = (doc_count, all_chunks)
+
+    # BM25 sobre chunks (siempre fresco: rápido con chunks ya en memoria)
     relevant_chunks = _bm25_search(all_chunks, pregunta, top_k=4) if all_chunks else []
 
     parts = []
@@ -711,22 +766,7 @@ ESTADO PROCESAL ACTUAL:
             bloque_consejo += f"\n- ⚠️ {consejo['advertencia']}"
 
     # 6. System prompt en dos partes para prompt caching
-    static_system = """Eres Minka, asistente de IA para abogados peruanos. Tu función es responder preguntas del abogado sobre su caso de forma precisa, práctica y fundamentada en el derecho peruano.
-
-Prioridad de respuesta (MUY IMPORTANTE):
-- Responde SIEMPRE desde el contexto específico del caso primero. Los datos del expediente, la etapa actual, las fechas y los documentos del caso son la fuente principal.
-- El abogado ya conoce el derecho procesal. No expliques conceptos jurídicos generales extensamente. Si un concepto general es relevante, menciona máximo 1-2 oraciones y vuelve al caso concreto.
-- Si la pregunta tiene respuesta directa en los datos del caso, ve directo a eso sin rodeos.
-
-Instrucciones de formato (MUY IMPORTANTE):
-- Responde en texto plano, sin markdown de ningún tipo
-- Prohibido usar #, ##, **, *, --, ---, |, >, emojis ni símbolos decorativos
-- Usa párrafos separados por línea en blanco para organizar la respuesta
-- Si necesitas enumerar, usa números simples: 1. 2. 3.
-- Sé conciso y directo, sin introducciones largas ni resúmenes al final
-- Cita artículos legales en texto plano: "Art. 196 del CP" o "Art. 334 del CPP"
-- Si hay advertencia de plazo vencido, mencionarla al inicio
-- No inventes información que no esté en el contexto"""
+    static_system = CHAT_CASO_SYSTEM
 
     dynamic_context = f"""{ctx_caso}
 {bloque_consejo}
