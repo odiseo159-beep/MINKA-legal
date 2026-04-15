@@ -11,16 +11,15 @@ Generar clave nueva:
 import os
 import gzip
 import base64
+from cryptography.fernet import Fernet, InvalidToken
 
 ENCRYPTION_KEY = os.getenv("DOCUMENT_ENCRYPTION_KEY", "")
 
 
-def _get_fernet():
+def _get_fernet() -> "Fernet | None":
     if not ENCRYPTION_KEY:
         return None
-    from cryptography.fernet import Fernet
-    key = ENCRYPTION_KEY.encode() if isinstance(ENCRYPTION_KEY, str) else ENCRYPTION_KEY
-    return Fernet(key)
+    return Fernet(ENCRYPTION_KEY.encode())
 
 
 def compress_encrypt(text: str) -> str:
@@ -48,7 +47,7 @@ def decrypt_decompress(data: str) -> str:
     if f:
         try:
             raw = f.decrypt(raw)
-        except Exception:
+        except InvalidToken:
             # Fallback: datos sin cifrar (compatibilidad retroactiva)
             pass
     return gzip.decompress(raw).decode("utf-8")
