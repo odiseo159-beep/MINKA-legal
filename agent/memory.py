@@ -102,5 +102,5 @@ async def limpiar_historial(telefono: str):
         result = await session.execute(query)
         mensajes = result.scalars().all()
         for msg in mensajes:
-            await session.delete(msg)
+            session.delete(msg)
         await session.commit()

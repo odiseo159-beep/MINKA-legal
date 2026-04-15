@@ -66,9 +66,12 @@ class ProveedorWhapi(ProveedorWhatsApp):
                     if r.status_code == 200:
                         return True
                     logger.error(f"Error Whapi: {r.status_code} — {r.text}")
+                    if intento < 2:
+                        continue
                     return False
             except httpx.TimeoutException:
                 logger.warning(f"Timeout Whapi intento {intento+1}/3 para {telefono}")
+                continue
             except Exception as e:
                 logger.error(f"Error enviando via Whapi: {e}")
                 return False

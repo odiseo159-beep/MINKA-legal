@@ -81,7 +81,17 @@ async def lifespan(app: FastAPI):
         logger.info(f"[DIAG] WHAPI_TOKEN: {whapi_tok[:4]}...{whapi_tok[-4:]} (len={len(whapi_tok)})")
     else:
         logger.warning("[DIAG] WHAPI_TOKEN no configurado o vacío")
+
+    # Scheduler — agregar jobs e iniciar ANTES del yield
+    scheduler.add_job(enviar_alertas_eventos, "cron", hour=8, minute=0)
+    scheduler.add_job(enviar_alertas_plazos,  "cron", hour=8, minute=5)
+    scheduler.start()
+    logger.info("[Alertas] Scheduler iniciado — alertas diarias a las 8:00 AM Lima")
+
     yield
+
+    # Shutdown — después del yield
+    scheduler.shutdown()
 
 
 app = FastAPI(
@@ -248,19 +258,6 @@ async def enviar_alertas_plazos():
             logger.error(f"[Plazos] Error enviando alerta para caso {caso['id']}: {e}")
 
     logger.info(f"[Plazos] Revision completa — {alertas_enviadas} alertas enviadas")
-
-
-@app.on_event("startup")
-async def start_scheduler():
-    scheduler.add_job(enviar_alertas_eventos, "cron", hour=8, minute=0)
-    scheduler.add_job(enviar_alertas_plazos,  "cron", hour=8, minute=5)
-    scheduler.start()
-    logger.info("[Alertas] Scheduler iniciado — alertas diarias a las 8:00 AM Lima")
-
-
-@app.on_event("shutdown")
-async def stop_scheduler():
-    scheduler.shutdown()
 
 
 app.add_middleware(

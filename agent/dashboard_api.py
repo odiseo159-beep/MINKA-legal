@@ -741,6 +741,8 @@ Instrucciones de formato (MUY IMPORTANTE):
             ],
             messages=[{"role": "user", "content": pregunta}],
         )
+        if not response.content:
+            raise HTTPException(status_code=500, detail="La IA no devolvió respuesta")
         respuesta = response.content[0].text
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al consultar IA: {str(e)}")

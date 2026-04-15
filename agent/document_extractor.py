@@ -136,9 +136,9 @@ def extraer_datos_documento(contenido_bytes: bytes, nombre_archivo: str, content
     texto_respuesta = mensaje.content[0].text.strip()
 
     if "```" in texto_respuesta:
-        texto_respuesta = texto_respuesta.split("```")[1]
-        if texto_respuesta.startswith("json"):
-            texto_respuesta = texto_respuesta[4:]
+        match = re.search(r"```(?:json)?\s*(.*?)\s*```", texto_respuesta, re.DOTALL)
+        if match:
+            texto_respuesta = match.group(1)
 
     try:
         campos_raw = json.loads(texto_respuesta)
