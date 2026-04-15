@@ -128,3 +128,22 @@ def verificar(request: Request):
 def logout():
     """Logout (client-side: el frontend elimina el token)."""
     return {"ok": True, "mensaje": "Sesión cerrada"}
+
+
+@router.post("/refresh")
+def refresh(request: Request):
+    """Renueva el JWT si es válido. Implementa sliding expiry — extiende 24h adicionales."""
+    token = _get_token_from_request(request)
+    if not token:
+        raise HTTPException(status_code=401, detail="Token requerido")
+    payload = decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Token inválido o expirado")
+
+    nuevo_token = create_token(
+        user_id=payload["sub"],
+        email=payload["email"],
+        nombre=payload.get("nombre", ""),
+        rol=payload.get("rol", "abogado"),
+    )
+    return {"access_token": nuevo_token, "token_type": "bearer"}
