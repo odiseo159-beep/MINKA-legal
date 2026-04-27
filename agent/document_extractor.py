@@ -18,29 +18,30 @@ CAMPOS_REQUERIDOS = ["nombre_cliente", "telefono"]
 
 PROMPT_EXTRACCION = """Eres un asistente especializado en extracción de datos de documentos legales peruanos.
 
-Analiza el documento adjunto y extrae ÚNICAMENTE los siguientes campos si los encuentras de forma EXPLÍCITA:
+PRIMERO evalúa el documento:
+- legible: true si el texto es claramente legible, false si está borroso, torcido o ilegible
+- es_legal: true si es un documento legal peruano (denuncia, demanda, resolución, oficio, contrato, etc.), false si no lo es
 
+Si legible=false o es_legal=false, devuelve SOLO:
+{"legible": false, "es_legal": false, "rejection_reason": "descripción breve del problema"}
+
+Si pasa la validación, extrae los siguientes campos si los encuentras de forma EXPLÍCITA:
 - nombre_cliente: Nombre completo del cliente, demandante o denunciante principal
 - telefono: Número de teléfono del cliente (solo los 9 dígitos, sin +51 ni 51)
-- expediente: Número de expediente judicial o carpeta fiscal (ej: 01234-2025-0-1801-JR-LA-09)
-- tipo_caso: Materia o tipo del proceso (ej: Laboral, Penal - Estafa, Alimentos, Civil - Desalojo)
-- abogado_asignado: Nombre del abogado o letrado que patrocina al cliente
-- documentos_pendientes: Documentos que el juzgado o fiscalía ha requerido presentar o subsanar
-- proxima_fecha: Fecha de la próxima audiencia, diligencia o plazo que aparezca EXPLÍCITAMENTE en el documento. Formato YYYY-MM-DD. Solo si está escrita con claridad (ej: "15 de abril de 2026" → "2026-04-15")
-- proxima_accion: Descripción breve de la próxima acción procesal mencionada en el documento (ej: "Audiencia de Conciliación", "Contestar demanda", "Subsanar demanda en 5 días hábiles")
+- expediente: Número de expediente judicial o carpeta fiscal
+- tipo_caso: Materia o tipo del proceso (ej: Laboral, Penal - Estafa, Alimentos)
+- abogado_asignado: Nombre del abogado que patrocina al cliente
+- documentos_pendientes: Documentos que el juzgado ha requerido presentar
+- proxima_fecha: Fecha de próxima audiencia. Formato YYYY-MM-DD.
+- proxima_accion: Descripción breve de la próxima acción procesal
 
-REGLAS IMPORTANTES:
-1. Solo extrae datos EXPLÍCITAMENTE escritos en el documento. NO inventes ni inferras plazos.
-2. Para proxima_fecha: usa SOLO fechas ya fijadas/programadas que aparezcan en el texto. Si hay varias, usa la más próxima futura.
-3. Para proxima_accion: describe la acción mencionada en el documento, no la que tú creas que debería hacerse.
-4. Para el teléfono, devuelve solo los 9 dígitos (sin +51 ni 51).
-5. Si un campo no está en el documento, omítelo completamente del JSON.
-6. Devuelve ÚNICAMENTE un objeto JSON válido, sin texto adicional, sin markdown, sin explicaciones.
+REGLAS:
+1. Solo extrae datos EXPLÍCITAMENTE escritos. NO inventes ni inferras.
+2. Si un campo no está en el documento, omítelo del JSON.
+3. Devuelve ÚNICAMENTE un objeto JSON válido, sin texto adicional.
 
-Formato exacto (incluye solo los campos que encontraste):
-{"nombre_cliente": "...", "telefono": "...", "expediente": "...", "tipo_caso": "...", "abogado_asignado": "...", "documentos_pendientes": "...", "proxima_fecha": "YYYY-MM-DD", "proxima_accion": "..."}
-
-Si no encuentras ningún campo, devuelve: {}
+Formato cuando pasa validación (incluye solo campos encontrados):
+{"legible": true, "es_legal": true, "nombre_cliente": "...", "telefono": "...", ...}
 """
 
 PROMPT_RESUMEN_ESTRUCTURADO = """Eres un asistente legal especializado en derecho peruano.
@@ -129,8 +130,36 @@ def extraer_datos_documento(contenido_bytes: bytes, nombre_archivo: str, content
                 "content": f"{PROMPT_EXTRACCION}\n\n--- CONTENIDO DEL DOCUMENTO ---\n{texto[:8000]}",
             }],
         )
+    # Imagen (JPG, PNG, WEBP) → Vision API
+    elif extension in ("jpg", "jpeg", "png", "webp"):
+        # Normalizar media type
+        if extension in ("jpg", "jpeg"):
+            media_type = "image/jpeg"
+        elif extension == "png":
+            media_type = "image/png"
+        elif extension == "webp":
+            media_type = "image/webp"
+        else:
+            media_type = "image/jpeg"
+        b64 = base64.standard_b64encode(contenido_bytes).decode("utf-8")
+        mensaje = cliente.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1000,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {"type": "base64", "media_type": media_type, "data": b64},
+                    },
+                    {"type": "text", "text": PROMPT_EXTRACCION},
+                ],
+            }],
+        )
     else:
-        raise ValueError(f"Formato no soportado: '{extension}'. Solo se aceptan PDF y DOCX.")
+        raise ValueError(
+            f"Formato no soportado: '{extension}'. Solo se aceptan PDF, DOCX, JPG, PNG y WEBP."
+        )
 
     # Parsear respuesta JSON
     texto_respuesta = mensaje.content[0].text.strip()
@@ -145,6 +174,24 @@ def extraer_datos_documento(contenido_bytes: bytes, nombre_archivo: str, content
     except json.JSONDecodeError:
         match = re.search(r"\{.*\}", texto_respuesta, re.DOTALL)
         campos_raw = json.loads(match.group()) if match else {}
+
+    # Extraer campos de validación (presentes en imágenes; para PDF/DOCX default True)
+    legible = campos_raw.get("legible", True)
+    es_legal = campos_raw.get("es_legal", True)
+    rejection_reason = campos_raw.get("rejection_reason", None)
+
+    # Documento rechazado por validación (ilegible o no legal)
+    if legible is False or es_legal is False:
+        return {
+            "campos": {},
+            "faltantes": CAMPOS_REQUERIDOS,
+            "advertencias": [rejection_reason or "Documento rechazado por validación."],
+            "legible": False,
+            "es_legal": es_legal if es_legal is not None else True,
+            "rejection_reason": rejection_reason,
+            "archivo": nombre_archivo,
+            "campos_encontrados": 0,
+        }
 
     # Filtrar solo campos permitidos y limpiar vacíos
     campos = {
@@ -167,6 +214,9 @@ def extraer_datos_documento(contenido_bytes: bytes, nombre_archivo: str, content
         "campos": campos,
         "faltantes": faltantes,
         "advertencias": advertencias,
+        "legible": True,
+        "es_legal": True,
+        "rejection_reason": None,
         "archivo": nombre_archivo,
         "campos_encontrados": len(campos),
     }
