@@ -49,7 +49,7 @@ def upload_document(contenido: bytes, nombre_archivo: str, content_type: str, ca
         Key=key,
         Body=contenido,
         ContentType=content_type,
-        ContentDisposition=f'attachment; filename="{nombre_archivo}"',
+        ContentDisposition=f'attachment; filename="{nombre_archivo.replace(chr(34), "").replace(chr(10), "").replace(chr(13), "")}"',
     )
     return key
 

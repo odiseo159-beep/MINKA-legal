@@ -260,13 +260,13 @@ async def enviar_alertas_plazos():
     logger.info(f"[Plazos] Revision completa — {alertas_enviadas} alertas enviadas")
 
 
+_cors_origins = ["https://minka-front.vercel.app"]
+if os.getenv("ENVIRONMENT", "production") == "development":
+    _cors_origins += ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://minka-front.vercel.app",
-        "http://localhost:3000",
-        "http://localhost:3001",
-    ],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],

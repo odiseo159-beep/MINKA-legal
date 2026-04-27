@@ -77,8 +77,8 @@ def register(data: RegisterRequest):
     if usuario_existe(data.email):
         raise HTTPException(status_code=409, detail="Ya existe una cuenta con ese correo electrónico")
 
-    if len(data.password) < 6:
-        raise HTTPException(status_code=422, detail="La contraseña debe tener al menos 6 caracteres")
+    if len(data.password) < 10:
+        raise HTTPException(status_code=422, detail="La contraseña debe tener al menos 10 caracteres")
 
     password_hash = hash_password(data.password)
     usuario = crear_usuario(

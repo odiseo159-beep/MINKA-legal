@@ -13,11 +13,13 @@ _jwt_secret = os.getenv("JWT_SECRET_KEY", "")
 if not _jwt_secret:
     import logging as _logging
     _logging.getLogger("agentkit").critical(
-        "[SECURITY] JWT_SECRET_KEY no está configurada. "
-        "Usando clave insegura por defecto. "
-        "Configura JWT_SECRET_KEY en las variables de entorno de Railway."
+        "[SECURITY] JWT_SECRET_KEY no configurada — el servidor NO puede arrancar sin esta variable. "
+        "Configúrala en Railway: Settings > Variables."
     )
-    _jwt_secret = "minka-legal-secret-key-change-in-production"
+    raise RuntimeError(
+        "JWT_SECRET_KEY no configurada. "
+        "El servidor no puede arrancar sin una clave secreta para JWT."
+    )
 SECRET_KEY = _jwt_secret
 TOKEN_EXPIRY = 24 * 60 * 60  # 24 horas en segundos
 
