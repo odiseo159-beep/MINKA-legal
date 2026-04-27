@@ -45,6 +45,8 @@ from agent.events_db import (
 )
 from agent.deadline_calculator import calcular_vencimiento, dias_restantes_habiles
 from agent.prompts import CHAT_CASO_SYSTEM
+from agent.legal_agent import ejecutar_agente, ACCIONES_VALIDAS
+from pydantic import Field
 
 router = APIRouter()
 
@@ -99,11 +101,9 @@ class CaseUpdate(BaseModel):
 class ChatRequest(BaseModel):
     pregunta: str
 
-from agent.legal_agent import ejecutar_agente, ACCIONES_VALIDAS
-
 class AgentRequest(BaseModel):
     accion: str
-    parametros: dict = {}
+    parametros: dict = Field(default_factory=dict)
 
 # ─────────────────────────────────────────────
 # Notificación proactiva vía Whapi
