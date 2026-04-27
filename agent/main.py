@@ -94,10 +94,14 @@ async def lifespan(app: FastAPI):
     scheduler.shutdown()
 
 
+_is_dev = ENVIRONMENT == "development"
 app = FastAPI(
     title="Minka — Asistente Legal AI",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs" if _is_dev else None,
+    redoc_url="/redoc" if _is_dev else None,
+    openapi_url="/openapi.json" if _is_dev else None,
 )
 
 # ─────────────────────────────────────────────

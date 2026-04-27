@@ -1,6 +1,8 @@
 # auth_api.py — Endpoints de autenticación
 # POST /auth/login, POST /auth/register, GET /auth/verificar, POST /auth/logout
 
+import time
+from collections import defaultdict
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
@@ -8,6 +10,24 @@ from agent.auth import hash_password, verify_password, create_token, decode_toke
 from agent.users_db import obtener_usuario_por_email, obtener_usuario_por_id, usuario_existe, crear_usuario
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# Rate limiter en memoria: máx 10 intentos por IP cada 15 minutos
+_login_attempts: dict[str, list[float]] = defaultdict(list)
+_LOGIN_MAX = 10
+_LOGIN_WINDOW = 15 * 60  # 15 minutos en segundos
+
+
+def _check_login_rate(ip: str) -> None:
+    now = time.time()
+    attempts = _login_attempts[ip]
+    # Limpiar intentos fuera de la ventana
+    _login_attempts[ip] = [t for t in attempts if now - t < _LOGIN_WINDOW]
+    if len(_login_attempts[ip]) >= _LOGIN_MAX:
+        raise HTTPException(
+            status_code=429,
+            detail="Demasiados intentos de inicio de sesión. Espera 15 minutos."
+        )
+    _login_attempts[ip].append(now)
 
 
 class LoginRequest(BaseModel):
@@ -41,8 +61,10 @@ def get_current_user(request: Request) -> dict | None:
 
 
 @router.post("/login")
-def login(data: LoginRequest):
+def login(data: LoginRequest, request: Request):
     """Autenticación con email y password. Retorna JWT token."""
+    ip = request.client.host if request.client else "unknown"
+    _check_login_rate(ip)
     usuario = obtener_usuario_por_email(data.email)
     if not usuario:
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
