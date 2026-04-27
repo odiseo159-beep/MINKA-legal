@@ -897,10 +897,11 @@ async def api_agente_legal(caso_id: int, data: AgentRequest, request: Request, u
     if data.accion not in ACCIONES_VALIDAS:
         raise HTTPException(status_code=400, detail=f"Acción no válida: {data.accion}")
 
-    # Para "analizar" verificar que hay documentos
+    # Para "analizar" verificar que hay documentos (nuevo sistema o legacy)
     if data.accion == "analizar":
         docs = listar_documentos_caso(caso_id)
-        if not docs:
+        tiene_legacy = bool(caso.get("documento_texto") or caso.get("documento_url"))
+        if not docs and not tiene_legacy:
             raise HTTPException(status_code=422, detail="Este caso no tiene documentos. Sube un archivo primero.")
 
     try:

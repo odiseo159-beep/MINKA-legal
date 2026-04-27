@@ -36,7 +36,7 @@ AGENT_TOOLS = [
 
 def _execute_tool(tool_name: str, tool_input: dict, caso_id: int, caso: dict) -> str:
     if tool_name == "get_case_documents":
-        return _get_case_documents(caso_id)
+        return _get_case_documents(caso_id, caso)
     elif tool_name == "search_normativa":
         return _search_normativa(tool_input.get("query", ""))
     elif tool_name == "consejo_procesal":
@@ -44,15 +44,13 @@ def _execute_tool(tool_name: str, tool_input: dict, caso_id: int, caso: dict) ->
     return "Tool no reconocida."
 
 
-def _get_case_documents(caso_id: int) -> str:
+def _get_case_documents(caso_id: int, caso: dict) -> str:
     from agent.cases_db import listar_documentos_caso, obtener_documento_caso
     from agent.crypto import decrypt_decompress
 
     docs = listar_documentos_caso(caso_id)
-    if not docs:
-        return "Este caso no tiene documentos subidos."
-
     textos = []
+
     for doc in docs[:3]:
         try:
             doc_data = obtener_documento_caso(doc["id"])
@@ -61,6 +59,10 @@ def _get_case_documents(caso_id: int) -> str:
                 textos.append(f"=== {doc['nombre']} ===\n{texto[:3000]}")
         except Exception:
             textos.append(f"=== {doc['nombre']} === [No se pudo descifrar]")
+
+    # Fallback: documento legacy en campo documento_texto del caso
+    if not textos and caso.get("documento_texto"):
+        textos.append(f"=== Documento del caso (legacy) ===\n{caso['documento_texto'][:3000]}")
 
     return "\n\n".join(textos) if textos else "No hay texto disponible en los documentos."
 
