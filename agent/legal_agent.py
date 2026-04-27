@@ -151,10 +151,12 @@ async def ejecutar_agente(caso_id: int, accion: str, parametros: dict, caso: dic
     total_tokens = 0
     total_cached = 0
 
+    max_tokens = 8192 if accion == "redactar" else 4096
+
     for _ in range(max_iterations):
         response = await client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=4096,
+            max_tokens=max_tokens,
             system=[{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}],
             tools=AGENT_TOOLS,
             messages=messages,
