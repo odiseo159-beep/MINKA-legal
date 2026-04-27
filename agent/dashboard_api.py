@@ -99,6 +99,12 @@ class CaseUpdate(BaseModel):
 class ChatRequest(BaseModel):
     pregunta: str
 
+from agent.legal_agent import ejecutar_agente, ACCIONES_VALIDAS
+
+class AgentRequest(BaseModel):
+    accion: str
+    parametros: dict = {}
+
 # ─────────────────────────────────────────────
 # Notificación proactiva vía Whapi
 # ─────────────────────────────────────────────
@@ -880,6 +886,29 @@ ESTADO PROCESAL ACTUAL:
     guardar_mensaje_chat(caso_id, "assistant", respuesta)
 
     return {"respuesta": respuesta}
+
+@router.post("/api/casos/{caso_id}/agente")
+async def api_agente_legal(caso_id: int, data: AgentRequest, request: Request, user=Depends(require_auth)):
+    """Agente Legal unificado: analizar, asesorar, redactar, normativa."""
+    caso = obtener_caso(caso_id)
+    if not caso:
+        raise HTTPException(status_code=404, detail="Caso no encontrado")
+
+    if data.accion not in ACCIONES_VALIDAS:
+        raise HTTPException(status_code=400, detail=f"Acción no válida: {data.accion}")
+
+    # Para "analizar" verificar que hay documentos
+    if data.accion == "analizar":
+        docs = listar_documentos_caso(caso_id)
+        if not docs:
+            raise HTTPException(status_code=422, detail="Este caso no tiene documentos. Sube un archivo primero.")
+
+    try:
+        resultado = await ejecutar_agente(caso_id, data.accion, data.parametros, caso)
+        return resultado
+    except RuntimeError as e:
+        raise HTTPException(status_code=504, detail=str(e))
+
 
 @router.get("/api/casos/{caso_id}/chat/historial")
 async def api_chat_historial(caso_id: int, request: Request, user=Depends(require_auth)):
