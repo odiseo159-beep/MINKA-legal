@@ -139,8 +139,6 @@ def extraer_datos_documento(contenido_bytes: bytes, nombre_archivo: str, content
             media_type = "image/png"
         elif extension == "webp":
             media_type = "image/webp"
-        else:
-            media_type = "image/jpeg"
         b64 = base64.standard_b64encode(contenido_bytes).decode("utf-8")
         mensaje = cliente.messages.create(
             model="claude-sonnet-4-20250514",
@@ -187,7 +185,7 @@ def extraer_datos_documento(contenido_bytes: bytes, nombre_archivo: str, content
             "faltantes": CAMPOS_REQUERIDOS,
             "advertencias": [rejection_reason or "Documento rechazado por validación."],
             "legible": False,
-            "es_legal": es_legal if es_legal is not None else True,
+            "es_legal": es_legal,
             "rejection_reason": rejection_reason,
             "archivo": nombre_archivo,
             "campos_encontrados": 0,

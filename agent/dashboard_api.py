@@ -571,10 +571,10 @@ async def api_extraer_documento(archivo: UploadFile = File(...), request: Reques
         raise HTTPException(status_code=413, detail=f"El archivo supera los {MAX_SIZE_MB}MB permitidos.")
 
     ext = (archivo.filename or "").lower().rsplit(".", 1)[-1]
-    if ext not in ("pdf", "doc", "docx"):
+    if ext not in ("pdf", "doc", "docx", "jpg", "jpeg", "png", "webp"):
         raise HTTPException(
             status_code=415,
-            detail="Formato no soportado. Solo se aceptan archivos PDF y DOCX."
+            detail="Formato no soportado. Solo se aceptan PDF, DOCX, JPG, PNG y WEBP."
         )
 
     try:
