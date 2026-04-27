@@ -139,16 +139,18 @@ async def ejecutar_agente(caso_id: int, accion: str, parametros: dict, caso: dic
     if accion not in ACCIONES_VALIDAS:
         raise ValueError(f"Acción no válida: '{accion}'. Opciones: {', '.join(ACCIONES_VALIDAS)}")
 
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     system_prompt = AGENT_SYSTEM_PROMPTS[accion]
     user_message = _build_initial_message(accion, caso, parametros)
 
     messages = [{"role": "user", "content": user_message}]
     tools_used: list[str] = []
     max_iterations = 6
+    total_tokens = 0
+    total_cached = 0
 
     for _ in range(max_iterations):
-        response = client.messages.create(
+        response = await client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=4096,
             system=[{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}],
@@ -156,14 +158,17 @@ async def ejecutar_agente(caso_id: int, accion: str, parametros: dict, caso: dic
             messages=messages,
         )
 
+        total_tokens += response.usage.input_tokens + response.usage.output_tokens
+        total_cached += int(getattr(response.usage, "cache_read_input_tokens", 0) or 0)
+
         if response.stop_reason == "end_turn":
-            text = next((b.text for b in response.content if hasattr(b, "text")), "")
+            text = "\n".join(b.text for b in response.content if hasattr(b, "text"))
             return {
                 "accion": accion,
                 "resultado": text,
                 "tools_usados": tools_used,
-                "tokens_usados": response.usage.input_tokens + response.usage.output_tokens,
-                "cached": int(getattr(response.usage, "cache_read_input_tokens", 0) or 0) > 0,
+                "tokens_usados": total_tokens,
+                "cached": total_cached > 0,
             }
 
         if response.stop_reason == "tool_use":
@@ -181,5 +186,11 @@ async def ejecutar_agente(caso_id: int, accion: str, parametros: dict, caso: dic
                     })
 
             messages.append({"role": "user", "content": tool_results})
+
+        else:
+            raise RuntimeError(
+                f"Stop inesperado del modelo: '{response.stop_reason}'. "
+                f"Herramientas usadas hasta ahora: {tools_used}"
+            )
 
     raise RuntimeError("El agente no convergió. Intenta de nuevo.")
