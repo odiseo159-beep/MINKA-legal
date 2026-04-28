@@ -382,6 +382,12 @@ async def webhook_handler(request: Request):
     return await _process_webhook(request, abogado=None)
 
 
+@app.get("/webhook/abogado/{abogado_id}")
+async def webhook_verificacion_por_abogado(abogado_id: int):
+    """Verificación GET del webhook multi-tenant — usado por Whapi 'Check webhook'."""
+    return {"status": "ok", "scope": "abogado", "abogado_id": abogado_id}
+
+
 @app.post("/webhook/abogado/{abogado_id}")
 async def webhook_handler_por_abogado(abogado_id: int, request: Request):
     """Webhook multi-tenant — un canal Whapi por abogado.
