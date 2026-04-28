@@ -184,16 +184,20 @@ def register(data: RegisterRequest, request: Request):
 
 @router.get("/verificar")
 def verificar(request: Request):
-    """Verifica si el token actual es válido."""
+    """Verifica si el token actual es válido. Re-lee rol desde BD por si fue actualizado."""
     payload = get_current_user(request)
     if not payload:
         return {"autenticado": False}
+
+    # Re-leer desde BD para reflejar cambios de rol (p.ej. promoción a admin) sin re-login
+    usuario = obtener_usuario_por_email(payload.get("email", ""))
+    rol_actual = usuario.get("rol", payload.get("rol", "abogado")) if usuario else payload.get("rol")
 
     return {
         "autenticado": True,
         "email": payload.get("email"),
         "nombre": payload.get("nombre"),
-        "rol": payload.get("rol"),
+        "rol": rol_actual,
     }
 
 
@@ -205,7 +209,7 @@ def logout():
 
 @router.post("/refresh")
 def refresh(request: Request):
-    """Renueva el JWT si es válido. Implementa sliding expiry — extiende 24h adicionales."""
+    """Renueva el JWT si es válido. Sliding expiry de 24h. Re-lee rol desde BD."""
     token = _get_token_from_request(request)
     if not token:
         raise HTTPException(status_code=401, detail="Token requerido")
@@ -213,10 +217,15 @@ def refresh(request: Request):
     if not payload:
         raise HTTPException(status_code=401, detail="Token inválido o expirado")
 
+    # Re-leer desde BD para que cambios de rol (p.ej. admin) se propaguen al refrescar
+    usuario = obtener_usuario_por_email(payload.get("email", ""))
+    if not usuario:
+        raise HTTPException(status_code=401, detail="Usuario no encontrado")
+
     nuevo_token = create_token(
-        user_id=payload["sub"],
-        email=payload["email"],
-        nombre=payload.get("nombre", ""),
-        rol=payload.get("rol", "abogado"),
+        user_id=usuario["id"],
+        email=usuario["email"],
+        nombre=usuario.get("nombre", payload.get("nombre", "")),
+        rol=usuario.get("rol", "abogado"),
     )
     return {"access_token": nuevo_token, "token_type": "bearer"}

@@ -22,7 +22,7 @@ from agent.memory import inicializar_db, guardar_mensaje, obtener_historial
 from agent.providers import obtener_proveedor
 from agent.cases_db import init_cases_db, init_corrections_db
 from agent.dashboard_api import router as dashboard_router
-from agent.users_db import init_users_db, usuario_existe, crear_usuario
+from agent.users_db import init_users_db, usuario_existe, crear_usuario, promover_a_admin, obtener_usuario_por_email
 from agent.auth import hash_password
 from agent.auth_api import router as auth_router
 from agent.lawyers_db import init_lawyers_db
@@ -78,6 +78,12 @@ async def lifespan(app: FastAPI):
             rol="admin",
         )
         logger.info(f"Usuario admin creado: {admin_email}")
+    else:
+        # Usuario ya existía — asegurar que tenga rol=admin (idempotente)
+        existente = obtener_usuario_por_email(admin_email)
+        if existente and existente.get("rol") != "admin":
+            if promover_a_admin(admin_email):
+                logger.info(f"[STARTUP] Usuario {admin_email} promovido a admin (era '{existente.get('rol')}')")
     logger.info("Base de datos inicializada (conversaciones + casos + usuarios)")
     logger.info(f"Servidor Minka Legal AI corriendo en puerto {PORT}")
     logger.info(f"Proveedor de WhatsApp: {proveedor.__class__.__name__}")

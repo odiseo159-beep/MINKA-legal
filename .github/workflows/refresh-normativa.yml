@@ -1,0 +1,68 @@
+name: Refresh normativa mensual
+
+# Re-scrapea todos los códigos legales el día 1 de cada mes a las 06:00 UTC (01:00 Lima).
+# Si hay cambios, abre un Pull Request automáticamente para revisión humana antes de mergear.
+# También se puede disparar manualmente desde la pestaña Actions.
+
+on:
+  schedule:
+    - cron: "0 6 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install httpx beautifulsoup4
+
+      - name: Run scraper for all codes
+        run: python scripts/scrape_normativa.py --all
+        continue-on-error: true
+
+      - name: Check for changes
+        id: check
+        run: |
+          if git diff --quiet knowledge/normativa/; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No hubo cambios en la normativa."
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Cambios detectados:"
+            git diff --stat knowledge/normativa/
+          fi
+
+      - name: Create Pull Request
+        if: steps.check.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: chore/refresh-normativa
+          delete-branch: true
+          commit-message: "chore: refresh mensual de normativa"
+          title: "chore: refresh mensual de normativa"
+          body: |
+            Re-scraping automático de los códigos legales desde lpderecho.pe.
+
+            **Revisar antes de mergear:**
+            - Verifica que los cambios reflejen actualizaciones reales (modificaciones de leyes), no errores de scraping.
+            - Si hay artículos con texto roto/vacío, descarta el PR e investiga la fuente.
+
+            Disparado por workflow `.github/workflows/refresh-normativa.yml`.
+          labels: |
+            normativa
+            automated

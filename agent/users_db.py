@@ -75,3 +75,17 @@ def usuario_existe(email: str) -> bool:
     existe = cursor.fetchone() is not None
     conn.close()
     return existe
+
+
+def promover_a_admin(email: str) -> bool:
+    """Eleva el rol de un usuario existente a 'admin'. Idempotente.
+
+    Devuelve True si el usuario fue promovido (o ya era admin), False si no existe.
+    """
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE usuarios SET rol = 'admin' WHERE email = ? AND activo = 1", (email,))
+    promovido = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return promovido
