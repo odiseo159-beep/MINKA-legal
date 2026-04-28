@@ -11,8 +11,10 @@ ACCIONES_VALIDAS = {"analizar", "asesorar", "redactar", "normativa"}
 
 # Hard cap de caracteres por documento — protección contra prompt injection
 # y consumo excesivo de tokens si el abogado sube documentos enormes.
-_MAX_CHARS_POR_DOC = 6000
-_MAX_DOCS = 5
+# 15 docs × 12000 chars ≈ 45K tokens (~22% de la ventana de Sonnet 4.6).
+# Si una sesión real necesita más, ajustar acá.
+_MAX_CHARS_POR_DOC = 12000
+_MAX_DOCS = 15
 
 AGENT_TOOLS = [
     {
