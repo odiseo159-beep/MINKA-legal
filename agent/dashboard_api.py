@@ -1000,6 +1000,78 @@ def api_eliminar_abogado(abogado_id: int, request: Request, user=Depends(require
     eliminar_abogado(abogado_id)
     return {"ok": True, "mensaje": "Abogado desactivado"}
 
+
+# ─────────────────────────────────────────────
+# Configuración del canal Whapi por abogado (multi-tenant)
+# ─────────────────────────────────────────────
+
+class WhapiConfig(BaseModel):
+    whapi_token: str
+    whatsapp_numero: Optional[str] = None  # opcional — se puede deducir del token
+
+
+@router.post("/api/abogados/{abogado_id}/whapi/verificar")
+async def api_verificar_whapi(abogado_id: int, data: WhapiConfig, request: Request, user=Depends(require_auth)):
+    """Verifica que el token Whapi sea válido y devuelve el channel_id + número.
+
+    No persiste todavía — el usuario revisa el resultado y luego confirma con POST .../whapi.
+    """
+    if not obtener_abogado(abogado_id):
+        raise HTTPException(status_code=404, detail="Abogado no encontrado")
+    from agent.providers.whapi import verificar_token_whapi
+    info = await verificar_token_whapi(data.whapi_token)
+    if not info or not info.get("channel_id"):
+        raise HTTPException(status_code=400, detail="Token Whapi inválido o canal no disponible (revisa en whapi.cloud)")
+    return info
+
+
+@router.post("/api/abogados/{abogado_id}/whapi")
+async def api_guardar_whapi(abogado_id: int, data: WhapiConfig, request: Request, user=Depends(require_auth)):
+    """Verifica el token y guarda la configuración Whapi del abogado.
+
+    También retorna la URL de webhook que el usuario debe configurar en Whapi.
+    """
+    if not obtener_abogado(abogado_id):
+        raise HTTPException(status_code=404, detail="Abogado no encontrado")
+    from agent.providers.whapi import verificar_token_whapi
+    info = await verificar_token_whapi(data.whapi_token)
+    if not info or not info.get("channel_id"):
+        raise HTTPException(status_code=400, detail="Token Whapi inválido. Verifica el token en whapi.cloud")
+
+    update_data = {
+        "whapi_token":      data.whapi_token,
+        "whapi_channel_id": info["channel_id"],
+    }
+    if data.whatsapp_numero:
+        update_data["whatsapp_numero"] = data.whatsapp_numero
+    elif info.get("phone"):
+        update_data["whatsapp_numero"] = info["phone"]
+
+    abogado_actualizado = actualizar_abogado(abogado_id, update_data)
+
+    base_url = os.getenv("PUBLIC_API_URL", "https://katia-jorkat-production.up.railway.app").rstrip("/")
+    webhook_url = f"{base_url}/webhook/abogado/{abogado_id}"
+
+    return {
+        "ok": True,
+        "abogado": abogado_actualizado,
+        "channel_info": info,
+        "webhook_url": webhook_url,
+        "instrucciones": (
+            "Copia esta URL de webhook a Whapi: dashboard del canal → Settings → Webhooks → "
+            "pega la URL en 'Endpoint' y activa el evento 'messages.post'."
+        ),
+    }
+
+
+@router.delete("/api/abogados/{abogado_id}/whapi")
+def api_desconectar_whapi(abogado_id: int, request: Request, user=Depends(require_auth)):
+    """Desconecta el canal Whapi del abogado (limpia token y channel_id)."""
+    if not obtener_abogado(abogado_id):
+        raise HTTPException(status_code=404, detail="Abogado no encontrado")
+    actualizar_abogado(abogado_id, {"whapi_token": None, "whapi_channel_id": None})
+    return {"ok": True, "mensaje": "Canal Whapi desconectado"}
+
 # ─────────────────────────────────────────────
 # Endpoints API REST — Estudios Jurídicos
 # ─────────────────────────────────────────────
@@ -1141,17 +1213,21 @@ def api_listar_corrections(
     limit: int = 200,
     user=Depends(require_auth),
 ):
-    """Lista correcciones/adiciones del abogado respecto a la extracción IA. Solo para uso del developer."""
+    """Lista correcciones del abogado autenticado respecto a la extracción IA.
+
+    Solo retorna correcciones de casos que pertenecen al abogado autenticado (multi-tenant).
+    """
     import sqlite3 as _sqlite
+    abogado_id = user.get("id") if user else None
     conn = _sqlite.connect(DB_PATH)
     conn.row_factory = _sqlite.Row
     cursor = conn.cursor()
-    conditions, params = [], []
+    conditions, params = ["c.abogado_id = ?"], [abogado_id]
     if campo:
         conditions.append("c.campo = ?"); params.append(campo)
     if tipo_caso:
         conditions.append("c.tipo_caso = ?"); params.append(tipo_caso)
-    where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+    where = f"WHERE {' AND '.join(conditions)}"
     cursor.execute(f"""
         SELECT c.*, ca.nombre_cliente, ca.expediente
         FROM corrections c
@@ -1167,8 +1243,9 @@ def api_listar_corrections(
 
 @router.get("/api/corrections/stats")
 def api_corrections_stats(request: Request, user=Depends(require_auth)):
-    """Estadísticas agrupadas de correcciones: qué campos corrige más el abogado y en qué tipos de caso."""
+    """Estadísticas agrupadas de correcciones del abogado autenticado."""
     import sqlite3 as _sqlite
+    abogado_id = user.get("id") if user else None
     conn = _sqlite.connect(DB_PATH)
     conn.row_factory = _sqlite.Row
     cursor = conn.cursor()
@@ -1178,9 +1255,10 @@ def api_corrections_stats(request: Request, user=Depends(require_auth)):
                SUM(CASE WHEN valor_claude IS NULL THEN 1 ELSE 0 END) as adiciones,
                SUM(CASE WHEN valor_claude IS NOT NULL THEN 1 ELSE 0 END) as correcciones
         FROM corrections
+        WHERE abogado_id = ?
         GROUP BY campo, tipo_caso
         ORDER BY total DESC
-    """)
+    """, (abogado_id,))
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]

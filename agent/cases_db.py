@@ -146,18 +146,31 @@ def obtener_caso(caso_id: int) -> dict:
     return None
 
 
-def buscar_por_telefono(telefono: str) -> list:
-    """Busca todos los casos asociados a un número de teléfono."""
+def buscar_por_telefono(telefono: str, abogado_id: int | None = None) -> list:
+    """Busca casos asociados a un número de teléfono.
+
+    Si se proporciona abogado_id, filtra solo los casos de ese abogado (multi-tenant).
+    Excluye siempre los casos eliminados (soft-delete).
+    """
     telefono = normalizar_telefono(telefono)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    # Buscar con diferentes variantes del teléfono
-    cursor.execute("""
-        SELECT * FROM casos 
-        WHERE telefono = ? OR telefono = ? OR telefono = ?
-        ORDER BY fecha_actualizacion DESC
-    """, (telefono, f"51{telefono}", f"+51{telefono}"))
+
+    base_where = "(telefono = ? OR telefono = ? OR telefono = ?) AND (eliminado IS NULL OR eliminado = 0)"
+    params: list = [telefono, f"51{telefono}", f"+51{telefono}"]
+
+    if abogado_id is not None:
+        cursor.execute(
+            f"SELECT * FROM casos WHERE {base_where} AND abogado_id = ? ORDER BY fecha_actualizacion DESC",
+            (*params, abogado_id),
+        )
+    else:
+        cursor.execute(
+            f"SELECT * FROM casos WHERE {base_where} ORDER BY fecha_actualizacion DESC",
+            params,
+        )
+
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]

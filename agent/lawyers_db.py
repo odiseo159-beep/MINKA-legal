@@ -47,6 +47,19 @@ def init_lawyers_db():
     except sqlite3.OperationalError:
         pass  # La columna ya existe
 
+    # Migraciones de canal Whapi por abogado
+    for columna, definicion in [
+        ("whapi_token",      "TEXT"),
+        ("whapi_channel_id", "TEXT"),
+        ("modo_atencion",    "TEXT DEFAULT 'individual'"),  # 'individual' | 'estudio'
+    ]:
+        try:
+            cursor.execute(f"ALTER TABLE abogados ADD COLUMN {columna} {definicion}")
+        except sqlite3.OperationalError:
+            pass
+
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_abogados_canal ON abogados(whapi_channel_id)")
+
     conn.commit()
     conn.close()
 
@@ -225,11 +238,35 @@ def listar_abogados(solo_activos: bool = False) -> list:
     return result
 
 
+def obtener_abogado_por_canal(channel_id: str) -> dict | None:
+    """Busca un abogado por el ID del canal Whapi configurado en su perfil."""
+    if not channel_id:
+        return None
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM abogados WHERE whapi_channel_id = ? AND activo = 1",
+        (channel_id,),
+    )
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None
+    d = dict(row)
+    try:
+        d["especialidades"] = json.loads(d.get("especialidades") or "[]")
+    except (json.JSONDecodeError, TypeError):
+        d["especialidades"] = []
+    return d
+
+
 def actualizar_abogado(abogado_id: int, data: dict) -> dict | None:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     campos = ["estudio_id", "nombre", "email", "telefono", "whatsapp_numero",
-              "colegiatura", "especialidades", "activo"]
+              "colegiatura", "especialidades", "activo",
+              "whapi_token", "whapi_channel_id", "modo_atencion"]
     updates = []
     values = []
     for c in campos:

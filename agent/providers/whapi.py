@@ -9,6 +9,74 @@ from agent.providers.base import ProveedorWhatsApp, MensajeEntrante
 
 logger = logging.getLogger("agentkit")
 
+WHAPI_BASE_URL = "https://gate.whapi.cloud"
+
+
+async def enviar_via_whapi(telefono: str, mensaje: str, token: str) -> bool:
+    """Envía un mensaje WhatsApp usando el token específico de un canal Whapi.
+
+    Se usa para multi-tenancy: cada abogado tiene su propio canal/token.
+    Hasta 3 reintentos. Devuelve True si Whapi acepta (200).
+    """
+    if not token:
+        logger.warning("[WHAPI] enviar_via_whapi llamado sin token — abort")
+        return False
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+    to = telefono if "@" in telefono else f"{telefono}@s.whatsapp.net"
+    for intento in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=45.0) as client:
+                r = await client.post(
+                    f"{WHAPI_BASE_URL}/messages/text",
+                    json={"to": to, "body": mensaje},
+                    headers=headers,
+                )
+                if r.status_code == 200:
+                    return True
+                logger.error(f"[WHAPI] Error enviar_via_whapi: {r.status_code} — {r.text[:200]}")
+                if intento < 2:
+                    continue
+                return False
+        except httpx.TimeoutException:
+            logger.warning(f"[WHAPI] Timeout intento {intento+1}/3 a {telefono}")
+            continue
+        except Exception as e:
+            logger.error(f"[WHAPI] Error enviando: {e}")
+            return False
+    return False
+
+
+async def verificar_token_whapi(token: str) -> dict | None:
+    """Verifica que un token Whapi sea válido y obtiene el channel_id + número.
+
+    Devuelve {"channel_id": str, "phone": str, "name": str} si el token es válido.
+    None si el token está mal o el canal no existe.
+    """
+    if not token:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.get(
+                f"{WHAPI_BASE_URL}/health",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            if r.status_code != 200:
+                return None
+            data = r.json()
+            user = data.get("user", {}) or {}
+            return {
+                "channel_id": data.get("channel", {}).get("id") or data.get("user", {}).get("id", ""),
+                "phone":      user.get("id", "").split("@")[0] if "@" in user.get("id", "") else user.get("id", ""),
+                "name":       user.get("name", ""),
+                "status":     data.get("status", {}).get("text", "unknown"),
+            }
+    except Exception as e:
+        logger.error(f"[WHAPI] verificar_token_whapi error: {e}")
+        return None
+
 
 class ProveedorWhapi(ProveedorWhatsApp):
     """Proveedor de WhatsApp usando Whapi.cloud (REST API simple)."""

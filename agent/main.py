@@ -363,46 +363,82 @@ async def webhook_verificacion(request: Request):
 @app.post("/webhook")
 @app.post("/webhook/messages")
 async def webhook_handler(request: Request):
+    """Webhook legacy — usa el WHAPI_TOKEN global. Sin filtro multi-tenant.
+
+    Para abogados nuevos usar /webhook/abogado/{abogado_id}.
     """
-    Recibe mensajes de WhatsApp via el proveedor configurado.
-    Procesa el mensaje, genera respuesta con Claude y la envía de vuelta.
+    return await _process_webhook(request, abogado=None)
+
+
+@app.post("/webhook/abogado/{abogado_id}")
+async def webhook_handler_por_abogado(abogado_id: int, request: Request):
+    """Webhook multi-tenant — un canal Whapi por abogado.
+
+    En modo 'individual' solo responde a clientes conocidos del abogado.
+    En modo 'estudio' responde a cualquier número (atención abierta).
+    """
+    from agent.lawyers_db import obtener_abogado
+    abogado = obtener_abogado(abogado_id)
+    if not abogado or not abogado.get("activo"):
+        logger.warning(f"[WEBHOOK] Abogado {abogado_id} no existe o inactivo")
+        raise HTTPException(status_code=404, detail="Abogado no encontrado")
+    if not abogado.get("whapi_token"):
+        logger.warning(f"[WEBHOOK] Abogado {abogado_id} sin canal Whapi configurado")
+        raise HTTPException(status_code=400, detail="Canal Whapi no configurado")
+    return await _process_webhook(request, abogado=abogado)
+
+
+async def _process_webhook(request: Request, abogado: dict | None):
+    """Lógica común de procesamiento de webhook.
+
+    abogado=None → modo legacy (token global, sin filtro de identidad).
+    abogado=dict → multi-tenant: filtro por casos del abogado y token específico.
     """
     try:
-        # Parsear webhook — el proveedor normaliza el formato
         mensajes = await proveedor.parsear_webhook(request)
 
         for msg in mensajes:
-            # Ignorar mensajes propios o vacíos
             if msg.es_propio or not msg.texto:
                 continue
 
-            logger.info(f"[WEBHOOK] Teléfono recibido: '{msg.telefono}' | Mensaje: {msg.texto}")
+            scope_label = f"ab={abogado['id']}" if abogado else "legacy"
+            logger.info(f"[WEBHOOK {scope_label}] de '{msg.telefono}': {msg.texto[:80]}")
 
-            # Obtener historial ANTES de guardar el mensaje actual
-            # (brain.py agrega el mensaje actual, evitando duplicados)
-            historial = await obtener_historial(msg.telefono)
-
-            # Si es el abogado, procesar como comando; si es cliente, usar Claude
-            if es_abogado(msg.telefono):
-                logger.info(f"[WEBHOOK] Mensaje de abogado detectado: {msg.telefono}")
+            # Si es el abogado dueño del canal escribiendo, procesar como comando
+            if abogado and msg.telefono == (abogado.get("whatsapp_numero") or ""):
+                respuesta = await procesar_comando_abogado(msg.texto, msg.telefono)
+            elif not abogado and es_abogado(msg.telefono):
+                # Modo legacy: detectar abogado por número global
                 respuesta = await procesar_comando_abogado(msg.texto, msg.telefono)
             else:
-                # Generar respuesta con Claude (inyecta contexto del caso del cliente)
+                # Es un cliente (o número desconocido)
+                if abogado:
+                    from agent.cases_db import buscar_por_telefono
+                    casos = buscar_por_telefono(msg.telefono, abogado_id=abogado["id"])
+                    modo = abogado.get("modo_atencion") or "individual"
+                    if not casos and modo == "individual":
+                        logger.info(f"[WEBHOOK ab={abogado['id']}] Ignorado — {msg.telefono} no es cliente conocido (modo individual)")
+                        continue
+                historial = await obtener_historial(msg.telefono)
                 respuesta = await generar_respuesta(msg.texto, historial, msg.telefono)
 
-            # Guardar mensaje del usuario Y respuesta del agente en memoria
             await guardar_mensaje(msg.telefono, "user", msg.texto)
             await guardar_mensaje(msg.telefono, "assistant", respuesta)
 
-            # Enviar respuesta por WhatsApp via el proveedor
-            enviado = await proveedor.enviar_mensaje(msg.telefono, respuesta)
-            if not enviado:
-                logger.warning(f"[WEBHOOK] Mensaje generado pero no enviado a {msg.telefono} (WhatsApp no disponible en local)")
+            # Enviar usando el token correcto
+            if abogado:
+                from agent.providers.whapi import enviar_via_whapi
+                enviado = await enviar_via_whapi(msg.telefono, respuesta, abogado["whapi_token"])
+            else:
+                enviado = await proveedor.enviar_mensaje(msg.telefono, respuesta)
 
-            logger.info(f"Respuesta a {msg.telefono}: {respuesta.encode('ascii', errors='replace').decode()}")
+            if not enviado:
+                logger.warning(f"[WEBHOOK {scope_label}] Mensaje generado pero no enviado a {msg.telefono}")
 
         return {"status": "ok"}
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error en webhook: {e}")
         raise HTTPException(status_code=500, detail=str(e))
