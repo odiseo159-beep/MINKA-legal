@@ -34,6 +34,10 @@ jobs:
         run: python scripts/scrape_normativa.py --all
         continue-on-error: true
 
+      - name: Refresh Plenos Casatorios Civiles
+        run: python scripts/scrape_plenos_civiles.py
+        continue-on-error: true
+
       - name: Check for changes
         id: check
         run: |

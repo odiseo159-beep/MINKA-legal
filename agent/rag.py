@@ -38,6 +38,7 @@ CODIGOS = {
     "ley_27444_lpag":                "LPAG",
     "ley_27584_contencioso":         "LPCA",
     "codigo_procesal_constitucional":"CPCo",
+    "plenos_casatorios_civiles":     "PCC",
 }
 
 CODIGO_NOMBRE = {
@@ -56,6 +57,7 @@ CODIGO_NOMBRE = {
     "LPAG":  "Ley 27444 - Procedimiento Administrativo General",
     "LPCA":  "Ley 27584 - Proceso Contencioso Administrativo",
     "CPCo":  "Código Procesal Constitucional (Ley 31307)",
+    "PCC":   "Plenos Casatorios Civiles (precedente vinculante de la Corte Suprema)",
 }
 
 # ---------------------------------------------------------------------------
@@ -101,8 +103,18 @@ def _construir_indice():
             if not texto and not titulo:
                 continue
 
-            # Texto que se indexa: nombre del código + número + título + texto
-            texto_idx = f"{nombre} artículo {numero} {titulo} {texto}"
+            # Caso especial: Plenos Casatorios — formato de citación distinto
+            if codigo == "PCC":
+                casacion = art.get("casacion", "")
+                materia  = art.get("materia", "")
+                reglas   = art.get("reglas_vinculantes", "")
+                # Indexamos: título + materia + reglas vinculantes (lo más citable) + texto
+                texto_idx = f"pleno casatorio civil {numero} {titulo} {materia} {casacion} {reglas} {texto}"
+                citacion = f"{numero} Pleno Casatorio Civil (Cas. {casacion})"
+            else:
+                texto_idx = f"{nombre} artículo {numero} {titulo} {texto}"
+                citacion = f"Art. {numero} del {nombre}"
+
             corpus.append(_tokenizar(texto_idx))
 
             _articulos.append({
@@ -110,7 +122,7 @@ def _construir_indice():
                 "numero":   numero,
                 "titulo":   titulo,
                 "texto":    texto,
-                "citacion": f"Art. {numero} del {nombre}",
+                "citacion": citacion,
             })
             cargados += 1
 
