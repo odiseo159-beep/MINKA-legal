@@ -389,8 +389,12 @@ async def webhook_verificacion_por_abogado(abogado_id: int):
 
 
 @app.post("/webhook/abogado/{abogado_id}")
+@app.post("/webhook/abogado/{abogado_id}/messages")
 async def webhook_handler_por_abogado(abogado_id: int, request: Request):
     """Webhook multi-tenant — un canal Whapi por abogado.
+
+    Whapi.cloud automáticamente añade /messages al path cuando el método configurado
+    es 'messages.post'. Por eso aceptamos ambas rutas.
 
     En modo 'individual' solo responde a clientes conocidos del abogado.
     En modo 'estudio' responde a cualquier número (atención abierta).
