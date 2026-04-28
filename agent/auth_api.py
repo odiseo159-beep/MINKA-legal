@@ -2,6 +2,7 @@
 # POST /auth/login, POST /auth/register, GET /auth/verificar, POST /auth/logout
 
 import time
+import re
 from collections import defaultdict
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
@@ -11,10 +12,18 @@ from agent.users_db import obtener_usuario_por_email, obtener_usuario_por_id, us
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# RFC 5322 simplificado — suficiente para validación pre-envío
+_EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$")
+
 # Rate limiter en memoria: máx 10 intentos por IP cada 15 minutos
 _login_attempts: dict[str, list[float]] = defaultdict(list)
 _LOGIN_MAX = 10
 _LOGIN_WINDOW = 15 * 60  # 15 minutos en segundos
+
+# Rate limiter para register: 5 intentos por IP por hora
+_register_attempts: dict[str, list[float]] = defaultdict(list)
+_REGISTER_MAX = 5
+_REGISTER_WINDOW = 60 * 60  # 1 hora
 
 
 def _check_login_rate(ip: str) -> None:
@@ -28,6 +37,29 @@ def _check_login_rate(ip: str) -> None:
             detail="Demasiados intentos de inicio de sesión. Espera 15 minutos."
         )
     _login_attempts[ip].append(now)
+
+
+def _check_register_rate(ip: str) -> None:
+    """Rate limiter para registro: 5 cuentas por IP por hora."""
+    now = time.time()
+    attempts = _register_attempts[ip]
+    _register_attempts[ip] = [t for t in attempts if now - t < _REGISTER_WINDOW]
+    if len(_register_attempts[ip]) >= _REGISTER_MAX:
+        raise HTTPException(
+            status_code=429,
+            detail="Demasiados intentos de registro. Intenta de nuevo en 1 hora."
+        )
+    _register_attempts[ip].append(now)
+
+
+def _validar_email(email: str) -> str:
+    """Valida formato de email y retorna versión normalizada (lowercase)."""
+    if not email or not isinstance(email, str):
+        raise HTTPException(status_code=422, detail="Correo electrónico requerido")
+    email = email.strip().lower()
+    if len(email) > 254 or not _EMAIL_REGEX.match(email):
+        raise HTTPException(status_code=422, detail="Formato de correo electrónico inválido")
+    return email
 
 
 class LoginRequest(BaseModel):
@@ -94,17 +126,36 @@ def login(data: LoginRequest, request: Request):
 
 
 @router.post("/register")
-def register(data: RegisterRequest):
-    """Registro de nuevo usuario. Retorna JWT token (auto-login)."""
-    if usuario_existe(data.email):
-        raise HTTPException(status_code=409, detail="Ya existe una cuenta con ese correo electrónico")
+def register(data: RegisterRequest, request: Request):
+    """Registro de nuevo usuario. Retorna JWT token (auto-login).
+
+    Endurecido contra:
+    - Account enumeration (email duplicado y password corto retornan el mismo error genérico)
+    - Brute-force registration (rate limit por IP)
+    - Email malformado (validación regex previa)
+    """
+    ip = request.client.host if request.client else "unknown"
+    _check_register_rate(ip)
+
+    email = _validar_email(data.email)
 
     if len(data.password) < 10:
-        raise HTTPException(status_code=422, detail="La contraseña debe tener al menos 10 caracteres")
+        # Mismo mensaje genérico que email duplicado para evitar enumeración
+        raise HTTPException(
+            status_code=422,
+            detail="No se pudo crear la cuenta. Verifica que el correo sea válido y la contraseña tenga al menos 10 caracteres."
+        )
+
+    if usuario_existe(email):
+        # Mensaje genérico — no revelar si existe o no
+        raise HTTPException(
+            status_code=422,
+            detail="No se pudo crear la cuenta. Verifica que el correo sea válido y la contraseña tenga al menos 10 caracteres."
+        )
 
     password_hash = hash_password(data.password)
     usuario = crear_usuario(
-        email=data.email,
+        email=email,
         password_hash=password_hash,
         nombre=data.nombre,
         rol="abogado",
