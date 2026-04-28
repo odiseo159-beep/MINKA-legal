@@ -1116,6 +1116,42 @@ def api_desconectar_whapi(abogado_id: int, request: Request, user=Depends(requir
     actualizar_abogado(abogado_id, {"whapi_token": None, "whapi_channel_id": None})
     return {"ok": True, "mensaje": "Canal Whapi desconectado"}
 
+
+@router.post("/api/abogados/{abogado_id}/whapi/refresh")
+async def api_refrescar_whapi(abogado_id: int, request: Request, user=Depends(require_auth)):
+    """Re-verifica el canal Whapi usando el token guardado y actualiza phone/channel_id.
+
+    Caso de uso: cuando el abogado re-pairea su canal con un teléfono distinto,
+    el token y channel_id NO cambian, pero el phone vinculado sí. Esta operación
+    actualiza Minka para reflejar el nuevo phone sin pedir al abogado que pegue
+    el token de nuevo.
+    """
+    abogado = obtener_abogado(abogado_id)
+    if not abogado:
+        raise HTTPException(status_code=404, detail="Abogado no encontrado")
+    token = abogado.get("whapi_token")
+    if not token:
+        raise HTTPException(status_code=400, detail="No hay canal Whapi conectado. Conecta uno primero.")
+
+    from agent.providers.whapi import verificar_token_whapi
+    info = await verificar_token_whapi(token)
+    if not info or not info.get("channel_id"):
+        raise HTTPException(status_code=400, detail="El canal Whapi no responde. Verifica que esté activo en whapi.cloud.")
+
+    update_data = {"whapi_channel_id": info["channel_id"]}
+    if info.get("phone"):
+        update_data["whatsapp_numero"] = info["phone"]
+    abogado_actualizado = actualizar_abogado(abogado_id, update_data)
+
+    return {
+        "ok": True,
+        "abogado": abogado_actualizado,
+        "channel_info": info,
+        "phone_anterior": abogado.get("whatsapp_numero"),
+        "phone_actualizado": info.get("phone"),
+        "cambio_detectado": abogado.get("whatsapp_numero") != info.get("phone"),
+    }
+
 # ─────────────────────────────────────────────
 # Endpoints API REST — Estudios Jurídicos
 # ─────────────────────────────────────────────
