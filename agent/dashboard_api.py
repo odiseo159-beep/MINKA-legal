@@ -191,8 +191,23 @@ def _tel_whatsapp(telefono: str) -> str:
     return t
 
 async def enviar_notificacion_whatsapp(caso: dict) -> bool:
-    if not WHAPI_TOKEN:
-        print("[Notificación] WHAPI_TOKEN no configurado, omitiendo.")
+    """Envía notificación al cliente vía WhatsApp.
+
+    Usa el token Whapi específico del abogado dueño del caso (multi-tenant).
+    Si el caso no tiene abogado_id o el abogado no tiene token configurado,
+    cae al WHAPI_TOKEN global (legacy).
+    """
+    # Determinar qué token usar: el del abogado dueño (multi-tenant) o el global (legacy)
+    token = None
+    if caso.get("abogado_id"):
+        from agent.lawyers_db import obtener_abogado
+        abogado = obtener_abogado(caso["abogado_id"])
+        if abogado and abogado.get("whapi_token"):
+            token = abogado["whapi_token"]
+    if not token:
+        token = WHAPI_TOKEN
+    if not token:
+        print("[Notificación] No hay token Whapi disponible (ni del abogado ni global), omitiendo.")
         return False
 
     telefono_wa  = _tel_whatsapp(caso.get("telefono", ""))
@@ -231,16 +246,19 @@ async def enviar_notificacion_whatsapp(caso: dict) -> bool:
             response = await client.post(
                 f"{WHAPI_API_URL}/messages/text",
                 headers={
-                    "Authorization": f"Bearer {WHAPI_TOKEN}",
+                    "Authorization": f"Bearer {token}",
                     "Content-Type": "application/json",
                 },
                 json=payload,
             )
             ok = response.status_code in (200, 201)
-            print(f"[Notificación] {'✅' if ok else '❌'} {response.status_code} → {telefono_wa}")
+            scope = "ab=" + str(caso.get("abogado_id")) if caso.get("abogado_id") else "global"
+            print(f"[Notificación {scope}] {'OK' if ok else 'FAIL'} {response.status_code} -> {telefono_wa}")
+            if not ok:
+                print(f"[Notificación] response body: {response.text[:300]}")
             return ok
     except Exception as e:
-        print(f"[Notificación] ❌ Excepción: {e}")
+        print(f"[Notificación] Excepción: {e}")
         return False
 
 # ─────────────────────────────────────────────
