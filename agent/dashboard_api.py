@@ -67,6 +67,65 @@ def require_auth(request: Request):
     if not user:
         raise HTTPException(status_code=401, detail="No autorizado. Inicia sesión.")
     return user
+
+
+def get_abogado_for_user(user: dict | None) -> dict | None:
+    """Mapea user (JWT payload) → abogado record por email.
+
+    Devuelve None si no hay user (auth desactivada) o si el usuario no tiene perfil de abogado.
+    """
+    if not user:
+        return None
+    from agent.lawyers_db import obtener_abogado_por_email
+    email = user.get("email")
+    if not email:
+        return None
+    return obtener_abogado_por_email(email)
+
+
+def require_caso_access(caso_id: int, user=Depends(require_auth)) -> dict:
+    """Dependency: valida que el usuario autenticado tenga acceso al caso.
+
+    Devuelve el dict del caso (para evitar duplicar `obtener_caso` en el handler).
+    Reglas:
+    - Si REQUIRE_AUTH=false (dev), devuelve el caso sin validar.
+    - Admins (rol=admin) pueden ver cualquier caso.
+    - Abogados solo ven casos cuyo abogado_id coincide con el suyo.
+    - Casos legacy sin abogado_id se permiten (compatibilidad temporal con log de warning).
+    - 404 ante intento de acceso ajeno (no leak de existencia).
+    """
+    caso = obtener_caso(caso_id)
+    if not caso:
+        raise HTTPException(status_code=404, detail="Caso no encontrado")
+
+    if not REQUIRE_AUTH:
+        return caso
+
+    if (user or {}).get("rol") == "admin":
+        return caso
+
+    abogado = get_abogado_for_user(user)
+    if not abogado:
+        raise HTTPException(
+            status_code=403,
+            detail="Tu cuenta no está vinculada a un perfil de abogado. Crea uno en Configuración.",
+        )
+
+    caso_abogado_id = caso.get("abogado_id")
+    if caso_abogado_id is None:
+        # Legacy: no enforcement, but log it
+        import logging as _logging
+        _logging.getLogger("agentkit").warning(
+            f"[IDOR] caso {caso_id} sin abogado_id — permitiendo acceso a abogado {abogado['id']} (legacy)"
+        )
+        return caso
+
+    if caso_abogado_id != abogado["id"]:
+        raise HTTPException(status_code=404, detail="Caso no encontrado")
+
+    return caso
+
+
 WHAPI_API_URL = os.getenv("WHAPI_API_URL", "https://gate.whapi.cloud")
 
 # ─────────────────────────────────────────────
@@ -190,7 +249,12 @@ async def enviar_notificacion_whatsapp(caso: dict) -> bool:
 
 @router.get("/api/casos")
 def api_listar_casos(request: Request, estado: Optional[str] = None, buscar: Optional[str] = None, user=Depends(require_auth)):
-    casos = listar_casos(filtro_estado=estado)
+    # Multi-tenant: admins ven todo, abogados solo sus casos
+    abogado_id = None
+    if user and user.get("rol") != "admin":
+        abogado = get_abogado_for_user(user)
+        abogado_id = abogado["id"] if abogado else -1  # -1 fuerza no-resultados si no hay perfil
+    casos = listar_casos(filtro_estado=estado, abogado_id=abogado_id)
     if buscar:
         q = buscar.lower()
         casos = [c for c in casos if
@@ -201,7 +265,11 @@ def api_listar_casos(request: Request, estado: Optional[str] = None, buscar: Opt
 
 @router.get("/api/casos/stats")
 def api_stats(request: Request, user=Depends(require_auth)):
-    casos = listar_casos()
+    abogado_id = None
+    if user and user.get("rol") != "admin":
+        abogado = get_abogado_for_user(user)
+        abogado_id = abogado["id"] if abogado else -1
+    casos = listar_casos(abogado_id=abogado_id)
     total = len(casos)
     por_estado = {}
     for c in casos:
@@ -217,36 +285,48 @@ def api_stats(request: Request, user=Depends(require_auth)):
     }
 
 @router.get("/api/casos/{caso_id}")
-def api_obtener_caso(caso_id: int, request: Request, user=Depends(require_auth)):
-    caso = obtener_caso(caso_id)
-    if not caso:
-        raise HTTPException(status_code=404, detail="Caso no encontrado")
+def api_obtener_caso(caso_id: int, caso=Depends(require_caso_access)):
     return caso
 
 @router.post("/api/casos", status_code=201)
 def api_crear_caso(data: CaseCreate, request: Request, user=Depends(require_auth)):
     case_data = data.dict()
+    # Auto-vincular al abogado del usuario autenticado (multi-tenant)
+    abogado = get_abogado_for_user(user)
+    if abogado:
+        case_data["abogado_id"] = abogado["id"]
     extracted_json = case_data.get("extracted_fields")
     nuevo_caso = crear_caso(case_data)
     if extracted_json:
-        abogado_id = user.get("id") if user else None
-        capturar_correcciones(nuevo_caso["id"], abogado_id, extracted_json, case_data, nuevo_caso.get("tipo_caso"))
+        capturar_correcciones(
+            nuevo_caso["id"],
+            abogado["id"] if abogado else None,
+            extracted_json,
+            case_data,
+            nuevo_caso.get("tipo_caso"),
+        )
     return nuevo_caso
 
 @router.put("/api/casos/{caso_id}")
-async def api_actualizar_caso(caso_id: int, data: CaseUpdate, request: Request, user=Depends(require_auth)):
-    caso_existente = obtener_caso(caso_id)
-    if not caso_existente:
-        raise HTTPException(status_code=404, detail="Caso no encontrado")
-
+async def api_actualizar_caso(
+    caso_id: int,
+    data: CaseUpdate,
+    request: Request,
+    caso_existente=Depends(require_caso_access),
+):
     notificar   = data.notificar_cliente
     update_data = data.dict(exclude_none=True, exclude={"notificar_cliente"})
 
     # Capturar correcciones del abogado respecto a la extracción IA original
     extracted_json = caso_existente.get("extracted_fields")
     if extracted_json:
-        abogado_id = user.get("id") if user else None
-        capturar_correcciones(caso_id, abogado_id, extracted_json, update_data, caso_existente.get("tipo_caso"))
+        capturar_correcciones(
+            caso_id,
+            caso_existente.get("abogado_id"),
+            extracted_json,
+            update_data,
+            caso_existente.get("tipo_caso"),
+        )
 
     caso_actualizado = actualizar_caso(caso_id, update_data)
 
@@ -257,21 +337,15 @@ async def api_actualizar_caso(caso_id: int, data: CaseUpdate, request: Request, 
     return {**caso_actualizado, "_notificacion_enviada": notificacion_enviada}
 
 @router.post("/api/casos/{caso_id}/notificar")
-async def api_notificar_caso(caso_id: int, request: Request, user=Depends(require_auth)):
+async def api_notificar_caso(caso_id: int, caso=Depends(require_caso_access)):
     """Envía notificación WhatsApp al cliente con el estado actual del caso."""
-    caso = obtener_caso(caso_id)
-    if not caso:
-        raise HTTPException(status_code=404, detail="Caso no encontrado")
     enviado = await enviar_notificacion_whatsapp(caso)
     if not enviado:
         raise HTTPException(status_code=500, detail="No se pudo enviar la notificación. Verifica WHAPI_TOKEN.")
     return {"ok": True, "mensaje": f"Notificación enviada a {caso.get('nombre_cliente', 'cliente')}"}
 
 @router.delete("/api/casos/{caso_id}")
-def api_eliminar_caso(caso_id: int, request: Request, user=Depends(require_auth)):
-    caso = obtener_caso(caso_id)
-    if not caso:
-        raise HTTPException(status_code=404, detail="Caso no encontrado")
+def api_eliminar_caso(caso_id: int, caso=Depends(require_caso_access)):
     _doc_chunks_cache.pop(caso_id, None)
     eliminar_caso(caso_id)
     return {"ok": True, "mensaje": "Caso eliminado"}
@@ -281,17 +355,17 @@ def api_eliminar_caso(caso_id: int, request: Request, user=Depends(require_auth)
 # ─────────────────────────────────────────────
 
 @router.post("/api/casos/{caso_id}/documento")
-async def api_subir_documento(caso_id: int, archivo: UploadFile = File(...), request: Request = None, user=Depends(require_auth)):
+async def api_subir_documento(
+    caso_id: int,
+    archivo: UploadFile = File(...),
+    caso=Depends(require_caso_access),
+):
     """
     Sube el archivo original del caso a Cloudflare R2 y guarda la referencia en BD.
     Requiere variables de entorno: R2_ACCOUNT_ID, R2_ACCESS_KEY, R2_SECRET_KEY, R2_BUCKET.
     """
     if not r2_configured():
         raise HTTPException(status_code=503, detail="El almacenamiento de documentos no está configurado. Contacta al administrador.")
-
-    caso = obtener_caso(caso_id)
-    if not caso:
-        raise HTTPException(status_code=404, detail="Caso no encontrado")
 
     MAX_SIZE_MB = 10
     contenido = await archivo.read()
@@ -320,16 +394,12 @@ async def api_subir_documento(caso_id: int, archivo: UploadFile = File(...), req
 
 
 @router.get("/api/casos/{caso_id}/documento")
-def api_obtener_url_documento(caso_id: int, request: Request, user=Depends(require_auth)):
+def api_obtener_url_documento(caso_id: int, caso=Depends(require_caso_access)):
     """
     Genera una URL firmada temporal (1 hora) para descargar el documento del caso.
     """
     if not r2_configured():
         raise HTTPException(status_code=503, detail="El almacenamiento de documentos no está configurado.")
-
-    caso = obtener_caso(caso_id)
-    if not caso:
-        raise HTTPException(status_code=404, detail="Caso no encontrado")
 
     key = caso.get("documento_url")
     if not key:
@@ -349,16 +419,12 @@ def api_obtener_url_documento(caso_id: int, request: Request, user=Depends(requi
 
 
 @router.delete("/api/casos/{caso_id}/documento")
-def api_eliminar_documento(caso_id: int, request: Request, user=Depends(require_auth)):
+def api_eliminar_documento(caso_id: int, caso=Depends(require_caso_access)):
     """
     Elimina el documento almacenado del caso (de R2 y de la BD).
     """
     if not r2_configured():
         raise HTTPException(status_code=503, detail="El almacenamiento de documentos no está configurado.")
-
-    caso = obtener_caso(caso_id)
-    if not caso:
-        raise HTTPException(status_code=404, detail="Caso no encontrado")
 
     key = caso.get("documento_url")
     if not key:
@@ -377,11 +443,8 @@ def api_eliminar_documento(caso_id: int, request: Request, user=Depends(require_
 # ─────────────────────────────────────────────
 
 @router.get("/api/casos/{caso_id}/documentos")
-def api_listar_documentos(caso_id: int, request: Request, user=Depends(require_auth)):
+def api_listar_documentos(caso_id: int, caso=Depends(require_caso_access)):
     """Lista todos los documentos subidos para un caso (solo metadata, sin texto)."""
-    caso = obtener_caso(caso_id)
-    if not caso:
-        raise HTTPException(status_code=404, detail="Caso no encontrado")
     docs = listar_documentos_caso(caso_id)
     return [
         {
@@ -399,8 +462,7 @@ def api_listar_documentos(caso_id: int, request: Request, user=Depends(require_a
 async def api_subir_documento_caso(
     caso_id: int,
     archivo: UploadFile = File(...),
-    request: Request = None,
-    user=Depends(require_auth),
+    caso=Depends(require_caso_access),
 ):
     """
     Sube un documento al caso:
@@ -411,10 +473,6 @@ async def api_subir_documento_caso(
     """
     if not r2_configured():
         raise HTTPException(status_code=503, detail="El almacenamiento de documentos no está configurado.")
-
-    caso = obtener_caso(caso_id)
-    if not caso:
-        raise HTTPException(status_code=404, detail="Caso no encontrado")
 
     MAX_MB = 10
     contenido = await archivo.read()
@@ -479,7 +537,7 @@ async def api_subir_documento_caso(
 
 @router.get("/api/casos/{caso_id}/documentos/{doc_id}")
 def api_obtener_url_doc(
-    caso_id: int, doc_id: int, request: Request, user=Depends(require_auth)
+    caso_id: int, doc_id: int, caso=Depends(require_caso_access)
 ):
     """Genera una URL firmada temporal (1 hora) para descargar un documento específico."""
     if not r2_configured():
@@ -496,7 +554,7 @@ def api_obtener_url_doc(
 
 @router.delete("/api/casos/{caso_id}/documentos/{doc_id}")
 def api_eliminar_doc(
-    caso_id: int, doc_id: int, request: Request, user=Depends(require_auth)
+    caso_id: int, doc_id: int, caso=Depends(require_caso_access)
 ):
     """Elimina un documento de R2 y de la BD."""
     if not r2_configured():
@@ -512,16 +570,12 @@ def api_eliminar_doc(
 
 
 @router.post("/api/casos/{caso_id}/documentos/migrar-legacy")
-def api_migrar_legacy(caso_id: int, request: Request, user=Depends(require_auth)):
+def api_migrar_legacy(caso_id: int, caso=Depends(require_caso_access)):
     """
     Migra el documento legacy (campos documento_url/nombre/tipo/texto en casos)
     al nuevo sistema de multi-documentos (tabla caso_documentos).
     El archivo en R2 NO se mueve — solo se crea la referencia en BD.
     """
-    caso = obtener_caso(caso_id)
-    if not caso:
-        raise HTTPException(status_code=404, detail="Caso no encontrado")
-
     key = caso.get("documento_url")
     if not key:
         raise HTTPException(status_code=404, detail="El caso no tiene documento legacy para migrar")
@@ -617,7 +671,7 @@ async def api_extraer_documento(archivo: UploadFile = File(...), request: Reques
 # ─────────────────────────────────────────────
 
 @router.get("/api/casos/{caso_id}/consejo")
-def api_consejo_procesal(caso_id: int, request: Request, user=Depends(require_auth)):
+def api_consejo_procesal(caso_id: int, caso=Depends(require_caso_access)):
     """
     Dado un caso registrado, devuelve:
     - La siguiente etapa procesal
@@ -626,10 +680,6 @@ def api_consejo_procesal(caso_id: int, request: Request, user=Depends(require_au
     - Los documentos que hay que preparar
     - La norma que lo sustenta
     """
-    caso = obtener_caso(caso_id)
-    if not caso:
-        raise HTTPException(status_code=404, detail="Caso no encontrado")
-
     consejo = generar_consejo_procesal(caso)
     return consejo
 
@@ -783,7 +833,11 @@ def _obtener_contexto_documentos(caso_id: int, pregunta: str) -> str:
 # ─────────────────────────────────────────────
 
 @router.post("/api/casos/{caso_id}/chat")
-async def api_chat_caso(caso_id: int, data: ChatRequest, request: Request, user=Depends(require_auth)):
+async def api_chat_caso(
+    caso_id: int,
+    data: ChatRequest,
+    caso=Depends(require_caso_access),
+):
     """
     El abogado hace una pregunta sobre el caso y Claude responde con contexto completo:
     - Datos del caso
@@ -792,10 +846,6 @@ async def api_chat_caso(caso_id: int, data: ChatRequest, request: Request, user=
     - Normativa relevante (BM25)
     """
     from anthropic import AsyncAnthropic
-
-    caso = obtener_caso(caso_id)
-    if not caso:
-        raise HTTPException(status_code=404, detail="Caso no encontrado")
 
     pregunta = data.pregunta.strip()
     if not pregunta:
@@ -904,12 +954,12 @@ ESTADO PROCESAL ACTUAL:
     return {"respuesta": respuesta}
 
 @router.post("/api/casos/{caso_id}/agente")
-async def api_agente_legal(caso_id: int, data: AgentRequest, request: Request, user=Depends(require_auth)):
+async def api_agente_legal(
+    caso_id: int,
+    data: AgentRequest,
+    caso=Depends(require_caso_access),
+):
     """Agente Legal unificado: analizar, asesorar, redactar, normativa."""
-    caso = obtener_caso(caso_id)
-    if not caso:
-        raise HTTPException(status_code=404, detail="Caso no encontrado")
-
     if data.accion not in ACCIONES_VALIDAS:
         raise HTTPException(status_code=400, detail=f"Acción no válida: {data.accion}")
 
@@ -928,21 +978,15 @@ async def api_agente_legal(caso_id: int, data: AgentRequest, request: Request, u
 
 
 @router.get("/api/casos/{caso_id}/chat/historial")
-async def api_chat_historial(caso_id: int, request: Request, user=Depends(require_auth)):
+async def api_chat_historial(caso_id: int, caso=Depends(require_caso_access)):
     """Retorna el historial de mensajes del chat de un caso."""
-    caso = obtener_caso(caso_id)
-    if not caso:
-        raise HTTPException(status_code=404, detail="Caso no encontrado")
     mensajes = listar_mensajes_chat(caso_id)
     return {"mensajes": mensajes}
 
 
 @router.delete("/api/casos/{caso_id}/chat/historial")
-async def api_chat_limpiar(caso_id: int, request: Request, user=Depends(require_auth)):
+async def api_chat_limpiar(caso_id: int, caso=Depends(require_caso_access)):
     """Elimina el historial de chat de un caso."""
-    caso = obtener_caso(caso_id)
-    if not caso:
-        raise HTTPException(status_code=404, detail="Caso no encontrado")
     limpiar_chat_caso(caso_id)
     return {"ok": True}
 

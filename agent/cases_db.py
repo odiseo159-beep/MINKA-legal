@@ -104,15 +104,15 @@ def normalizar_telefono(telefono: str) -> str:
 
 
 def crear_caso(data: dict) -> dict:
-    """Crea un nuevo caso."""
+    """Crea un nuevo caso. Si data['abogado_id'] está presente, lo persiste (multi-tenant)."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     telefono = normalizar_telefono(data.get("telefono", ""))
     cursor.execute("""
         INSERT INTO casos (telefono, nombre_cliente, expediente, tipo_caso, estado,
                           proxima_fecha, proxima_accion, documentos_pendientes, notas,
-                          abogado_asignado, documento_texto, extracted_fields)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                          abogado_asignado, abogado_id, documento_texto, extracted_fields)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         telefono,
         data.get("nombre_cliente", ""),
@@ -124,6 +124,7 @@ def crear_caso(data: dict) -> dict:
         data.get("documentos_pendientes", ""),
         data.get("notas", ""),
         data.get("abogado_asignado", ""),
+        data.get("abogado_id"),
         data.get("documento_texto", ""),
         data.get("extracted_fields"),
     ))
@@ -176,23 +177,52 @@ def buscar_por_telefono(telefono: str, abogado_id: int | None = None) -> list:
     return [dict(row) for row in rows]
 
 
-def listar_casos(filtro_estado: str = None) -> list:
-    """Lista todos los casos activos (no eliminados), opcionalmente filtrados por estado."""
+def listar_casos(filtro_estado: str = None, abogado_id: int | None = None) -> list:
+    """Lista casos activos (no eliminados).
+
+    Si se proporciona abogado_id, filtra solo los casos de ese abogado (multi-tenant).
+    """
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
+
+    where = ["(eliminado IS NULL OR eliminado = 0)"]
+    params: list = []
     if filtro_estado:
-        cursor.execute(
-            "SELECT * FROM casos WHERE estado = ? AND (eliminado IS NULL OR eliminado = 0) ORDER BY fecha_actualizacion DESC",
-            (filtro_estado,)
-        )
-    else:
-        cursor.execute(
-            "SELECT * FROM casos WHERE (eliminado IS NULL OR eliminado = 0) ORDER BY fecha_actualizacion DESC"
-        )
+        where.append("estado = ?")
+        params.append(filtro_estado)
+    if abogado_id is not None:
+        where.append("abogado_id = ?")
+        params.append(abogado_id)
+
+    cursor.execute(
+        f"SELECT * FROM casos WHERE {' AND '.join(where)} ORDER BY fecha_actualizacion DESC",
+        params,
+    )
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+
+def backfill_abogado_id_unicamente_si_uno() -> int:
+    """Migración one-shot: si solo hay UN abogado en el sistema y existen casos sin abogado_id,
+    los vincula a ese abogado. Devuelve el número de casos vinculados."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM abogados WHERE activo = 1 LIMIT 2")
+    abogados = cursor.fetchall()
+    if len(abogados) != 1:
+        conn.close()
+        return 0
+    abogado_id = abogados[0][0]
+    cursor.execute(
+        "UPDATE casos SET abogado_id = ? WHERE abogado_id IS NULL AND (eliminado IS NULL OR eliminado = 0)",
+        (abogado_id,),
+    )
+    n = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return n
 
 
 def actualizar_caso(caso_id: int, data: dict) -> dict:

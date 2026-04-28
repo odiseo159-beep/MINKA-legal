@@ -55,6 +55,12 @@ async def lifespan(app: FastAPI):
     init_users_db()
     init_lawyers_db()
     init_events_db()
+
+    # Backfill abogado_id en casos huérfanos si solo hay 1 abogado (migración one-shot)
+    from agent.cases_db import backfill_abogado_id_unicamente_si_uno
+    n_backfilled = backfill_abogado_id_unicamente_si_uno()
+    if n_backfilled:
+        logger.info(f"[STARTUP] Vinculados {n_backfilled} casos huérfanos al único abogado existente")
     # Crear usuario admin inicial si no existe
     admin_email = os.getenv("ADMIN_EMAIL", "")
     admin_password = os.getenv("ADMIN_PASSWORD", "")
