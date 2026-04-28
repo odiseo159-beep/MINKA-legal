@@ -2,6 +2,7 @@
 # Se integra con la misma base de datos SQLite que usa memory.py
 
 import sqlite3
+import json
 import os
 from datetime import datetime
 
@@ -42,8 +43,9 @@ def init_cases_db():
         ("documento_url", "TEXT"),
         ("documento_nombre", "TEXT"),
         ("documento_tipo", "TEXT"),
-        ("version", "INTEGER DEFAULT 0"),  # NUEVO
+        ("version", "INTEGER DEFAULT 0"),
         ("eliminado", "INTEGER DEFAULT 0"),
+        ("extracted_fields", "TEXT"),  # JSON snapshot de lo que Claude extrajo al crear el caso
     ]:
         try:
             cursor.execute(f"ALTER TABLE casos ADD COLUMN {columna} {definicion}")
@@ -109,8 +111,8 @@ def crear_caso(data: dict) -> dict:
     cursor.execute("""
         INSERT INTO casos (telefono, nombre_cliente, expediente, tipo_caso, estado,
                           proxima_fecha, proxima_accion, documentos_pendientes, notas,
-                          abogado_asignado, documento_texto)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                          abogado_asignado, documento_texto, extracted_fields)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         telefono,
         data.get("nombre_cliente", ""),
@@ -123,6 +125,7 @@ def crear_caso(data: dict) -> dict:
         data.get("notas", ""),
         data.get("abogado_asignado", ""),
         data.get("documento_texto", ""),
+        data.get("extracted_fields"),
     ))
     conn.commit()
     caso_id = cursor.lastrowid
@@ -345,5 +348,86 @@ def limpiar_chat_caso(caso_id: int) -> None:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM chat_mensajes WHERE caso_id = ?", (caso_id,))
+    conn.commit()
+    conn.close()
+
+
+# ─────────────────────────────────────────────
+# Feedback loop — correcciones del abogado
+# ─────────────────────────────────────────────
+
+def init_corrections_db():
+    """Crea la tabla corrections para capturar diferencias entre extracción IA y datos finales del abogado."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS corrections (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            caso_id     INTEGER NOT NULL,
+            abogado_id  INTEGER,
+            campo       TEXT NOT NULL,
+            valor_claude TEXT,
+            valor_abogado TEXT,
+            tipo_caso   TEXT,
+            created_at  TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (caso_id) REFERENCES casos(id)
+        )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_corrections_campo    ON corrections(campo)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_corrections_tipo     ON corrections(tipo_caso)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_corrections_caso     ON corrections(caso_id)")
+    conn.commit()
+    conn.close()
+
+
+_CAMPOS_CORREGIBLES = [
+    "expediente", "nombre_cliente", "telefono", "tipo_caso",
+    "estado", "proxima_accion", "documentos_pendientes", "notas", "proxima_fecha",
+]
+
+
+def capturar_correcciones(
+    caso_id: int,
+    abogado_id: int | None,
+    extracted_fields_json: str | None,
+    datos_guardados: dict,
+    tipo_caso: str | None,
+) -> None:
+    """Compara lo que Claude extrajo con lo que el abogado guardó y registra las diferencias.
+
+    Se llama tanto al crear (para detectar cambios pre-guardado) como al actualizar el caso.
+    Solo registra diferencias: correcciones (Claude extrajo X, abogado puso Y) y
+    adiciones (Claude no encontró nada, abogado llenó el campo).
+    """
+    if not extracted_fields_json:
+        return
+    try:
+        extraido = json.loads(extracted_fields_json)
+    except Exception:
+        return
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    for campo in _CAMPOS_CORREGIBLES:
+        if campo not in datos_guardados:
+            continue
+        valor_nuevo = datos_guardados.get(campo) or ""
+        valor_extraido = extraido.get(campo) or ""
+
+        if not valor_nuevo and not valor_extraido:
+            continue
+        if valor_nuevo == valor_extraido:
+            continue
+
+        cursor.execute(
+            """INSERT INTO corrections (caso_id, abogado_id, campo, valor_claude, valor_abogado, tipo_caso)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (caso_id, abogado_id, campo,
+             valor_extraido or None,
+             valor_nuevo or None,
+             tipo_caso),
+        )
+
     conn.commit()
     conn.close()

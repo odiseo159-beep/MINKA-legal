@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 from agent.brain import generar_respuesta
 from agent.memory import inicializar_db, guardar_mensaje, obtener_historial
 from agent.providers import obtener_proveedor
-from agent.cases_db import init_cases_db
+from agent.cases_db import init_cases_db, init_corrections_db
 from agent.dashboard_api import router as dashboard_router
 from agent.users_db import init_users_db, usuario_existe, crear_usuario
 from agent.auth import hash_password
@@ -51,6 +51,7 @@ async def lifespan(app: FastAPI):
     """Inicializa las bases de datos al arrancar el servidor."""
     await inicializar_db()
     init_cases_db()
+    init_corrections_db()
     init_users_db()
     init_lawyers_db()
     init_events_db()

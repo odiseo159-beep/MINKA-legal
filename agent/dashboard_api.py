@@ -19,6 +19,8 @@ from agent.cases_db import (
     guardar_mensaje_chat,
     listar_mensajes_chat,
     limpiar_chat_caso,
+    capturar_correcciones,
+    DB_PATH,
 )
 from agent.crypto import compress_encrypt, decrypt_decompress
 from agent.lawyers_db import (
@@ -83,6 +85,7 @@ class CaseCreate(BaseModel):
     notas: Optional[str] = None
     abogado_asignado: Optional[str] = None
     documento_texto: Optional[str] = None
+    extracted_fields: Optional[str] = None  # JSON snapshot de extracción IA — para feedback loop
 
 class CaseUpdate(BaseModel):
     telefono: Optional[str] = None
@@ -222,7 +225,13 @@ def api_obtener_caso(caso_id: int, request: Request, user=Depends(require_auth))
 
 @router.post("/api/casos", status_code=201)
 def api_crear_caso(data: CaseCreate, request: Request, user=Depends(require_auth)):
-    return crear_caso(data.dict())
+    case_data = data.dict()
+    extracted_json = case_data.get("extracted_fields")
+    nuevo_caso = crear_caso(case_data)
+    if extracted_json:
+        abogado_id = user.get("id") if user else None
+        capturar_correcciones(nuevo_caso["id"], abogado_id, extracted_json, case_data, nuevo_caso.get("tipo_caso"))
+    return nuevo_caso
 
 @router.put("/api/casos/{caso_id}")
 async def api_actualizar_caso(caso_id: int, data: CaseUpdate, request: Request, user=Depends(require_auth)):
@@ -232,6 +241,13 @@ async def api_actualizar_caso(caso_id: int, data: CaseUpdate, request: Request, 
 
     notificar   = data.notificar_cliente
     update_data = data.dict(exclude_none=True, exclude={"notificar_cliente"})
+
+    # Capturar correcciones del abogado respecto a la extracción IA original
+    extracted_json = caso_existente.get("extracted_fields")
+    if extracted_json:
+        abogado_id = user.get("id") if user else None
+        capturar_correcciones(caso_id, abogado_id, extracted_json, update_data, caso_existente.get("tipo_caso"))
+
     caso_actualizado = actualizar_caso(caso_id, update_data)
 
     notificacion_enviada = False
@@ -1111,6 +1127,63 @@ class NormativaRequest(BaseModel):
     query: str
     codigos: Optional[List[str]] = None
     top_k: int = 5
+
+
+# ─────────────────────────────────────────────
+# Feedback loop — correcciones del abogado
+# ─────────────────────────────────────────────
+
+@router.get("/api/corrections")
+def api_listar_corrections(
+    request: Request,
+    campo: Optional[str] = None,
+    tipo_caso: Optional[str] = None,
+    limit: int = 200,
+    user=Depends(require_auth),
+):
+    """Lista correcciones/adiciones del abogado respecto a la extracción IA. Solo para uso del developer."""
+    import sqlite3 as _sqlite
+    conn = _sqlite.connect(DB_PATH)
+    conn.row_factory = _sqlite.Row
+    cursor = conn.cursor()
+    conditions, params = [], []
+    if campo:
+        conditions.append("c.campo = ?"); params.append(campo)
+    if tipo_caso:
+        conditions.append("c.tipo_caso = ?"); params.append(tipo_caso)
+    where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+    cursor.execute(f"""
+        SELECT c.*, ca.nombre_cliente, ca.expediente
+        FROM corrections c
+        LEFT JOIN casos ca ON c.caso_id = ca.id
+        {where}
+        ORDER BY c.created_at DESC
+        LIMIT ?
+    """, params + [limit])
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+@router.get("/api/corrections/stats")
+def api_corrections_stats(request: Request, user=Depends(require_auth)):
+    """Estadísticas agrupadas de correcciones: qué campos corrige más el abogado y en qué tipos de caso."""
+    import sqlite3 as _sqlite
+    conn = _sqlite.connect(DB_PATH)
+    conn.row_factory = _sqlite.Row
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT campo, tipo_caso,
+               COUNT(*) as total,
+               SUM(CASE WHEN valor_claude IS NULL THEN 1 ELSE 0 END) as adiciones,
+               SUM(CASE WHEN valor_claude IS NOT NULL THEN 1 ELSE 0 END) as correcciones
+        FROM corrections
+        GROUP BY campo, tipo_caso
+        ORDER BY total DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 
 @router.post("/api/normativa/buscar")
