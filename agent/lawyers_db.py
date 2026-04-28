@@ -238,6 +238,64 @@ def listar_abogados(solo_activos: bool = False) -> list:
     return result
 
 
+def listar_abogados_por_email(email: str, solo_activos: bool = False) -> list:
+    """Devuelve sólo los abogados cuyo email coincide con el del usuario autenticado.
+
+    Usado para multi-tenancy: cada usuario debería ver sólo SU registro de abogado,
+    no los de otros estudios/cuentas que comparten la base de datos.
+    """
+    if not email:
+        return []
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    if solo_activos:
+        cursor.execute(
+            "SELECT * FROM abogados WHERE email = ? AND activo = 1 ORDER BY nombre",
+            (email.lower(),),
+        )
+    else:
+        cursor.execute(
+            "SELECT * FROM abogados WHERE email = ? ORDER BY nombre",
+            (email.lower(),),
+        )
+    rows = cursor.fetchall()
+    conn.close()
+    result = []
+    for row in rows:
+        d = dict(row)
+        try:
+            d["especialidades"] = json.loads(d.get("especialidades") or "[]")
+        except (json.JSONDecodeError, TypeError):
+            d["especialidades"] = []
+        result.append(d)
+    return result
+
+
+def listar_estudios_por_email(email: str) -> list:
+    """Devuelve los estudios que tienen al menos un abogado con el email dado.
+
+    Multi-tenant: el usuario sólo ve estudios donde figura como abogado.
+    """
+    if not email:
+        return []
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT DISTINCT e.* FROM estudios e
+        INNER JOIN abogados a ON a.estudio_id = e.id
+        WHERE LOWER(a.email) = LOWER(?)
+        ORDER BY e.nombre
+        """,
+        (email,),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
 def obtener_abogado_por_canal(channel_id: str) -> dict | None:
     """Busca un abogado por el ID del canal Whapi configurado en su perfil."""
     if not channel_id:

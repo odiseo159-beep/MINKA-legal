@@ -25,11 +25,13 @@ from agent.cases_db import (
 from agent.crypto import compress_encrypt, decrypt_decompress
 from agent.lawyers_db import (
     listar_abogados,
+    listar_abogados_por_email,
     obtener_abogado,
     crear_abogado,
     actualizar_abogado,
     eliminar_abogado,
     listar_estudios,
+    listar_estudios_por_email,
     obtener_estudio,
     crear_estudio,
     actualizar_estudio,
@@ -1056,32 +1058,62 @@ class AbogadoUpdate(BaseModel):
     estudio_id: Optional[int] = None
     activo: Optional[bool] = None
 
+def _es_admin(user: dict) -> bool:
+    return (user or {}).get("rol") == "admin"
+
+
+def _require_abogado_owner(abogado_id: int, user: dict) -> dict:
+    """Lookup abogado y verifica que pertenezca al usuario autenticado.
+
+    Multi-tenant guard: previene que el usuario A modifique los datos del
+    usuario B sólo conociendo el abogado_id. Admin tiene acceso global.
+    Lanza 404 si no existe (mismo código que ownership-mismatch para no
+    revelar IDs ajenos).
+    """
+    abogado = obtener_abogado(abogado_id)
+    if not abogado:
+        raise HTTPException(status_code=404, detail="Abogado no encontrado")
+    if not _es_admin(user):
+        owner_email = (abogado.get("email") or "").lower()
+        user_email = (user.get("email") or "").lower()
+        if owner_email != user_email:
+            raise HTTPException(status_code=404, detail="Abogado no encontrado")
+    return abogado
+
+
 @router.get("/api/abogados")
 def api_listar_abogados(request: Request, solo_activos: bool = False, user=Depends(require_auth)):
-    return listar_abogados(solo_activos=solo_activos)
+    if _es_admin(user):
+        return listar_abogados(solo_activos=solo_activos)
+    return listar_abogados_por_email(user.get("email", ""), solo_activos=solo_activos)
 
 @router.post("/api/abogados", status_code=201)
 def api_crear_abogado(data: AbogadoCreate, request: Request, user=Depends(require_auth)):
-    return crear_abogado(data.dict())
+    payload = data.dict()
+    # Forzar el email al del usuario autenticado para que el abogado quede
+    # ligado a la cuenta correcta. El admin sí puede crear abogados con
+    # cualquier email (uso interno).
+    if not _es_admin(user):
+        payload["email"] = user.get("email", "")
+    return crear_abogado(payload)
 
 @router.get("/api/abogados/{abogado_id}")
 def api_obtener_abogado(abogado_id: int, request: Request, user=Depends(require_auth)):
-    abogado = obtener_abogado(abogado_id)
-    if not abogado:
-        raise HTTPException(status_code=404, detail="Abogado no encontrado")
-    return abogado
+    return _require_abogado_owner(abogado_id, user)
 
 @router.put("/api/abogados/{abogado_id}")
 def api_actualizar_abogado(abogado_id: int, data: AbogadoUpdate, request: Request, user=Depends(require_auth)):
-    abogado = obtener_abogado(abogado_id)
-    if not abogado:
-        raise HTTPException(status_code=404, detail="Abogado no encontrado")
-    return actualizar_abogado(abogado_id, data.dict(exclude_none=True))
+    _require_abogado_owner(abogado_id, user)
+    payload = data.dict(exclude_none=True)
+    # No permitir que un abogado cambie su email para "secuestrar" la cuenta
+    # de otro usuario. Admin sí puede.
+    if not _es_admin(user) and "email" in payload:
+        payload.pop("email", None)
+    return actualizar_abogado(abogado_id, payload)
 
 @router.delete("/api/abogados/{abogado_id}")
 def api_eliminar_abogado(abogado_id: int, request: Request, user=Depends(require_auth)):
-    if not obtener_abogado(abogado_id):
-        raise HTTPException(status_code=404, detail="Abogado no encontrado")
+    _require_abogado_owner(abogado_id, user)
     eliminar_abogado(abogado_id)
     return {"ok": True, "mensaje": "Abogado desactivado"}
 
@@ -1101,8 +1133,7 @@ async def api_verificar_whapi(abogado_id: int, data: WhapiConfig, request: Reque
 
     No persiste todavía — el usuario revisa el resultado y luego confirma con POST .../whapi.
     """
-    if not obtener_abogado(abogado_id):
-        raise HTTPException(status_code=404, detail="Abogado no encontrado")
+    _require_abogado_owner(abogado_id, user)
     from agent.providers.whapi import verificar_token_whapi
     info = await verificar_token_whapi(data.whapi_token)
     if not info or not info.get("channel_id"):
@@ -1116,8 +1147,7 @@ async def api_guardar_whapi(abogado_id: int, data: WhapiConfig, request: Request
 
     También retorna la URL de webhook que el usuario debe configurar en Whapi.
     """
-    if not obtener_abogado(abogado_id):
-        raise HTTPException(status_code=404, detail="Abogado no encontrado")
+    _require_abogado_owner(abogado_id, user)
     from agent.providers.whapi import verificar_token_whapi
     info = await verificar_token_whapi(data.whapi_token)
     if not info or not info.get("channel_id"):
@@ -1152,8 +1182,7 @@ async def api_guardar_whapi(abogado_id: int, data: WhapiConfig, request: Request
 @router.delete("/api/abogados/{abogado_id}/whapi")
 def api_desconectar_whapi(abogado_id: int, request: Request, user=Depends(require_auth)):
     """Desconecta el canal Whapi del abogado (limpia token y channel_id)."""
-    if not obtener_abogado(abogado_id):
-        raise HTTPException(status_code=404, detail="Abogado no encontrado")
+    _require_abogado_owner(abogado_id, user)
     actualizar_abogado(abogado_id, {"whapi_token": None, "whapi_channel_id": None})
     return {"ok": True, "mensaje": "Canal Whapi desconectado"}
 
@@ -1167,9 +1196,7 @@ async def api_refrescar_whapi(abogado_id: int, request: Request, user=Depends(re
     actualiza Minka para reflejar el nuevo phone sin pedir al abogado que pegue
     el token de nuevo.
     """
-    abogado = obtener_abogado(abogado_id)
-    if not abogado:
-        raise HTTPException(status_code=404, detail="Abogado no encontrado")
+    abogado = _require_abogado_owner(abogado_id, user)
     token = abogado.get("whapi_token")
     if not token:
         raise HTTPException(status_code=400, detail="No hay canal Whapi conectado. Conecta uno primero.")
