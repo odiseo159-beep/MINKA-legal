@@ -196,14 +196,20 @@ async def enviar_notificacion_whatsapp(caso: dict) -> bool:
     Usa el token Whapi específico del abogado dueño del caso (multi-tenant).
     Si el caso no tiene abogado_id o el abogado no tiene token configurado,
     cae al WHAPI_TOKEN global (legacy).
+    El mensaje se personaliza con el nombre del abogado y/o del estudio.
     """
-    # Determinar qué token usar: el del abogado dueño (multi-tenant) o el global (legacy)
+    # Determinar qué token usar y obtener datos del abogado/estudio para personalización
     token = None
+    abogado = None
+    estudio = None
     if caso.get("abogado_id"):
-        from agent.lawyers_db import obtener_abogado
+        from agent.lawyers_db import obtener_abogado, obtener_estudio
         abogado = obtener_abogado(caso["abogado_id"])
-        if abogado and abogado.get("whapi_token"):
-            token = abogado["whapi_token"]
+        if abogado:
+            if abogado.get("whapi_token"):
+                token = abogado["whapi_token"]
+            if abogado.get("estudio_id"):
+                estudio = obtener_estudio(abogado["estudio_id"])
     if not token:
         token = WHAPI_TOKEN
     if not token:
@@ -219,10 +225,24 @@ async def enviar_notificacion_whatsapp(caso: dict) -> bool:
     proxima_accion  = caso.get("proxima_accion") or ""
     documentos      = caso.get("documentos_pendientes") or ""
 
+    nombre_abogado = (abogado.get("nombre") if abogado else "") or ""
+    nombre_estudio = (estudio.get("nombre") if estudio else "") or ""
+
+    # Encabezado: prefiere nombre del estudio, luego del abogado, luego genérico
+    if nombre_estudio:
+        encabezado = f"Hola {nombre}, le escribimos del estudio {nombre_estudio} sobre su caso."
+    elif nombre_abogado:
+        encabezado = f"Hola {nombre}, le escribimos del despacho del Dr(a). {nombre_abogado} sobre su caso."
+    else:
+        encabezado = f"Hola {nombre}, le escribimos sobre su caso."
+
+    # Firma: nombre del abogado si existe; sino, nombre del estudio; sino sin firma
+    firma = nombre_abogado or nombre_estudio
+
     lineas = [
-        f"👋 Hola {nombre}, le escribimos del estudio jurídico.",
+        f"👋 {encabezado}",
         "",
-        "*Su caso ha sido actualizado:*",
+        "*Actualización de su caso:*",
         f"📁 Expediente: {expediente}" if expediente else None,
         f"📊 Estado: {estado_label}",
     ]
@@ -232,7 +252,10 @@ async def enviar_notificacion_whatsapp(caso: dict) -> bool:
         lineas.append(f"▶️ Próxima acción: {proxima_accion}")
     if documentos:
         lineas.append(f"📎 Documentos pendientes: {documentos}")
-    lineas += ["", "Si tiene consultas, puede escribirme aquí mismo. 🤖 _Minka_"]
+    lineas.append("")
+    lineas.append("Si tiene alguna consulta, puede responder a este mensaje.")
+    if firma:
+        lineas.append(f"— _{firma}_")
 
     mensaje = "\n".join(l for l in lineas if l is not None)
     payload = {
