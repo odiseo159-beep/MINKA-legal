@@ -101,6 +101,41 @@ CODIGOS = {
         "output_dir": "ley_29497_nlpt",
         "nota": "",
     },
+    "ct": {
+        "nombre": "Código Tributario (TUO)",
+        "decreto": "Decreto Supremo 133-2013-EF",
+        "url": "https://lpderecho.pe/tuo-codigo-tributario-decreto-supremo-133-2013-ef-actualizado/",
+        "output_dir": "codigo_tributario",
+        "nota": "",
+    },
+    "lgs": {
+        "nombre": "Ley General de Sociedades",
+        "decreto": "Ley N° 26887",
+        "url": "https://lpderecho.pe/ley-general-sociedades-ley-26887-actualizado/",
+        "output_dir": "ley_26887_sociedades",
+        "nota": "",
+    },
+    "lpag": {
+        "nombre": "Ley del Procedimiento Administrativo General (TUO)",
+        "decreto": "Decreto Supremo 004-2019-JUS (TUO Ley 27444)",
+        "url": "https://lpderecho.pe/ley-procedimiento-administrativo-27444/",
+        "output_dir": "ley_27444_lpag",
+        "nota": "",
+    },
+    "lpca": {
+        "nombre": "Ley del Proceso Contencioso Administrativo",
+        "decreto": "TUO Ley N° 27584, aprobado por DS 011-2019-JUS",
+        "url": "https://lpderecho.pe/ley-27584-ley-que-regula-proceso-contencioso-administrativo/",
+        "output_dir": "ley_27584_contencioso",
+        "nota": "",
+    },
+    "cpc_const": {
+        "nombre": "Código Procesal Constitucional",
+        "decreto": "Ley N° 31307, vigente desde 23 de julio de 2021",
+        "url": "https://lpderecho.pe/codigo-procesal-constitucional-actualizado/",
+        "output_dir": "codigo_procesal_constitucional",
+        "nota": "",
+    },
 }
 
 KNOWLEDGE_BASE = os.path.join(os.path.dirname(__file__), "..", "knowledge", "normativa")

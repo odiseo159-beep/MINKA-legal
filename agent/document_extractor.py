@@ -104,7 +104,7 @@ def extraer_datos_documento(contenido_bytes: bytes, nombre_archivo: str, content
         b64 = base64.standard_b64encode(contenido_bytes).decode("utf-8")
         mensaje = cliente.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=1000,
+            max_tokens=2048,
             messages=[{
                 "role": "user",
                 "content": [
@@ -124,10 +124,10 @@ def extraer_datos_documento(contenido_bytes: bytes, nombre_archivo: str, content
             raise ValueError("El documento Word está vacío o no tiene texto extraíble.")
         mensaje = cliente.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=1000,
+            max_tokens=2048,
             messages=[{
                 "role": "user",
-                "content": f"{PROMPT_EXTRACCION}\n\n--- CONTENIDO DEL DOCUMENTO ---\n{texto[:8000]}",
+                "content": f"{PROMPT_EXTRACCION}\n\n--- CONTENIDO DEL DOCUMENTO ---\n{texto}",
             }],
         )
     # Imagen (JPG, PNG, WEBP) → Vision API
@@ -142,7 +142,7 @@ def extraer_datos_documento(contenido_bytes: bytes, nombre_archivo: str, content
         b64 = base64.standard_b64encode(contenido_bytes).decode("utf-8")
         mensaje = cliente.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=1000,
+            max_tokens=2048,
             messages=[{
                 "role": "user",
                 "content": [
@@ -242,7 +242,7 @@ def extraer_resumen_estructurado(
         content_for_claude = [
             {
                 "type": "text",
-                "text": f"Documento legal (DOCX convertido a texto):\n\n{texto[:12000]}",
+                "text": f"Documento legal (DOCX convertido a texto):\n\n{texto}",
             }
         ]
     elif content_type.startswith("image/") or ext in ("jpg", "jpeg", "png"):
@@ -269,7 +269,7 @@ def extraer_resumen_estructurado(
     try:
         response = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=1500,
+            max_tokens=4096,
             system=PROMPT_RESUMEN_ESTRUCTURADO,
             messages=[{"role": "user", "content": content_for_claude}],
         )

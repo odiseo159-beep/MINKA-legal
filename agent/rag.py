@@ -23,16 +23,21 @@ logger = logging.getLogger("minka")
 NORMATIVA_DIR = os.path.join(os.path.dirname(__file__), "..", "knowledge", "normativa")
 
 CODIGOS = {
-    "codigo_penal":               "CP",
-    "codigo_procesal_penal":      "CPP",
-    "codigo_procesal_civil":      "CPC",
-    "codigo_civil":               "CC",
-    "codigo_ejecucion_penal":     "CEP",
-    "codigo_ninos_adolescentes":  "CNA",
-    "constitucion":               "CONST",
-    "ley_29497_nlpt":             "NLPT",
-    "ley_30077_crimen_organizado":"L30077",
-    "ley_30364_violencia_mujer":  "L30364",
+    "codigo_penal":                  "CP",
+    "codigo_procesal_penal":         "CPP",
+    "codigo_procesal_civil":         "CPC",
+    "codigo_civil":                  "CC",
+    "codigo_ejecucion_penal":        "CEP",
+    "codigo_ninos_adolescentes":     "CNA",
+    "constitucion":                  "CONST",
+    "ley_29497_nlpt":                "NLPT",
+    "ley_30077_crimen_organizado":   "L30077",
+    "ley_30364_violencia_mujer":     "L30364",
+    "codigo_tributario":             "CT",
+    "ley_26887_sociedades":          "LGS",
+    "ley_27444_lpag":                "LPAG",
+    "ley_27584_contencioso":         "LPCA",
+    "codigo_procesal_constitucional":"CPCo",
 }
 
 CODIGO_NOMBRE = {
@@ -46,6 +51,11 @@ CODIGO_NOMBRE = {
     "NLPT":  "Ley 29497 - Nueva Ley Procesal del Trabajo",
     "L30077":"Ley 30077 - Crimen Organizado",
     "L30364":"Ley 30364 - Violencia contra la Mujer",
+    "CT":    "Código Tributario (TUO DS 133-2013-EF)",
+    "LGS":   "Ley 26887 - Ley General de Sociedades",
+    "LPAG":  "Ley 27444 - Procedimiento Administrativo General",
+    "LPCA":  "Ley 27584 - Proceso Contencioso Administrativo",
+    "CPCo":  "Código Procesal Constitucional (Ley 31307)",
 }
 
 # ---------------------------------------------------------------------------
