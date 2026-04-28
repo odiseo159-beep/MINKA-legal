@@ -1081,19 +1081,14 @@ def api_eliminar_evento(evento_id: int, request: Request, user=Depends(require_a
 # ─────────────────────────────────────────────
 
 class CalcularPlazoRequest(BaseModel):
-    fecha_inicio: str   # YYYY-MM-DD
-    plazo_dias: int
+    fecha_inicio: str           # YYYY-MM-DD
+    dias: int                   # número de días del plazo
+    tipo: str = "habiles"       # "habiles" | "calendario"
 
 @router.post("/api/calcular-plazo")
 def api_calcular_plazo(data: CalcularPlazoRequest, request: Request, user=Depends(require_auth)):
-    fecha_vencimiento = calcular_vencimiento(data.fecha_inicio, data.plazo_dias)
-    restantes = dias_restantes_habiles(fecha_vencimiento)
-    return {
-        "fecha_inicio": data.fecha_inicio,
-        "plazo_dias": data.plazo_dias,
-        "fecha_vencimiento": fecha_vencimiento,
-        "dias_restantes": restantes,
-    }
+    from agent.deadline_calculator import calcular_plazo_completo
+    return calcular_plazo_completo(data.fecha_inicio, data.dias, data.tipo)
 
 @router.get("/api/feriados")
 def api_feriados(
@@ -1101,10 +1096,11 @@ def api_feriados(
     anio: Optional[int] = None,
     user=Depends(require_auth),
 ):
-    from agent.deadline_calculator import cargar_feriados
-    feriados = sorted(cargar_feriados())
+    from agent.deadline_calculator import cargar_feriados, get_nombre_feriado
+    fechas = sorted(cargar_feriados())
     if anio:
-        feriados = [f for f in feriados if f.startswith(str(anio))]
+        fechas = [f for f in fechas if f.startswith(str(anio))]
+    feriados = [{"fecha": f, "nombre": get_nombre_feriado(f)} for f in fechas]
     return {"feriados": feriados, "total": len(feriados)}
 
 # ─────────────────────────────────────────────
