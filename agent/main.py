@@ -419,6 +419,16 @@ async def _process_webhook(request: Request, abogado: dict | None):
     try:
         mensajes = await proveedor.parsear_webhook(request)
 
+        # Log diagnóstico de routing: el path URL puso al abogado X, comparar
+        # con el whapi_channel_id que tenemos guardado para detectar mismatch
+        # con el channel_id del body (que ya logueó parsear_webhook).
+        if abogado:
+            logger.info(
+                f"[WHAPI ROUTE] path.abogado_id={abogado['id']} | "
+                f"saved.whapi_channel_id={abogado.get('whapi_channel_id')!r} | "
+                f"saved.whatsapp_numero={abogado.get('whatsapp_numero')!r}"
+            )
+
         for msg in mensajes:
             if msg.es_propio or not msg.texto:
                 continue

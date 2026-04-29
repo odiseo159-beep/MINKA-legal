@@ -98,6 +98,9 @@ class ProveedorWhapi(ProveedorWhatsApp):
             logger.warning("[WHAPI] WHAPI_WEBHOOK_TOKEN no configurado — webhook sin validación de firma")
 
         body = await request.json()
+        # Log diagnóstico para detectar mismatch entre el channel_id del body y
+        # el whapi_channel_id guardado en abogados. Ver issue de routing por path URL.
+        logger.info(f"[WHAPI] body.channel_id={body.get('channel_id')!r} | event={body.get('event')!r}")
         mensajes = []
         for msg in body.get("messages", []):
             # Whapi envía chat_id como "51912345678@s.whatsapp.net" — limpiar el sufijo

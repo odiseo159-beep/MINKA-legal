@@ -1432,6 +1432,77 @@ def api_buscar_normativa(data: NormativaRequest, request: Request, user=Depends(
 
 
 # ─────────────────────────────────────────────
+# Admin diagnostics
+# ─────────────────────────────────────────────
+
+@router.get("/api/admin/diagnostico-whapi")
+def api_diagnostico_whapi(user=Depends(require_auth)):
+    """Solo admin. Snapshot de la tabla abogados para detectar split-brain de
+    identidad multi-tenant que rompe el routing del webhook Whapi.
+
+    Devuelve:
+    - emails_duplicados: filas de abogados con el mismo email (debería ser []).
+    - channels_duplicados: filas con el mismo whapi_channel_id (debería ser []).
+    - schema_email_unique: si la columna email tiene constraint UNIQUE en la BD real.
+    - abogados: snapshot completo (sin token, solo flag tiene_token).
+    """
+    if not _es_admin(user):
+        raise HTTPException(status_code=403, detail="Solo admin")
+
+    import sqlite3
+    from agent.lawyers_db import DB_PATH
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT email, COUNT(*) as cantidad FROM abogados
+        GROUP BY email HAVING COUNT(*) > 1
+    """)
+    emails_duplicados = [dict(r) for r in cursor.fetchall()]
+
+    cursor.execute("""
+        SELECT whapi_channel_id, COUNT(*) as cantidad FROM abogados
+        WHERE whapi_channel_id IS NOT NULL AND whapi_channel_id != ''
+        GROUP BY whapi_channel_id HAVING COUNT(*) > 1
+    """)
+    channels_duplicados = [dict(r) for r in cursor.fetchall()]
+
+    # Detectar si email tiene UNIQUE en la BD real (CREATE TABLE IF NOT EXISTS
+    # no aplica UNIQUE si la tabla ya existía sin el constraint).
+    cursor.execute("PRAGMA index_list(abogados)")
+    indices = [dict(r) for r in cursor.fetchall()]
+    schema_email_unique = False
+    for idx in indices:
+        cursor.execute(f"PRAGMA index_info({idx['name']!r})")
+        cols = [r["name"] for r in cursor.fetchall()]
+        if cols == ["email"] and idx.get("unique") == 1:
+            schema_email_unique = True
+            break
+
+    cursor.execute("""
+        SELECT id, email, nombre, whatsapp_numero, whapi_channel_id, modo_atencion,
+               CASE WHEN whapi_token IS NOT NULL AND whapi_token != ''
+                    THEN 1 ELSE 0 END as tiene_token,
+               activo, fecha_creacion
+        FROM abogados ORDER BY id
+    """)
+    abogados = [dict(r) for r in cursor.fetchall()]
+
+    conn.close()
+
+    return {
+        "emails_duplicados": emails_duplicados,
+        "channels_duplicados": channels_duplicados,
+        "schema_email_unique": schema_email_unique,
+        "schema_indices": indices,
+        "abogados": abogados,
+        "total_abogados": len(abogados),
+    }
+
+
+# ─────────────────────────────────────────────
 # Dashboard (sirve dashboard.html)
 # ─────────────────────────────────────────────
 
