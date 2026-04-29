@@ -415,41 +415,117 @@ async def _process_webhook(request: Request, abogado: dict | None):
 
     abogado=None → modo legacy (token global, sin filtro de identidad).
     abogado=dict → multi-tenant: filtro por casos del abogado y token específico.
+
+    Routing por content: el body del webhook trae channel_id. Si la BD tiene un
+    abogado con ese whapi_channel_id, ese es la fuente de verdad — no el path URL.
+    Si saved.whapi_channel_id está vacío o tiene formato legacy (JID en lugar de
+    código de canal), self-heal: actualizar con el body.channel_id.
     """
     try:
-        mensajes = await proveedor.parsear_webhook(request)
+        # Usar parsear_webhook_completo si el provider lo expone (Whapi sí).
+        # Fallback al método base para compat futura.
+        if hasattr(proveedor, "parsear_webhook_completo"):
+            payload = await proveedor.parsear_webhook_completo(request)
+            mensajes = payload.mensajes
+            body_channel_id = payload.channel_id
+        else:
+            mensajes = await proveedor.parsear_webhook(request)
+            body_channel_id = None
 
-        # Log diagnóstico de routing: el path URL puso al abogado X, comparar
-        # con el whapi_channel_id que tenemos guardado para detectar mismatch
-        # con el channel_id del body (que ya logueó parsear_webhook).
-        if abogado:
+        # ─── Routing por content + self-heal ───────────────────────────────
+        # abogado_routed: el abogado al que realmente pertenece el canal según
+        # el body. Empieza igual al del path URL pero puede cambiar si el body
+        # apunta a otro o si self-heal actualiza el saved del path.
+        abogado_routed = abogado
+
+        if body_channel_id and abogado:
+            from agent.lawyers_db import (
+                obtener_abogado,
+                obtener_abogado_por_canal,
+                actualizar_abogado,
+            )
+            abogado_por_canal = obtener_abogado_por_canal(body_channel_id)
+
+            if abogado_por_canal:
+                if abogado_por_canal["id"] != abogado["id"]:
+                    # Path apunta a uno, pero el canal pertenece a otro.
+                    # Priorizar content — el body del webhook no miente sobre
+                    # qué canal lo emitió, pero el path URL pudo copiarse mal.
+                    logger.error(
+                        f"[WHAPI ROUTE] MISMATCH path=ab{abogado['id']} pero "
+                        f"channel_id={body_channel_id!r} pertenece a "
+                        f"ab{abogado_por_canal['id']} (revisar URL en panel Whapi). "
+                        f"Priorizando content."
+                    )
+                    abogado_routed = abogado_por_canal
+            else:
+                # Nadie en BD tiene este channel_id. Posible self-heal del path:
+                # si saved del abogado del path es vacío o formato legacy (JID),
+                # actualizar con el body.channel_id que es la fuente correcta.
+                saved = abogado.get("whapi_channel_id") or ""
+                if not saved or saved.isdigit():
+                    logger.warning(
+                        f"[WHAPI ROUTE] Self-heal ab{abogado['id']}: "
+                        f"whapi_channel_id={saved!r} (legacy) → {body_channel_id!r}"
+                    )
+                    actualizar_abogado(abogado["id"], {"whapi_channel_id": body_channel_id})
+                    abogado_routed = obtener_abogado(abogado["id"]) or abogado
+                else:
+                    logger.error(
+                        f"[WHAPI ROUTE] body.channel_id={body_channel_id!r} no matchea "
+                        f"saved={saved!r} de ab{abogado['id']} ni ningún otro abogado. "
+                        f"Procesando con path como fallback."
+                    )
+
+        if abogado_routed:
             logger.info(
-                f"[WHAPI ROUTE] path.abogado_id={abogado['id']} | "
-                f"saved.whapi_channel_id={abogado.get('whapi_channel_id')!r} | "
-                f"saved.whatsapp_numero={abogado.get('whatsapp_numero')!r}"
+                f"[WHAPI ROUTE] usando ab={abogado_routed['id']} | "
+                f"saved.whapi_channel_id={abogado_routed.get('whapi_channel_id')!r}"
             )
 
+        # ─── Procesamiento de mensajes ─────────────────────────────────────
         for msg in mensajes:
             if msg.es_propio or not msg.texto:
                 continue
 
-            scope_label = f"ab={abogado['id']}" if abogado else "legacy"
+            scope_label = f"ab={abogado_routed['id']}" if abogado_routed else "legacy"
             logger.info(f"[WEBHOOK {scope_label}] de '{msg.telefono}': {msg.texto[:80]}")
 
             # Si es el abogado dueño del canal escribiendo, procesar como comando
-            if abogado and msg.telefono == (abogado.get("whatsapp_numero") or ""):
+            if abogado_routed and msg.telefono == (abogado_routed.get("whatsapp_numero") or ""):
                 respuesta = await procesar_comando_abogado(msg.texto, msg.telefono)
-            elif not abogado and es_abogado(msg.telefono):
+            elif not abogado_routed and es_abogado(msg.telefono):
                 # Modo legacy: detectar abogado por número global
                 respuesta = await procesar_comando_abogado(msg.texto, msg.telefono)
             else:
                 # Es un cliente (o número desconocido)
-                if abogado:
+                if abogado_routed:
                     from agent.cases_db import buscar_por_telefono
-                    casos = buscar_por_telefono(msg.telefono, abogado_id=abogado["id"])
-                    modo = abogado.get("modo_atencion") or "individual"
+                    casos = buscar_por_telefono(msg.telefono, abogado_id=abogado_routed["id"])
+                    modo = abogado_routed.get("modo_atencion") or "individual"
                     if not casos and modo == "individual":
-                        logger.info(f"[WEBHOOK ab={abogado['id']}] Ignorado — {msg.telefono} no es cliente conocido (modo individual)")
+                        # Defense-in-depth: en lugar de descartar silencioso,
+                        # responder al cliente con un mensaje claro. Así si hay
+                        # un mismatch de configuración (canal apunta a un abogado
+                        # donde el cliente no tiene caso), el cliente se entera
+                        # en lugar de quedarse sin respuesta.
+                        nombre_ab = abogado_routed.get("nombre") or "tu abogado"
+                        respuesta_fallback = (
+                            f"Hola, este número no figura como cliente de {nombre_ab} "
+                            f"en nuestro sistema. Si tu abogado te indicó este canal, "
+                            f"pedile que te registre como cliente del caso para que pueda "
+                            f"asistirte por acá."
+                        )
+                        logger.warning(
+                            f"[WEBHOOK ab={abogado_routed['id']}] {msg.telefono} no es cliente conocido — "
+                            f"respondiendo con mensaje informativo en lugar de descartar"
+                        )
+                        from agent.providers.whapi import enviar_via_whapi
+                        token_envio = abogado_routed.get("whapi_token")
+                        if token_envio:
+                            await enviar_via_whapi(msg.telefono, respuesta_fallback, token_envio)
+                        else:
+                            await proveedor.enviar_mensaje(msg.telefono, respuesta_fallback)
                         continue
                 historial = await obtener_historial(msg.telefono)
                 respuesta = await generar_respuesta(msg.texto, historial, msg.telefono)
@@ -458,9 +534,9 @@ async def _process_webhook(request: Request, abogado: dict | None):
             await guardar_mensaje(msg.telefono, "assistant", respuesta)
 
             # Enviar usando el token correcto
-            if abogado:
+            if abogado_routed:
                 from agent.providers.whapi import enviar_via_whapi
-                enviado = await enviar_via_whapi(msg.telefono, respuesta, abogado["whapi_token"])
+                enviado = await enviar_via_whapi(msg.telefono, respuesta, abogado_routed["whapi_token"])
             else:
                 enviado = await proveedor.enviar_mensaje(msg.telefono, respuesta)
 
@@ -472,5 +548,5 @@ async def _process_webhook(request: Request, abogado: dict | None):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error en webhook: {e}")
+        logger.error(f"Error en webhook: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

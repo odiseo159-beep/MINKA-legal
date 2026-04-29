@@ -4,12 +4,23 @@
 import os
 import logging
 import httpx
+from dataclasses import dataclass
 from fastapi import Request
 from agent.providers.base import ProveedorWhatsApp, MensajeEntrante
 
 logger = logging.getLogger("agentkit")
 
 WHAPI_BASE_URL = "https://gate.whapi.cloud"
+
+
+@dataclass
+class PayloadWebhook:
+    """Payload completo del webhook de Whapi: identifica el canal de origen
+    además de los mensajes. El channel_id viene como código tipo 'WOLVRN-WR3WE'
+    en el body del POST de Whapi y es la fuente de verdad para identificar
+    qué tenant recibe el webhook."""
+    channel_id: str | None
+    mensajes: list[MensajeEntrante]
 
 
 async def enviar_via_whapi(telefono: str, mensaje: str, token: str) -> bool:
@@ -53,7 +64,13 @@ async def verificar_token_whapi(token: str) -> dict | None:
     """Verifica que un token Whapi sea válido y obtiene el channel_id + número.
 
     Devuelve {"channel_id": str, "phone": str, "name": str} si el token es válido.
-    None si el token está mal o el canal no existe.
+    None si el token está mal, el canal no existe, o /health no devuelve channel.id.
+
+    IMPORTANTE: NO usar fallback a user.id como channel_id. user.id es el JID del
+    WhatsApp (formato '51XXXXXXXX@s.whatsapp.net'), pero el webhook entrante de
+    Whapi trae channel.id como código de canal (formato 'WOLVRN-WR3WE'). Mezclar
+    los dos rompe el routing por content del webhook (lookup por whapi_channel_id
+    en obtener_abogado_por_canal).
     """
     if not token:
         return None
@@ -64,11 +81,27 @@ async def verificar_token_whapi(token: str) -> dict | None:
                 headers={"Authorization": f"Bearer {token}"},
             )
             if r.status_code != 200:
+                logger.warning(
+                    f"[WHAPI] /health devolvió {r.status_code} — token probablemente inválido"
+                )
                 return None
             data = r.json()
             user = data.get("user", {}) or {}
+            channel = data.get("channel", {}) or {}
+            channel_id = channel.get("id") or ""
+            if not channel_id:
+                # Diagnóstico: imprimir keys del data para entender qué viene
+                # cuando channel.id no está poblado (canal sin conectar, formato
+                # de respuesta inesperado, etc.). No imprimir el token.
+                logger.error(
+                    f"[WHAPI] /health no devolvió channel.id. "
+                    f"data keys={list(data.keys())} | "
+                    f"channel keys={list(channel.keys())} | "
+                    f"user keys={list(user.keys())}"
+                )
+                return None
             return {
-                "channel_id": data.get("channel", {}).get("id") or data.get("user", {}).get("id", ""),
+                "channel_id": channel_id,
                 "phone":      user.get("id", "").split("@")[0] if "@" in user.get("id", "") else user.get("id", ""),
                 "name":       user.get("name", ""),
                 "status":     data.get("status", {}).get("text", "unknown"),
@@ -85,8 +118,10 @@ class ProveedorWhapi(ProveedorWhatsApp):
         self.token = os.getenv("WHAPI_TOKEN")
         self.url_envio = "https://gate.whapi.cloud/messages/text"
 
-    async def parsear_webhook(self, request: Request) -> list[MensajeEntrante]:
-        """Parsea el payload de Whapi.cloud, validando el token de webhook si está configurado."""
+    async def _validar_y_leer_body(self, request: Request) -> dict:
+        """Valida la firma del webhook (si WHAPI_WEBHOOK_TOKEN está configurado)
+        y devuelve el body parseado. Centralizado para que parsear_webhook y
+        parsear_webhook_completo lo compartan."""
         webhook_token = os.getenv("WHAPI_WEBHOOK_TOKEN", "")
         if webhook_token:
             import hmac as _hmac
@@ -96,14 +131,19 @@ class ProveedorWhapi(ProveedorWhatsApp):
                 raise HTTPException(status_code=403, detail="Invalid webhook token")
         else:
             logger.warning("[WHAPI] WHAPI_WEBHOOK_TOKEN no configurado — webhook sin validación de firma")
+        return await request.json()
 
-        body = await request.json()
-        # Log diagnóstico para detectar mismatch entre el channel_id del body y
-        # el whapi_channel_id guardado en abogados. Ver issue de routing por path URL.
-        logger.info(f"[WHAPI] body.channel_id={body.get('channel_id')!r} | event={body.get('event')!r}")
-        mensajes = []
+    def _extraer_payload(self, body: dict) -> PayloadWebhook:
+        """Convierte un body ya parseado de Whapi en PayloadWebhook.
+        Separado de la lectura del request para que sea testeable y para que
+        _process_webhook pueda inspeccionar el channel_id del body."""
+        channel_id = body.get("channel_id") or None
+        logger.info(
+            f"[WHAPI] body.channel_id={channel_id!r} | event={body.get('event')!r} | "
+            f"mensajes={len(body.get('messages', []))}"
+        )
+        mensajes: list[MensajeEntrante] = []
         for msg in body.get("messages", []):
-            # Whapi envía chat_id como "51912345678@s.whatsapp.net" — limpiar el sufijo
             chat_id = msg.get("chat_id", "")
             telefono = chat_id.split("@")[0] if "@" in chat_id else chat_id
             logger.info(f"[WHAPI] chat_id recibido: '{chat_id}' → teléfono limpio: '{telefono}'")
@@ -113,7 +153,17 @@ class ProveedorWhapi(ProveedorWhatsApp):
                 mensaje_id=msg.get("id", ""),
                 es_propio=msg.get("from_me", False),
             ))
-        return mensajes
+        return PayloadWebhook(channel_id=channel_id, mensajes=mensajes)
+
+    async def parsear_webhook_completo(self, request: Request) -> PayloadWebhook:
+        """Como parsear_webhook pero también devuelve el channel_id del body —
+        usado por el routing por content en _process_webhook."""
+        body = await self._validar_y_leer_body(request)
+        return self._extraer_payload(body)
+
+    async def parsear_webhook(self, request: Request) -> list[MensajeEntrante]:
+        """Compat con la interfaz ProveedorWhatsApp — solo retorna mensajes."""
+        return (await self.parsear_webhook_completo(request)).mensajes
 
     async def enviar_mensaje(self, telefono: str, mensaje: str) -> bool:
         """Envía mensaje via Whapi.cloud."""
