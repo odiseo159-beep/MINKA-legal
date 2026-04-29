@@ -1502,6 +1502,184 @@ def api_diagnostico_whapi(user=Depends(require_auth)):
     }
 
 
+@router.get("/api/admin/health-check")
+def api_health_check(user=Depends(require_auth)):
+    """Solo admin. Smoke test de servicios y dependencias del backend.
+    Verifica BD, corpus legal, Whapi, Anthropic, R2, y devuelve counts.
+    Útil para validar el estado del deploy sin ejecutar requests externos."""
+    if not _es_admin(user):
+        raise HTTPException(status_code=403, detail="Solo admin")
+
+    import sqlite3
+    from agent.lawyers_db import DB_PATH as LAWYERS_DB
+
+    health: dict = {"ok": True, "checks": {}, "counts": {}}
+
+    # BD: contar filas de las tablas principales
+    try:
+        conn = sqlite3.connect(LAWYERS_DB)
+        cursor = conn.cursor()
+        for tabla in ["usuarios", "abogados", "estudios", "casos",
+                      "caso_documentos", "chat_mensajes", "eventos_calendario",
+                      "corrections", "mensajes"]:
+            try:
+                cursor.execute(f"SELECT COUNT(*) FROM {tabla}")
+                health["counts"][tabla] = cursor.fetchone()[0]
+            except sqlite3.OperationalError:
+                health["counts"][tabla] = "no existe"
+        conn.close()
+        health["checks"]["sqlite"] = "ok"
+    except Exception as e:
+        health["checks"]["sqlite"] = f"error: {e}"
+        health["ok"] = False
+
+    # Corpus legal (BM25)
+    try:
+        from agent.rag import buscar_normativa
+        articulos = buscar_normativa("contrato", top_k=1)
+        health["checks"]["corpus_bm25"] = (
+            f"ok ({len(articulos)} resultado/s en query de prueba)"
+            if articulos else "vacío o no cargado"
+        )
+    except Exception as e:
+        health["checks"]["corpus_bm25"] = f"error: {e}"
+        health["ok"] = False
+
+    # Anthropic API key
+    health["checks"]["anthropic_key"] = (
+        "set" if os.getenv("ANTHROPIC_API_KEY") else "MISSING"
+    )
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        health["ok"] = False
+
+    # R2 (Cloudflare)
+    r2_keys = ["R2_ACCOUNT_ID", "R2_ACCESS_KEY", "R2_SECRET_KEY", "R2_BUCKET"]
+    r2_set = [k for k in r2_keys if os.getenv(k)]
+    health["checks"]["r2"] = f"{len(r2_set)}/{len(r2_keys)} env vars set"
+    if len(r2_set) < len(r2_keys):
+        health["ok"] = False
+
+    # JWT secret
+    health["checks"]["jwt_secret"] = (
+        "set" if os.getenv("JWT_SECRET_KEY") else "MISSING"
+    )
+    if not os.getenv("JWT_SECRET_KEY"):
+        health["ok"] = False
+
+    # WHAPI_WEBHOOK_TOKEN (opcional pero recomendado)
+    health["checks"]["whapi_webhook_token"] = (
+        "set" if os.getenv("WHAPI_WEBHOOK_TOKEN") else "no configurado (warning)"
+    )
+
+    # Email del admin actual
+    health["admin_email"] = user.get("email")
+
+    return health
+
+
+@router.post("/api/admin/reset-data-prueba")
+def api_reset_data_prueba(user=Depends(require_auth)):
+    """⚠️ DESTRUCTIVO. Solo admin. Borra TODA la data de prueba: casos,
+    documentos, eventos, mensajes, conversaciones, corrections. Borra todos
+    los abogados, estudios y usuarios EXCEPTO el admin que ejecuta esto.
+    Limpia el Whapi configurado del admin (token, channel_id, número) para
+    que reconecte desde cero. NO toca el corpus legal.
+
+    Devuelve un dict con qué borró por tabla.
+
+    Safety: requiere rol=admin Y exige que el admin esté presente en la BD.
+    """
+    if not _es_admin(user):
+        raise HTTPException(status_code=403, detail="Solo admin")
+
+    admin_email = (user.get("email") or "").lower()
+    if not admin_email:
+        raise HTTPException(status_code=400, detail="JWT sin email — no es seguro borrar")
+
+    import sqlite3
+    from agent.lawyers_db import DB_PATH as LAWYERS_DB
+
+    conn = sqlite3.connect(LAWYERS_DB)
+    cursor = conn.cursor()
+
+    # Encontrar el ID del admin antes de borrar nada
+    cursor.execute("SELECT id FROM usuarios WHERE LOWER(email) = ? AND activo = 1", (admin_email,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(
+            status_code=400,
+            detail=f"Admin con email {admin_email} no encontrado en usuarios. Aborto."
+        )
+    admin_user_id = row[0]
+
+    cursor.execute("SELECT id, estudio_id FROM abogados WHERE LOWER(email) = ?", (admin_email,))
+    row = cursor.fetchone()
+    admin_abogado_id = row[0] if row else None
+    admin_estudio_id = row[1] if row else None
+
+    borrados = {}
+
+    def _delete(sql: str, params: tuple = (), label: str = ""):
+        try:
+            cursor.execute(sql, params)
+            borrados[label] = cursor.rowcount
+        except sqlite3.OperationalError as e:
+            borrados[label] = f"error: {e}"
+
+    # Orden: hijos primero (FKs)
+    _delete("DELETE FROM caso_documentos", (), "caso_documentos")
+    _delete("DELETE FROM chat_mensajes", (), "chat_mensajes")
+    _delete("DELETE FROM corrections", (), "corrections")
+    _delete("DELETE FROM casos", (), "casos")
+    _delete("DELETE FROM eventos_calendario", (), "eventos_calendario")
+    _delete("DELETE FROM mensajes", (), "mensajes_legacy_wa")  # SQLAlchemy async memory
+
+    if admin_abogado_id:
+        _delete("DELETE FROM abogados WHERE id != ?", (admin_abogado_id,), "abogados")
+    else:
+        _delete("DELETE FROM abogados", (), "abogados")
+
+    if admin_estudio_id:
+        _delete("DELETE FROM estudios WHERE id != ?", (admin_estudio_id,), "estudios")
+    else:
+        _delete("DELETE FROM estudios", (), "estudios")
+
+    _delete("DELETE FROM usuarios WHERE id != ?", (admin_user_id,), "usuarios")
+
+    # Limpiar Whapi del admin para reconexión limpia
+    if admin_abogado_id:
+        try:
+            cursor.execute(
+                "UPDATE abogados SET whapi_token = NULL, whapi_channel_id = NULL, "
+                "whatsapp_numero = NULL WHERE id = ?",
+                (admin_abogado_id,),
+            )
+            borrados["whapi_admin_reseteado"] = cursor.rowcount
+        except sqlite3.OperationalError as e:
+            borrados["whapi_admin_reseteado"] = f"error: {e}"
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "ok": True,
+        "preservado": {
+            "admin_user_id": admin_user_id,
+            "admin_email": admin_email,
+            "admin_abogado_id": admin_abogado_id,
+            "admin_estudio_id": admin_estudio_id,
+        },
+        "borrados": borrados,
+        "siguiente_paso": (
+            "Logueate de nuevo en el frontend, andá a Configuración → "
+            "Integración WhatsApp → reconectá tu canal Whapi (esta vez se va "
+            "a guardar el channel_id correcto). Después pegá la URL nueva "
+            "del webhook en whapi.cloud."
+        ),
+    }
+
+
 # ─────────────────────────────────────────────
 # Dashboard (sirve dashboard.html)
 # ─────────────────────────────────────────────

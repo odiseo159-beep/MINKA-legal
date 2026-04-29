@@ -488,6 +488,17 @@ async def _process_webhook(request: Request, abogado: dict | None):
             if msg.es_propio or not msg.texto:
                 continue
 
+            # NEVER responder a chats grupales — los abogados usan WhatsApp para
+            # grupos personales/colegas y una respuesta automática del bot sería
+            # spam. Whapi reenvía webhooks de todos los grupos donde está el
+            # número del canal, no solo de chats 1-a-1 con clientes.
+            if msg.es_grupo:
+                logger.info(
+                    f"[WEBHOOK] Ignorado mensaje de grupo '{msg.telefono}' "
+                    f"(el bot no responde a grupos)"
+                )
+                continue
+
             scope_label = f"ab={abogado_routed['id']}" if abogado_routed else "legacy"
             logger.info(f"[WEBHOOK {scope_label}] de '{msg.telefono}': {msg.texto[:80]}")
 

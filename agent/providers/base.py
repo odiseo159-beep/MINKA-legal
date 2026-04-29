@@ -18,6 +18,7 @@ class MensajeEntrante:
     texto: str          # Contenido del mensaje
     mensaje_id: str     # ID único del mensaje
     es_propio: bool     # True si lo envió el agente (se ignora)
+    es_grupo: bool = False  # True si viene de un chat grupal (el bot NO debe responder)
 
 
 class ProveedorWhatsApp(ABC):

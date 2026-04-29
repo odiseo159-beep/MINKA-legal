@@ -145,13 +145,21 @@ class ProveedorWhapi(ProveedorWhatsApp):
         mensajes: list[MensajeEntrante] = []
         for msg in body.get("messages", []):
             chat_id = msg.get("chat_id", "")
+            # Whapi marca chats grupales con sufijo '@g.us' (ej: '120363...@g.us').
+            # El bot NUNCA debe responder a grupos — los abogados los usan para
+            # familia/colegas y una respuesta automática del bot sería spam.
+            es_grupo = "@g.us" in chat_id
             telefono = chat_id.split("@")[0] if "@" in chat_id else chat_id
-            logger.info(f"[WHAPI] chat_id recibido: '{chat_id}' → teléfono limpio: '{telefono}'")
+            logger.info(
+                f"[WHAPI] chat_id recibido: '{chat_id}' → "
+                f"teléfono limpio: '{telefono}' | es_grupo={es_grupo}"
+            )
             mensajes.append(MensajeEntrante(
                 telefono=telefono,
                 texto=msg.get("text", {}).get("body", ""),
                 mensaje_id=msg.get("id", ""),
                 es_propio=msg.get("from_me", False),
+                es_grupo=es_grupo,
             ))
         return PayloadWebhook(channel_id=channel_id, mensajes=mensajes)
 
