@@ -1337,17 +1337,35 @@ def api_listar_estudios(request: Request, user=Depends(require_auth)):
 def api_crear_estudio(data: EstudioCreate, request: Request, user=Depends(require_auth)):
     return crear_estudio(data.dict())
 
-@router.get("/api/estudios/{estudio_id}")
-def api_obtener_estudio(estudio_id: int, request: Request, user=Depends(require_auth)):
+def _require_estudio_owner(estudio_id: int, user: dict) -> dict:
+    """Valida que el estudio pertenece al usuario (vía abogados.estudio_id).
+    Admin tiene override. Lanza 404 ante intento ajeno."""
     estudio = obtener_estudio(estudio_id)
     if not estudio:
         raise HTTPException(status_code=404, detail="Estudio no encontrado")
+    if _es_admin(user):
+        admin_ab = get_abogado_for_user(user)
+        admin_estudio = admin_ab.get("estudio_id") if admin_ab else None
+        if admin_estudio and admin_estudio != estudio_id:
+            _logging.getLogger("agentkit").warning(
+                f"[ADMIN OVERRIDE] {user.get('email')} accede a estudio {estudio_id}"
+            )
+        return estudio
+    abogado = get_abogado_for_user(user)
+    if not abogado:
+        raise HTTPException(status_code=403, detail="Tu cuenta no está vinculada a un abogado")
+    if abogado.get("estudio_id") != estudio_id:
+        raise HTTPException(status_code=404, detail="Estudio no encontrado")
     return estudio
+
+
+@router.get("/api/estudios/{estudio_id}")
+def api_obtener_estudio(estudio_id: int, request: Request, user=Depends(require_auth)):
+    return _require_estudio_owner(estudio_id, user)
 
 @router.put("/api/estudios/{estudio_id}")
 def api_actualizar_estudio(estudio_id: int, data: EstudioUpdate, request: Request, user=Depends(require_auth)):
-    if not obtener_estudio(estudio_id):
-        raise HTTPException(status_code=404, detail="Estudio no encontrado")
+    _require_estudio_owner(estudio_id, user)
     return actualizar_estudio(estudio_id, data.dict(exclude_none=True))
 
 # ─────────────────────────────────────────────
@@ -1512,18 +1530,31 @@ def api_listar_corrections(
     """Lista correcciones del abogado autenticado respecto a la extracción IA.
 
     Solo retorna correcciones de casos que pertenecen al abogado autenticado (multi-tenant).
+    Admin (rol=admin) ve correcciones de TODOS los abogados.
     """
     import sqlite3 as _sqlite
-    abogado_id = user.get("id") if user else None
+    # FIX: el JWT payload tiene `sub` (user_id), no `id`. Antes se usaba
+    # user.get("id") que siempre devolvía None y la query no matcheaba nada.
+    # Para multi-tenant correcto, mapear user → abogado vía email.
+    if _es_admin(user):
+        abogado_id = None  # admin ve todo
+    else:
+        abogado = get_abogado_for_user(user)
+        if not abogado:
+            return []  # cuenta sin abogado vinculado: lista vacía
+        abogado_id = abogado["id"]
     conn = _sqlite.connect(DB_PATH)
     conn.row_factory = _sqlite.Row
     cursor = conn.cursor()
-    conditions, params = ["c.abogado_id = ?"], [abogado_id]
+    conditions, params = [], []
+    if abogado_id is not None:
+        conditions.append("c.abogado_id = ?")
+        params.append(abogado_id)
     if campo:
         conditions.append("c.campo = ?"); params.append(campo)
     if tipo_caso:
         conditions.append("c.tipo_caso = ?"); params.append(tipo_caso)
-    where = f"WHERE {' AND '.join(conditions)}"
+    where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
     cursor.execute(f"""
         SELECT c.*, ca.nombre_cliente, ca.expediente
         FROM corrections c
@@ -1539,22 +1570,32 @@ def api_listar_corrections(
 
 @router.get("/api/corrections/stats")
 def api_corrections_stats(request: Request, user=Depends(require_auth)):
-    """Estadísticas agrupadas de correcciones del abogado autenticado."""
+    """Estadísticas agrupadas de correcciones del abogado autenticado.
+    Admin ve agregados de TODOS los abogados."""
     import sqlite3 as _sqlite
-    abogado_id = user.get("id") if user else None
+    # FIX: el JWT no tiene `id`. Mapear user→abogado vía email.
+    if _es_admin(user):
+        abogado_id = None
+    else:
+        abogado = get_abogado_for_user(user)
+        if not abogado:
+            return []
+        abogado_id = abogado["id"]
     conn = _sqlite.connect(DB_PATH)
     conn.row_factory = _sqlite.Row
     cursor = conn.cursor()
-    cursor.execute("""
+    where_sql = "WHERE abogado_id = ?" if abogado_id is not None else ""
+    params = (abogado_id,) if abogado_id is not None else ()
+    cursor.execute(f"""
         SELECT campo, tipo_caso,
                COUNT(*) as total,
                SUM(CASE WHEN valor_claude IS NULL THEN 1 ELSE 0 END) as adiciones,
                SUM(CASE WHEN valor_claude IS NOT NULL THEN 1 ELSE 0 END) as correcciones
         FROM corrections
-        WHERE abogado_id = ?
+        {where_sql}
         GROUP BY campo, tipo_caso
         ORDER BY total DESC
-    """, (abogado_id,))
+    """, params)
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
