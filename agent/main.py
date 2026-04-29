@@ -420,7 +420,20 @@ async def _process_webhook(request: Request, abogado: dict | None):
     abogado con ese whapi_channel_id, ese es la fuente de verdad — no el path URL.
     Si saved.whapi_channel_id está vacío o tiene formato legacy (JID en lugar de
     código de canal), self-heal: actualizar con el body.channel_id.
+
+    Si WHAPI_ENABLED=false, retorna 200 sin procesar — Whapi sigue intentando
+    entregar pero el bot no responde nada (modo mantenimiento).
     """
+    from agent.feature_flags import whapi_enabled
+    if not whapi_enabled():
+        logger.info("[WEBHOOK] WHAPI_ENABLED=false — descartando webhook sin procesar")
+        # Drenar el body para que httpx no se queje, pero no procesamos nada
+        try:
+            await request.json()
+        except Exception:
+            pass
+        return {"status": "disabled"}
+
     try:
         # Usar parsear_webhook_completo si el provider lo expone (Whapi sí).
         # Fallback al método base para compat futura.

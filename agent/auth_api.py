@@ -161,6 +161,31 @@ def register(data: RegisterRequest, request: Request):
         rol="abogado",
     )
 
+    # Auto-crear el perfil de abogado vinculado al email del usuario. Sin esto,
+    # entre el registro y el primer "Guardar perfil" en Configuración, el
+    # usuario podría crear casos que quedarían con abogado_id=NULL (legacy
+    # huérfanos) y se mostrarían en queries de otros tenants. Falla silenciosa
+    # si ya existe (UNIQUE en email) — el endpoint de Configuración lo detecta.
+    try:
+        from agent.lawyers_db import crear_abogado, obtener_abogado_por_email
+        if not obtener_abogado_por_email(email):
+            crear_abogado({
+                "email": email,
+                "nombre": data.nombre or "",
+                "telefono": "",
+                "whatsapp_numero": "",
+                "colegiatura": "",
+                "especialidades": [],
+                "activo": True,
+            })
+    except Exception:
+        # No queremos que un error en auto-crear abogado bloquee el registro.
+        # El usuario puede completarlo después en Configuración.
+        import logging
+        logging.getLogger("agentkit").exception(
+            "[REGISTER] No se pudo auto-crear abogado para %s — continuando", email
+        )
+
     token = create_token(
         user_id=usuario["id"],
         email=usuario["email"],

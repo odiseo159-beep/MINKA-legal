@@ -65,30 +65,38 @@ def obtener_evento(evento_id: int) -> dict | None:
     return dict(row) if row else None
 
 
-def listar_eventos(fecha_desde: str = None, fecha_hasta: str = None) -> list:
-    """Lista todos los eventos, opcionalmente filtrados por rango de fechas."""
+def listar_eventos(
+    fecha_desde: str = None,
+    fecha_hasta: str = None,
+    abogado_id: int | None = None,
+) -> list:
+    """Lista eventos, opcionalmente filtrados por rango de fechas y abogado.
+
+    Si `abogado_id` se provee, solo retorna eventos de ese abogado (filtro
+    multi-tenant). Si es None, retorna todos los eventos (uso interno: admin,
+    APScheduler de notificaciones, backfill, etc.).
+    """
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
-    if fecha_desde and fecha_hasta:
-        cursor.execute(
-            "SELECT * FROM eventos_calendario WHERE fecha_hora >= ? AND fecha_hora <= ? ORDER BY fecha_hora ASC",
-            (fecha_desde, fecha_hasta),
-        )
-    elif fecha_desde:
-        cursor.execute(
-            "SELECT * FROM eventos_calendario WHERE fecha_hora >= ? ORDER BY fecha_hora ASC",
-            (fecha_desde,),
-        )
-    elif fecha_hasta:
-        cursor.execute(
-            "SELECT * FROM eventos_calendario WHERE fecha_hora <= ? ORDER BY fecha_hora ASC",
-            (fecha_hasta,),
-        )
-    else:
-        cursor.execute("SELECT * FROM eventos_calendario ORDER BY fecha_hora ASC")
+    where_parts: list[str] = []
+    params: list = []
+    if fecha_desde:
+        where_parts.append("fecha_hora >= ?")
+        params.append(fecha_desde)
+    if fecha_hasta:
+        where_parts.append("fecha_hora <= ?")
+        params.append(fecha_hasta)
+    if abogado_id is not None:
+        where_parts.append("abogado_id = ?")
+        params.append(abogado_id)
 
+    where_sql = f"WHERE {' AND '.join(where_parts)}" if where_parts else ""
+    cursor.execute(
+        f"SELECT * FROM eventos_calendario {where_sql} ORDER BY fecha_hora ASC",
+        params,
+    )
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]

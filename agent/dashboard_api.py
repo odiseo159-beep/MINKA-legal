@@ -50,9 +50,25 @@ from agent.events_db import (
 from agent.deadline_calculator import calcular_vencimiento, dias_restantes_habiles
 from agent.prompts import CHAT_CASO_SYSTEM
 from agent.legal_agent import ejecutar_agente, ACCIONES_VALIDAS
+from agent.feature_flags import (
+    whapi_enabled,
+    destructive_reset_enabled,
+    whapi_status_message,
+)
 from pydantic import Field
+import logging as _logging
 
 router = APIRouter()
+
+
+def _require_whapi_enabled() -> None:
+    """Helper para endpoints de configuración Whapi: si la integración está
+    apagada por feature flag, devolver 503 con mensaje claro."""
+    if not whapi_enabled():
+        raise HTTPException(
+            status_code=503,
+            detail=whapi_status_message() or "Integración Whapi temporalmente deshabilitada",
+        )
 
 # Cache module-level: caso_id → (doc_count, chunks_list)
 _doc_chunks_cache: dict[int, tuple[int, list[str]]] = {}
@@ -104,6 +120,16 @@ def require_caso_access(caso_id: int, user=Depends(require_auth)) -> dict:
         return caso
 
     if (user or {}).get("rol") == "admin":
+        # Audit trail: el admin está accediendo al caso de otro abogado.
+        # No bloqueamos (override es intencional) pero queda traza en logs.
+        caso_owner = caso.get("abogado_id")
+        admin_abogado = get_abogado_for_user(user)
+        admin_abogado_id = admin_abogado["id"] if admin_abogado else None
+        if caso_owner and caso_owner != admin_abogado_id:
+            _logging.getLogger("agentkit").warning(
+                f"[ADMIN OVERRIDE] {user.get('email')} accede a caso {caso_id} "
+                f"que pertenece a ab{caso_owner}"
+            )
         return caso
 
     abogado = get_abogado_for_user(user)
@@ -1078,6 +1104,14 @@ def _require_abogado_owner(abogado_id: int, user: dict) -> dict:
         user_email = (user.get("email") or "").lower()
         if owner_email != user_email:
             raise HTTPException(status_code=404, detail="Abogado no encontrado")
+    else:
+        # Audit trail: el admin está actuando sobre un abogado distinto al suyo.
+        admin_email = (user.get("email") or "").lower()
+        owner_email = (abogado.get("email") or "").lower()
+        if owner_email and owner_email != admin_email:
+            _logging.getLogger("agentkit").warning(
+                f"[ADMIN OVERRIDE] {admin_email} accede a abogado {abogado_id} ({owner_email})"
+            )
     return abogado
 
 
@@ -1088,13 +1122,54 @@ def api_listar_abogados(request: Request, solo_activos: bool = False, user=Depen
     return listar_abogados_por_email(user.get("email", ""), solo_activos=solo_activos)
 
 @router.post("/api/abogados", status_code=201)
-def api_crear_abogado(data: AbogadoCreate, request: Request, user=Depends(require_auth)):
+def api_crear_abogado(
+    data: AbogadoCreate,
+    request: Request,
+    user=Depends(require_auth),
+    confirm_email_diferente: bool = False,
+):
+    """Crea un perfil de abogado vinculado al usuario autenticado.
+
+    Reglas (endurecidas para prevenir split-brain de identidad):
+    - Usuario normal: el email del payload se ignora y se fuerza al del JWT.
+    - Admin: por default también se fuerza al del JWT. Para crear con OTRO
+      email (alta de un colega), debe pasar `?confirm_email_diferente=true`
+      Y el email debe corresponder a un usuario ya existente en `usuarios`.
+      No se permite crear abogados huérfanos sin user asociado — esa fue la
+      ruta que llevó al bug del split-brain con `brbn4meme@gmail.com`.
+    """
     payload = data.dict()
-    # Forzar el email al del usuario autenticado para que el abogado quede
-    # ligado a la cuenta correcta. El admin sí puede crear abogados con
-    # cualquier email (uso interno).
+    user_email = (user.get("email") or "").lower()
+    payload_email = (payload.get("email") or "").lower()
+
     if not _es_admin(user):
-        payload["email"] = user.get("email", "")
+        payload["email"] = user_email
+    elif payload_email and payload_email != user_email:
+        if not confirm_email_diferente:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Como admin estás por crear un abogado con email distinto al tuyo. "
+                    "Si es intencional (alta de un colega), pasá "
+                    "?confirm_email_diferente=true. El email debe corresponder a un "
+                    "usuario ya registrado."
+                ),
+            )
+        from agent.users_db import obtener_usuario_por_email
+        if not obtener_usuario_por_email(payload_email):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"El email '{payload_email}' no corresponde a ningún usuario "
+                    f"registrado. Pedile que se registre primero en /registro."
+                ),
+            )
+        _logging.getLogger("agentkit").warning(
+            f"[ADMIN OVERRIDE] {user_email} crea abogado con email distinto: {payload_email}"
+        )
+    else:
+        payload["email"] = user_email
+
     return crear_abogado(payload)
 
 @router.get("/api/abogados/{abogado_id}")
@@ -1127,12 +1202,24 @@ class WhapiConfig(BaseModel):
     whatsapp_numero: Optional[str] = None  # opcional — se puede deducir del token
 
 
+@router.get("/api/whapi/status")
+def api_whapi_status():
+    """Endpoint público (sin auth requerido) que reporta si la integración
+    WhatsApp está habilitada. El frontend lo consulta para mostrar/ocultar
+    el formulario de configuración Whapi y el banner de mantenimiento."""
+    return {
+        "enabled": whapi_enabled(),
+        "mensaje": whapi_status_message(),
+    }
+
+
 @router.post("/api/abogados/{abogado_id}/whapi/verificar")
 async def api_verificar_whapi(abogado_id: int, data: WhapiConfig, request: Request, user=Depends(require_auth)):
     """Verifica que el token Whapi sea válido y devuelve el channel_id + número.
 
     No persiste todavía — el usuario revisa el resultado y luego confirma con POST .../whapi.
     """
+    _require_whapi_enabled()
     _require_abogado_owner(abogado_id, user)
     from agent.providers.whapi import verificar_token_whapi
     info = await verificar_token_whapi(data.whapi_token)
@@ -1147,6 +1234,7 @@ async def api_guardar_whapi(abogado_id: int, data: WhapiConfig, request: Request
 
     También retorna la URL de webhook que el usuario debe configurar en Whapi.
     """
+    _require_whapi_enabled()
     _require_abogado_owner(abogado_id, user)
     from agent.providers.whapi import verificar_token_whapi
     info = await verificar_token_whapi(data.whapi_token)
@@ -1181,7 +1269,11 @@ async def api_guardar_whapi(abogado_id: int, data: WhapiConfig, request: Request
 
 @router.delete("/api/abogados/{abogado_id}/whapi")
 def api_desconectar_whapi(abogado_id: int, request: Request, user=Depends(require_auth)):
-    """Desconecta el canal Whapi del abogado (limpia token y channel_id)."""
+    """Desconecta el canal Whapi del abogado (limpia token y channel_id).
+
+    Permitido incluso con WHAPI_ENABLED=false: si vamos a refactorear la
+    integración, queremos poder limpiar configs viejas durante el mantenimiento.
+    """
     _require_abogado_owner(abogado_id, user)
     actualizar_abogado(abogado_id, {"whapi_token": None, "whapi_channel_id": None})
     return {"ok": True, "mensaje": "Canal Whapi desconectado"}
@@ -1196,6 +1288,7 @@ async def api_refrescar_whapi(abogado_id: int, request: Request, user=Depends(re
     actualiza Minka para reflejar el nuevo phone sin pedir al abogado que pegue
     el token de nuevo.
     """
+    _require_whapi_enabled()
     abogado = _require_abogado_owner(abogado_id, user)
     token = abogado.get("whapi_token")
     if not token:
@@ -1279,6 +1372,37 @@ class EventoUpdate(BaseModel):
     recordatorio_dias: Optional[int] = None
     notas: Optional[str] = None
 
+def _require_evento_owner(evento_id: int, user: dict) -> dict:
+    """Valida que el evento existe y pertenece al usuario (o que sea admin).
+    Devuelve el evento. Lanza 404 ante intento ajeno (no leak de existencia).
+    """
+    evento = obtener_evento(evento_id)
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+    if _es_admin(user):
+        # Admin: log audit si actúa sobre evento de otro abogado
+        admin_ab = get_abogado_for_user(user)
+        admin_ab_id = admin_ab["id"] if admin_ab else None
+        if evento.get("abogado_id") and evento["abogado_id"] != admin_ab_id:
+            _logging.getLogger("agentkit").warning(
+                f"[ADMIN OVERRIDE] {user.get('email')} actúa sobre evento {evento_id} "
+                f"de ab{evento.get('abogado_id')}"
+            )
+        return evento
+    abogado = get_abogado_for_user(user)
+    if not abogado:
+        raise HTTPException(status_code=403, detail="Tu cuenta no está vinculada a un abogado")
+    # Eventos legacy sin abogado_id: los aceptamos durante migración (log warning)
+    if evento.get("abogado_id") is None:
+        _logging.getLogger("agentkit").warning(
+            f"[IDOR] evento {evento_id} sin abogado_id — permitiendo acceso a ab{abogado['id']} (legacy)"
+        )
+        return evento
+    if evento["abogado_id"] != abogado["id"]:
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+    return evento
+
+
 @router.get("/api/eventos")
 def api_listar_eventos(
     request: Request,
@@ -1286,29 +1410,53 @@ def api_listar_eventos(
     fecha_hasta: Optional[str] = None,
     user=Depends(require_auth),
 ):
-    return listar_eventos(fecha_desde=fecha_desde, fecha_hasta=fecha_hasta)
+    """Lista eventos del usuario autenticado. Admin ve todos."""
+    if _es_admin(user):
+        return listar_eventos(fecha_desde=fecha_desde, fecha_hasta=fecha_hasta)
+    abogado = get_abogado_for_user(user)
+    if not abogado:
+        return []  # cuenta nueva sin abogado: lista vacía
+    return listar_eventos(
+        fecha_desde=fecha_desde, fecha_hasta=fecha_hasta, abogado_id=abogado["id"]
+    )
 
 @router.post("/api/eventos", status_code=201)
 def api_crear_evento(data: EventoCreate, request: Request, user=Depends(require_auth)):
-    return crear_evento(data.dict())
+    """Crea un evento auto-vinculado al abogado del usuario autenticado.
+    El abogado_id del payload se IGNORA (no se permite spoofing)."""
+    payload = data.dict()
+    if _es_admin(user):
+        # Admin puede pasar abogado_id explícito si quiere crear para otro
+        if not payload.get("abogado_id"):
+            admin_ab = get_abogado_for_user(user)
+            payload["abogado_id"] = admin_ab["id"] if admin_ab else None
+    else:
+        abogado = get_abogado_for_user(user)
+        if not abogado:
+            raise HTTPException(
+                status_code=403,
+                detail="Tu cuenta no está vinculada a un abogado. Crea uno en Configuración."
+            )
+        # Forzar siempre el abogado del JWT, ignorando lo que venga en payload
+        payload["abogado_id"] = abogado["id"]
+    return crear_evento(payload)
 
 @router.get("/api/eventos/{evento_id}")
 def api_obtener_evento(evento_id: int, request: Request, user=Depends(require_auth)):
-    evento = obtener_evento(evento_id)
-    if not evento:
-        raise HTTPException(status_code=404, detail="Evento no encontrado")
-    return evento
+    return _require_evento_owner(evento_id, user)
 
 @router.put("/api/eventos/{evento_id}")
 def api_actualizar_evento(evento_id: int, data: EventoUpdate, request: Request, user=Depends(require_auth)):
-    if not obtener_evento(evento_id):
-        raise HTTPException(status_code=404, detail="Evento no encontrado")
-    return actualizar_evento(evento_id, data.dict(exclude_none=True))
+    _require_evento_owner(evento_id, user)
+    update = data.dict(exclude_none=True)
+    # No permitir reasignar el evento a otro abogado (incluso para admin sería
+    # una mutación rara — si quiere mover, que delete + create explícito).
+    update.pop("abogado_id", None)
+    return actualizar_evento(evento_id, update)
 
 @router.delete("/api/eventos/{evento_id}")
 def api_eliminar_evento(evento_id: int, request: Request, user=Depends(require_auth)):
-    if not obtener_evento(evento_id):
-        raise HTTPException(status_code=404, detail="Evento no encontrado")
+    _require_evento_owner(evento_id, user)
     eliminar_evento(evento_id)
     return {"ok": True, "mensaje": "Evento eliminado"}
 
@@ -1587,10 +1735,27 @@ def api_reset_data_prueba(user=Depends(require_auth)):
 
     Devuelve un dict con qué borró por tabla.
 
-    Safety: requiere rol=admin Y exige que el admin esté presente en la BD.
+    Safety:
+    - Requiere rol=admin
+    - Exige que el admin esté presente en la BD (no es seguro borrar si el
+      JWT no matchea ningún usuario)
+    - Requiere env var ALLOW_DESTRUCTIVE_RESET=true. Si está apagado (default
+      en producción), responde 503 con instrucciones. Esto evita que un admin
+      borre data legítima por error cuando ya hay clientes reales en el sistema.
     """
     if not _es_admin(user):
         raise HTTPException(status_code=403, detail="Solo admin")
+
+    if not destructive_reset_enabled():
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Reset destructivo deshabilitado. Para ejecutarlo, setear "
+                "ALLOW_DESTRUCTIVE_RESET=true en Railway, ejecutar el reset, y "
+                "después volver a setear en false. Esta protección evita que un "
+                "admin borre datos de clientes reales por error."
+            ),
+        )
 
     admin_email = (user.get("email") or "").lower()
     if not admin_email:
