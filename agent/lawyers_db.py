@@ -60,6 +60,27 @@ def init_lawyers_db():
 
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_abogados_canal ON abogados(whapi_channel_id)")
 
+    # UNIQUE partial index en whatsapp_numero — clave para el modelo single-channel
+    # donde el bot identifica al abogado por su número. Si dos abogados tuvieran el
+    # mismo whatsapp_numero, el routing del webhook entrante sería ambiguo.
+    # Partial index (WHERE not null/empty) permite múltiples abogados sin número
+    # registrado durante el onboarding sin disparar el constraint.
+    # Try/except por si hay duplicados en producción al deployar — log warning
+    # en lugar de fallar el startup. El admin debe limpiar manualmente.
+    try:
+        cursor.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_abogados_whatsapp_numero "
+            "ON abogados(whatsapp_numero) WHERE whatsapp_numero IS NOT NULL "
+            "AND whatsapp_numero != ''"
+        )
+    except sqlite3.IntegrityError as e:
+        import logging as _logging
+        _logging.getLogger("agentkit").warning(
+            f"[INIT] No se pudo crear UNIQUE INDEX en abogados.whatsapp_numero: {e}. "
+            f"Hay duplicados en producción — limpiar manualmente para que el routing "
+            f"del bot por número sea inequívoco."
+        )
+
     conn.commit()
     conn.close()
 

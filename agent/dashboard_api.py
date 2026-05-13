@@ -1833,13 +1833,17 @@ def api_reset_data_prueba(user=Depends(require_auth)):
         except sqlite3.OperationalError as e:
             borrados[label] = f"error: {e}"
 
-    # Orden: hijos primero (FKs)
+    # Orden: hijos primero (FKs).
+    # NOTA: la tabla `mensajes` (historial WhatsApp legacy, SQLAlchemy async)
+    # se PRESERVA intencionalmente. Decisión de producto: no borrar historial
+    # de conversaciones de los usuarios actuales. Si se necesita limpieza
+    # selectiva de esa tabla, hacerla en una migración aparte.
     _delete("DELETE FROM caso_documentos", (), "caso_documentos")
     _delete("DELETE FROM chat_mensajes", (), "chat_mensajes")
     _delete("DELETE FROM corrections", (), "corrections")
     _delete("DELETE FROM casos", (), "casos")
     _delete("DELETE FROM eventos_calendario", (), "eventos_calendario")
-    _delete("DELETE FROM mensajes", (), "mensajes_legacy_wa")  # SQLAlchemy async memory
+    borrados["mensajes_legacy_wa"] = "preservado (decisión de producto)"
 
     if admin_abogado_id:
         _delete("DELETE FROM abogados WHERE id != ?", (admin_abogado_id,), "abogados")
