@@ -49,9 +49,14 @@ def init_lawyers_db():
 
     # Migraciones de canal Whapi por abogado
     for columna, definicion in [
-        ("whapi_token",      "TEXT"),
-        ("whapi_channel_id", "TEXT"),
-        ("modo_atencion",    "TEXT DEFAULT 'individual'"),  # 'individual' | 'estudio'
+        ("whapi_token",      "TEXT"),                          # DEPRECATED (modelo viejo multi-tenant)
+        ("whapi_channel_id", "TEXT"),                          # DEPRECATED (modelo viejo multi-tenant)
+        ("modo_atencion",    "TEXT DEFAULT 'individual'"),     # DEPRECATED
+        # Verificación del whatsapp_numero del abogado (modelo nuevo single-channel):
+        # el abogado escribe "/registrar CODIGO" desde su WhatsApp al canal de la
+        # empresa y se vincula su número con su cuenta. Evita self-attestation insegura.
+        ("verificacion_codigo",     "TEXT"),                   # código pendiente (6 chars)
+        ("verificacion_expira_at",  "TEXT"),                   # ISO timestamp UTC
     ]:
         try:
             cursor.execute(f"ALTER TABLE abogados ADD COLUMN {columna} {definicion}")
@@ -379,6 +384,124 @@ def eliminar_abogado(abogado_id: int) -> bool:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("UPDATE abogados SET activo = 0 WHERE id = ?", (abogado_id,))
+    ok = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return ok
+
+
+# ─────────────────────────────────────────────
+# Verificación de whatsapp_numero (modelo single-channel)
+# ─────────────────────────────────────────────
+#
+# El abogado pide un código en Configuración del frontend → backend genera
+# código 6 chars, expira en 10 min. El abogado lo envía como "/registrar CODE"
+# desde su WhatsApp al canal de la empresa. Webhook handler valida y vincula
+# whatsapp_numero al abogado correspondiente.
+
+import secrets as _secrets
+from datetime import datetime as _dt, timedelta as _td
+
+# Alfabeto sin caracteres confusos (0, O, 1, I, L)
+_CODIGO_ALFABETO = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+_CODIGO_LEN = 6
+_CODIGO_TTL_MIN = 10
+
+
+def generar_codigo_verificacion(abogado_id: int) -> dict:
+    """Genera un código de verificación de 10 minutos para vincular WhatsApp.
+    Sobrescribe cualquier código pendiente previo. Devuelve {codigo, expira_at_iso}."""
+    codigo = "".join(_secrets.choice(_CODIGO_ALFABETO) for _ in range(_CODIGO_LEN))
+    expira_at = _dt.utcnow() + _td(minutes=_CODIGO_TTL_MIN)
+    expira_at_iso = expira_at.isoformat() + "Z"
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE abogados SET verificacion_codigo = ?, verificacion_expira_at = ? WHERE id = ?",
+        (codigo, expira_at_iso, abogado_id),
+    )
+    conn.commit()
+    conn.close()
+    return {"codigo": codigo, "expira_at": expira_at_iso, "ttl_minutos": _CODIGO_TTL_MIN}
+
+
+def consumir_codigo_verificacion(codigo: str, telefono: str) -> dict | None:
+    """Si el código existe, no expiró, y aún no fue usado, vincula el `telefono`
+    al abogado y limpia el código. Devuelve el abogado actualizado o None.
+
+    `telefono` debe venir ya normalizado (sin prefijo 51, sin sufijos WA)."""
+    codigo = (codigo or "").strip().upper()
+    if not codigo:
+        return None
+
+    telefono_norm = _normalizar_telefono(telefono)
+    if not telefono_norm:
+        return None
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT * FROM abogados WHERE verificacion_codigo = ? AND activo = 1",
+        (codigo,),
+    )
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return None
+    abogado = dict(row)
+
+    # Verificar expiración
+    expira_at_iso = abogado.get("verificacion_expira_at") or ""
+    try:
+        # Quitar 'Z' final si está, parsear como naive UTC
+        clean = expira_at_iso.rstrip("Z")
+        expira_at = _dt.fromisoformat(clean)
+    except (ValueError, TypeError):
+        conn.close()
+        return None
+    if _dt.utcnow() > expira_at:
+        conn.close()
+        return None
+
+    # Verificar que el número no esté ya vinculado a OTRO abogado (UNIQUE)
+    cursor.execute(
+        "SELECT id FROM abogados WHERE whatsapp_numero = ? AND id != ? AND activo = 1",
+        (telefono_norm, abogado["id"]),
+    )
+    conflicto = cursor.fetchone()
+    if conflicto:
+        conn.close()
+        # Conflicto: este número ya pertenece a otro abogado.
+        return {"_error": "numero_ya_vinculado", "_conflicto_id": conflicto[0]}
+
+    # OK, vincular y limpiar código
+    cursor.execute(
+        "UPDATE abogados SET whatsapp_numero = ?, verificacion_codigo = NULL, "
+        "verificacion_expira_at = NULL WHERE id = ?",
+        (telefono_norm, abogado["id"]),
+    )
+    conn.commit()
+
+    # Devolver abogado actualizado
+    cursor.execute("SELECT * FROM abogados WHERE id = ?", (abogado["id"],))
+    actualizado = dict(cursor.fetchone())
+    conn.close()
+    return actualizado
+
+
+def desvincular_whatsapp(abogado_id: int) -> bool:
+    """Limpia el whatsapp_numero del abogado. Útil cuando el abogado quiere
+    re-vincular un número distinto o desactivar el bot."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE abogados SET whatsapp_numero = NULL, verificacion_codigo = NULL, "
+        "verificacion_expira_at = NULL WHERE id = ?",
+        (abogado_id,),
+    )
     ok = cursor.rowcount > 0
     conn.commit()
     conn.close()

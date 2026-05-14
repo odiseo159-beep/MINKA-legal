@@ -35,6 +35,8 @@ from agent.lawyers_db import (
     obtener_estudio,
     crear_estudio,
     actualizar_estudio,
+    generar_codigo_verificacion,
+    desvincular_whatsapp,
 )
 from agent.document_extractor import extraer_datos_documento, extraer_resumen_estructurado
 from agent.legal_advisor import generar_consejo_procesal
@@ -1312,6 +1314,95 @@ async def api_refrescar_whapi(abogado_id: int, request: Request, user=Depends(re
         "phone_actualizado": info.get("phone"),
         "cambio_detectado": abogado.get("whatsapp_numero") != info.get("phone"),
     }
+
+
+# ─────────────────────────────────────────────
+# Vinculación del WhatsApp del abogado (modelo single-channel)
+# ─────────────────────────────────────────────
+#
+# Flujo: abogado en Configuración pide código → backend genera código 6
+# chars con TTL 10min → frontend muestra "Mandá /registrar CODIGO desde
+# tu WhatsApp al número de la empresa" → abogado lo manda → webhook handler
+# valida y vincula whatsapp_numero. Frontend hace polling al endpoint
+# /estado para detectar cuando se vincula.
+
+@router.get("/api/empresa/whatsapp")
+def api_empresa_whatsapp():
+    """Endpoint público (sin auth): número de WhatsApp de la empresa al que
+    los abogados deben mandar /registrar para vincular su número.
+
+    Configurable via env var EMPRESA_WHATSAPP_NUMERO. Si no está set,
+    devuelve un placeholder informativo."""
+    numero = os.getenv("EMPRESA_WHATSAPP_NUMERO", "").strip()
+    return {
+        "numero": numero,
+        "numero_display": _formatear_whatsapp_display(numero) if numero else None,
+        "configurado": bool(numero),
+    }
+
+
+def _formatear_whatsapp_display(numero: str) -> str:
+    """Formatea un número limpio (51XXXXXXXXX o XXXXXXXXX) como '+51 9XX XXX XXX'."""
+    if not numero:
+        return ""
+    s = numero.strip().replace("+", "").replace(" ", "").replace("-", "")
+    if s.startswith("51") and len(s) == 11:
+        s = s[2:]
+    if len(s) == 9:
+        return f"+51 {s[0:3]} {s[3:6]} {s[6:9]}"
+    return f"+{numero}" if not numero.startswith("+") else numero
+
+
+@router.post("/api/abogados/{abogado_id}/whatsapp/codigo")
+def api_generar_codigo_whatsapp(abogado_id: int, request: Request, user=Depends(require_auth)):
+    """Genera un código de verificación de 10 minutos. El abogado debe
+    mandar 'registrar CODIGO' desde su WhatsApp al canal de la empresa
+    para vincular su número con su cuenta. Sobrescribe código previo."""
+    _require_whapi_enabled()
+    _require_abogado_owner(abogado_id, user)
+    result = generar_codigo_verificacion(abogado_id)
+    empresa_num = os.getenv("EMPRESA_WHATSAPP_NUMERO", "").strip()
+    return {
+        "codigo": result["codigo"],
+        "expira_at": result["expira_at"],
+        "ttl_minutos": result["ttl_minutos"],
+        "instrucciones": (
+            f"Desde tu WhatsApp, mandá el siguiente mensaje al número "
+            f"{_formatear_whatsapp_display(empresa_num) if empresa_num else 'de la empresa'}:\n\n"
+            f"registrar {result['codigo']}\n\n"
+            f"El código expira en {result['ttl_minutos']} minutos. Una vez vinculado, "
+            f"vas a poder consultar tus casos y recibir recordatorios por WhatsApp."
+        ),
+        "empresa_numero": empresa_num,
+    }
+
+
+@router.get("/api/abogados/{abogado_id}/whatsapp/estado")
+def api_estado_whatsapp(abogado_id: int, request: Request, user=Depends(require_auth)):
+    """Devuelve el estado del vínculo WhatsApp del abogado. El frontend lo
+    polling-ea cada 3-5s después de pedir un código para detectar cuando el
+    abogado completó la verificación desde su WhatsApp."""
+    abogado = _require_abogado_owner(abogado_id, user)
+    tiene_codigo = bool(abogado.get("verificacion_codigo"))
+    expira_at = abogado.get("verificacion_expira_at")
+    return {
+        "verificado": bool(abogado.get("whatsapp_numero")),
+        "whatsapp_numero": abogado.get("whatsapp_numero"),
+        "whatsapp_numero_display": _formatear_whatsapp_display(abogado.get("whatsapp_numero") or ""),
+        "codigo_pendiente": tiene_codigo,
+        "codigo_expira_at": expira_at if tiene_codigo else None,
+    }
+
+
+@router.delete("/api/abogados/{abogado_id}/whatsapp")
+def api_desvincular_whatsapp(abogado_id: int, request: Request, user=Depends(require_auth)):
+    """Limpia el whatsapp_numero del abogado. El bot dejará de reconocerlo
+    como abogado registrado. Permitido incluso con WHAPI_ENABLED=false
+    (limpieza durante mantenimiento)."""
+    _require_abogado_owner(abogado_id, user)
+    ok = desvincular_whatsapp(abogado_id)
+    return {"ok": ok, "mensaje": "WhatsApp desvinculado" if ok else "No había vínculo"}
+
 
 # ─────────────────────────────────────────────
 # Endpoints API REST — Estudios Jurídicos

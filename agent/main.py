@@ -445,7 +445,10 @@ async def _process_webhook(request: Request, abogado: dict | None = None):
         else:
             mensajes = await proveedor.parsear_webhook(request)
 
-        from agent.lawyers_db import obtener_abogado_por_whatsapp
+        from agent.lawyers_db import (
+            obtener_abogado_por_whatsapp,
+            consumir_codigo_verificacion,
+        )
         from agent.lawyer_chat import responder_a_abogado
 
         for msg in mensajes:
@@ -458,23 +461,77 @@ async def _process_webhook(request: Request, abogado: dict | None = None):
                 )
                 continue
 
+            # ── Handler /registrar (vinculación del número de un abogado) ──
+            # Debe ir ANTES del lookup por número, porque un abogado nuevo
+            # justamente todavía no tiene su número vinculado en la BD.
+            # Acepta "registrar CODIGO" o "/registrar CODIGO" (case-insensitive).
+            texto_strip = msg.texto.strip()
+            lower = texto_strip.lower()
+            if lower.startswith("/registrar ") or lower.startswith("registrar "):
+                partes = texto_strip.split(maxsplit=1)
+                codigo = partes[1].strip().upper() if len(partes) > 1 else ""
+                if not codigo:
+                    respuesta = (
+                        "Necesito el código. Mandalo así:\nregistrar TUCODIGO\n\n"
+                        "Si no tenés código, generalo en el dashboard de Minka → "
+                        "Configuración → WhatsApp → Vincular."
+                    )
+                else:
+                    resultado = consumir_codigo_verificacion(codigo, msg.telefono)
+                    if resultado is None:
+                        respuesta = (
+                            "Código inválido o expirado. Pedí uno nuevo en el "
+                            "dashboard de Minka → Configuración → WhatsApp → Vincular. "
+                            "Los códigos duran 10 minutos."
+                        )
+                    elif resultado.get("_error") == "numero_ya_vinculado":
+                        respuesta = (
+                            "Este número de WhatsApp ya está vinculado a otra cuenta "
+                            "de Minka. Si crees que es un error, contactá a soporte de "
+                            "SimplifAI."
+                        )
+                    else:
+                        nombre = resultado.get("nombre") or "Abogado"
+                        respuesta = (
+                            f"Listo, {nombre}. Tu WhatsApp está vinculado a Minka.\n\n"
+                            f"Desde acá podés:\n"
+                            f"- Preguntarme sobre tus casos en lenguaje natural "
+                            f"(ej: \"¿cuándo es la audiencia de Pérez?\")\n"
+                            f"- Escribir \"ayuda\" para ver el menú de comandos\n"
+                            f"- Recibir recordatorios automáticos de plazos\n\n"
+                            f"¿En qué te ayudo hoy?"
+                        )
+                logger.info(
+                    f"[WEBHOOK] /registrar desde {msg.telefono}: codigo={codigo!r} → "
+                    f"{'OK' if isinstance(resultado, dict) and not resultado.get('_error') else 'FALLA'}"
+                    if codigo
+                    else f"[WEBHOOK] /registrar desde {msg.telefono} sin código"
+                )
+                await guardar_mensaje(msg.telefono, "user", msg.texto)
+                await guardar_mensaje(msg.telefono, "assistant", respuesta)
+                await proveedor.enviar_mensaje(msg.telefono, respuesta)
+                continue
+
             # Identidad del remitente: buscar abogado por su whatsapp_numero.
             abogado_remitente = obtener_abogado_por_whatsapp(msg.telefono)
 
             if not abogado_remitente:
                 # No es abogado registrado. Responder con mensaje informativo
-                # (no silent-ignore). Casos típicos: ex-clientes del modelo
-                # viejo que siguen escribiendo, números de prueba, etc.
+                # (no silent-ignore) que incluye instrucciones para vincularse
+                # si el remitente es un abogado nuevo.
                 logger.info(
                     f"[WEBHOOK] Mensaje de no-abogado {msg.telefono}: "
                     f"{msg.texto[:80]!r} — respondiendo info"
                 )
                 respuesta_info = (
-                    "Hola, este número de Minka (SimplifAI Legal) es un canal "
-                    "interno solo para abogados registrados en la plataforma. "
-                    "Si tu abogado usa Minka, él recibe directamente las "
-                    "novedades de tu caso. Para cualquier consulta sobre tu "
-                    "expediente, comunicate con él directamente."
+                    "Hola, este es el canal interno de Minka (SimplifAI Legal) "
+                    "para abogados registrados.\n\n"
+                    "Si sos abogado y querés vincular este número con tu cuenta, "
+                    "entrá al dashboard → Configuración → WhatsApp → Vincular y "
+                    "seguí las instrucciones.\n\n"
+                    "Si sos cliente de un abogado que usa Minka, él va a recibir "
+                    "directamente las novedades de tu caso por su propio canal. "
+                    "Cualquier consulta del expediente, comunicate con él."
                 )
                 await proveedor.enviar_mensaje(msg.telefono, respuesta_info)
                 continue
